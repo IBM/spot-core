@@ -1,5 +1,5 @@
 # spot-core
-Core of the Selenium Page Object Testing repository
+<b>Core of the Selenium Page Object Testing repository</b>
 
 SPOT is a framework to help writing integration test scenarios using full Oriented Object design in Java.
 

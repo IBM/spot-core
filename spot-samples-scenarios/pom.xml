@@ -2,9 +2,14 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.ibm.bear.qa.bas.spot</groupId>
+	<parent>
+		<groupId>com.ibm.bear.qa.spot</groupId>
+		<artifactId>spot-core-root</artifactId>
+		<version>3.1.0-SNAPSHOT</version>
+	</parent>
+	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-samples-scenarios</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<name>SPOT Samples Scenarios</name>
 
 	<properties>
@@ -21,7 +26,7 @@
 		<dependency>
 			<groupId>com.ibm.bear.qa.spot</groupId>
 			<artifactId>spot-samples-pages</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 
@@ -35,7 +40,7 @@
 					<includes>
 						<include>**/*${scenario_identifier}Scenario.java</include>
 					</includes>
-					<testFailureIgnore>true</testFailureIgnore>
+					<testFailureIgnore>false</testFailureIgnore>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 					<systemProperties>
 						<paramFilesDir>params</paramFilesDir>
