@@ -9,4 +9,4 @@ You will also find in this repository a sample developed for demo purposes which
 
 # Videos
 Here are some short videos demonstrating some nice features of this framework
-1. Automatic test rerun on transient errors: https://github.com/IBM/spot-core/blob/master/doc/Automatic%20test%20rerun.mp4
+1. Automatic test rerun on transient errors: https://github.com/IBM/spot-core/raw/master/doc/Automatic%20test%20rerun.mp4
