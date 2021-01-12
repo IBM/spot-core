@@ -8,5 +8,5 @@ Visit the repository wiki page (https://github.com/IBM/spot-core/wiki) to find m
 You will also find in this repository a sample developed for demo purposes which hightlights how to use the core layer to implement a product and a scenario layer.
 
 # Videos
-Here are some short videos demonstrating some nice features of this framework
+Here are some short videos demonstrating some nice framework features:
 1. Automatic test rerun on transient errors: https://github.com/IBM/spot-core/raw/master/doc/Automatic%20test%20rerun.mp4
