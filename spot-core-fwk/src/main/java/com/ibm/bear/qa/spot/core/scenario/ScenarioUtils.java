@@ -226,6 +226,19 @@ public class ScenarioUtils {
 	 */
 	public final static String SERVER_ERRORS_FILE_NAME = getParameterValue("server.errors.file.name", "logErrors_" + COMPACT_DATE_STRING + ".log");
 
+	/**
+	 * Flag to tell framework to use environment variables when looking for a property value.
+	 * <p>
+	 * Name: <code>"use.env.variables"</code><br>
+	 * Value: <code>boolean</code><br>
+	 * Default: <code>true</code> which means that by default environment variables are used when looking for properties value<br>
+	 * Usage: <code>-Duse.env.variables=false</code> in the VM Arguments field of the launch configuration.
+	 * </p>
+	 *
+	 */
+	public final static boolean USE_ENV_VARIABLES = getParameterBooleanValue("use.env.variables", true);
+	private static final Map<String, String> ENV_VARIABLES = System.getenv();
+
 	/*
 	 * Stream to store debug information.
 	 */
@@ -523,7 +536,7 @@ private static String formatDebugLine(final String line) {
  * @return the simple class name as a String.
  */
 public static String getClassSimpleName(final Class<?> clazz) {
-    return getClassSimpleName(clazz.getName());
+	return getClassSimpleName(clazz.getName());
 }
 
 /**
@@ -532,12 +545,103 @@ public static String getClassSimpleName(final Class<?> clazz) {
  * @return the simple class name as a String.
  */
 public static String getClassSimpleName(final String className) {
-    String classSimpleName = className;
-    int lastDot = classSimpleName.lastIndexOf('.');
-    if (lastDot != -1) {
-        classSimpleName = classSimpleName.substring(lastDot + 1);
-    }
+	String classSimpleName = className;
+	int lastDot = classSimpleName.lastIndexOf('.');
+	if (lastDot != -1) {
+		classSimpleName = classSimpleName.substring(lastDot + 1);
+	}
 	return classSimpleName;
+}
+
+/**
+ * Return the given environment variable value.
+ *
+ * @param name The name of the variable
+ * @return The environment variable value if found, <code>null</code> otherwise
+ */
+public static String getEnvVariableValue(final String name) {
+	return getSimilarEnvVariableValue(name, false);
+}
+
+
+/**
+ * Return the given or similar environment variable value.
+ * <p>
+ * This method can extend the search to similar name of environment variables.<br>
+ * This is due to the fact that dot character ('.') is not allowed for Linux environment
+ * variable names and names are not case sensitive for Windows environment
+ * variable names.<br>
+ * Hence, this method can still return a value even if the name of the environment
+ * variable is not exactly the same than the given property name.
+ * </p><p>
+ * For example, a value will be returned for <code>foo.bar</code> property if:
+ * <ol>
+ * <li>on Windows system: environment variable <code>FOO.BAR</code> is defined</li>
+ * <li>on Linux system: environment variable <code>foo_bar</code> is defined</li>
+ * </ol>
+ * </p>
+ * @param name The name of the variable
+ * @param searchForSimilarName Flag to tell whether search can be extended to similar names
+ * @return The environment variable value if found, <code>null</code> otherwise
+ */
+protected static String getSimilarEnvVariableValue(final String name, final boolean searchForSimilarName) {
+	String envValue = ENV_VARIABLES.get(name);
+	if (envValue == null && searchForSimilarName) {
+		switch (getOsName()) {
+			case "win":
+				envValue = ENV_VARIABLES.get(name.toUpperCase());
+				break;
+			case "lnx":
+				if (name.indexOf('.') > 0) {
+					envValue = getSimilarEnvVariableValue(name.replaceAll("\\.", "_"), false);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	return envValue;
+}
+
+/**
+ * Return a list of strings from the given objects array.
+ * <p>
+ * Note that <code>null</code> slots are automatically skipped,
+ * hence the return list might have not the same number than provided
+ * array.
+ * </p>
+ * @param array The objects array
+ * @return The strings list
+ */
+public static List<String> getListFromArray(final Object[] array) {
+	List<String> list = new ArrayList<>();
+	if (array.length > 0) {
+		for (Object obj: array) {
+			if (obj != null) {
+				list.add(obj.toString());
+			}
+		}
+	}
+	return list;
+}
+
+/**
+ * Return the current OS type.
+ *
+ * @return The OS type
+ */
+public static String getOsName() {
+	String osName = System.getProperty("os.name");
+	if (osName.toLowerCase().startsWith("windows")) {
+		return "win";
+	}
+	if (osName.equalsIgnoreCase("linux")) {
+		return "lnx";
+	}
+	if (osName.toLowerCase().contains("mac")) {
+		return "mac";
+	}
+	return "unknown";
 }
 
 /**
@@ -733,7 +837,9 @@ public static String[] getParameterValues(final String name, final String defaul
  * Return the value of the the given property.
  * <p>
  * Try first to get it from {@link System} properties. If not defined, then try
- * to get it from {@link #PARAMETERS_MANAGER}. If not defined then return <code>null</code>.
+ * to get it from {@link #PARAMETERS_MANAGER}. If not defined and use of
+ * environment variables is allowed, then try to look for an environment variable
+ * with similar name. If still not defined then return <code>null</code>.
  * </p>
  * @param name The parameter name
  * @return The string corresponding to the parameter value or <code>null</code>
@@ -744,6 +850,9 @@ private static String getProperty(final String name) {
 	if (value != null) return value;
 	if (PARAMETERS_MANAGER != null) {
 		value = PARAMETERS_MANAGER.getProperty(name);
+	}
+	if (value == null && USE_ENV_VARIABLES) {
+		value = getSimilarEnvVariableValue(name, true);
 	}
 	return value;
 }
@@ -756,28 +865,6 @@ private static String getProperty(final String name) {
 public static String getSeleniumVersion() {
 	WebDriverException exception = new WebDriverException("info");
 	return "Selenium " + exception.getBuildInformation();
-}
-
-/**
- * Return a list of strings from the given objects array.
- * <p>
- * Note that <code>null</code> slots are automatically skipped,
- * hence the return list might have not the same number than provided
- * array.
- * </p>
- * @param array The objects array
- * @return The strings list
- */
-public static List<String> getListFromArray(final Object[] array) {
-	List<String> list = new ArrayList<>();
-	if (array.length > 0) {
-		for (Object obj: array) {
-			if (obj != null) {
-				list.add(obj.toString());
-			}
-		}
-	}
-	return list;
 }
 
 /**

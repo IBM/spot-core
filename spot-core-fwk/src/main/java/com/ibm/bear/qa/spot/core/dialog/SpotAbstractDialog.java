@@ -242,15 +242,15 @@ protected void closeAction(final boolean validate) {
 private List<String> getAlreadyOpenedDialogIDs() {
 
 	// Get list of opened dialog elements
-   	List<WebBrowserElement> dialogElements = getOpenedElements(0/*sec*/);
+	List<WebBrowserElement> dialogElements = getOpenedElements(0/* sec */);
 
-   	// Return the IDs list
-   	List<String> dialogIDs = new ArrayList<String>(dialogElements.size());
-   	Iterator<WebBrowserElement> iterator = dialogElements.iterator();
-   	while (iterator.hasNext()) {
-   		dialogIDs.add(iterator.next().getAttribute("id"));
-   	}
-   	return dialogIDs;
+	// Return the IDs list
+	List<String> dialogIDs = new ArrayList<String>(dialogElements.size());
+	Iterator<WebBrowserElement> iterator = dialogElements.iterator();
+	while (iterator.hasNext()) {
+		dialogIDs.add(iterator.next().getAttribute("id"));
+	}
+	return dialogIDs;
 }
 
 /**
@@ -272,65 +272,38 @@ protected void handleConfirmationPopup() {
 
 @Override
 public WebBrowserElement open(final WebBrowserElement webElement) {
-	if (DEBUG) debugPrintln("		+ Open "+getClassSimpleName(getClass())+" dialog");
+	debugPrintEnteringMethod("webElement", webElement);
 
 	// Store the link element
 	this.openingElement = webElement;
 
 	// Get list of already opened dialog IDs
-   	List<String> alreadyOpenedDialogIDs = getAlreadyOpenedDialogIDs();
+	List<String> alreadyOpenedDialogIDs = getAlreadyOpenedDialogIDs();
 
 	// Click on element which opens the dialog
 	clickOnOpenElement(this.openingElement, 0);
 
-	// Wait one second
-//	sleep(1);
-
 	// Wait for dialog web element
-	//	this.element = this.browser.waitForElement(this.parent, this.findBy, false, shortTimeout(), true/*visible*/, false/*first occurrence*/);
 	setElement(alreadyOpenedDialogIDs);
 
 	// Loop until having got the web element
-	if (DEBUG) debugPrintln("		  -> timeout="+(this.max*shortTimeout())+" seconds");
+	debugPrintln("		  -> timeout=" + (this.max * shortTimeout()) + " seconds");
 	int count = 0;
 	while (this.element == null) {
 		if (count++ > this.max) {
-			throw new WaitElementTimeoutError("Failing to open the dialog "+this);
+			throw new WaitElementTimeoutError("Failing to open the dialog " + this);
 		}
 		// Workaround
-		debugPrintln("Workaround: click on "+this.openingElement+" to open dialog again as previous click didn't work...");
-	   	try {
-	        clickOnOpenElement(this.openingElement, count);
-	    }
-	   	catch (WebDriverException wde) {
+		debugPrintln("Workaround: click on " + this.openingElement + " to open dialog again as previous click didn't work...");
+		try {
+			clickOnOpenElement(this.openingElement, count);
+		}
+		catch (WebDriverException wde) {
 			// Workaround
-	    	debugPrintException(wde);
+			debugPrintException(wde);
 			debugPrintln("Workaround: exception occurred during the click might be because the dialog finally opened!?");
-	    }
-	   	// Disabled code which would allow to manage several successive click on the opening element...
-	   	// TODO See if we discard it or enabled it at some point
-//	   	List<WebBrowserElement> windowElements = this.browser.waitForElements(this.parent, this.findBy, false, shortTimeout(), true/*visible*/);
-//	   	final int size = windowElements.size();
-//	   	switch (size) {
-//	   		case 1:
-//	   			// We got it, store in window and leave the loop
-//	   			this.element = windowElements.get(0);
-//	   			break;
-//	   		case 0:
-//	   			// Still not found, the loop will continue
-//	   			break;
-//	   		case 2:
-//	   			// Apparently, the first dialog finally opened but the second click opened
-//	   			// another dialog. So, keep the first one and close the second
-//	   			this.element = windowElements.get(1);
-//	   			WebBrowserElement firstWindow = windowElements.get(0);
-//	   			firstWindow.findElement(By.xpath(".//button[text()='Cancel']")).click();
-//	   			sleep(2);
-//	   			break;
-//	   		default:
-//	   			throw new ScenarioFailedError("Too many dialogs opened.");
-//	   	}
-	    setElement(alreadyOpenedDialogIDs);
+		}
+		setElement(alreadyOpenedDialogIDs);
 	}
 
 	// Wait for extra loading end if necessary
@@ -338,7 +311,7 @@ public WebBrowserElement open(final WebBrowserElement webElement) {
 
 	// Purge alerts if any
 	if (this.purgeAlerts) {
-		if (this.browser.purgeAlerts("Open dialog "+this.locator+"from "+this.page) > 0) {
+		if (this.browser.purgeAlerts("Open dialog " + this.locator + "from " + this.page) > 0) {
 			if (!this.element.isDisplayed(false)) {
 				// Workaround
 				debugPrintln("Workaround: The dialog was closed while purging alerts, try to open it again...");
@@ -392,47 +365,47 @@ protected void selectDialogFrame() {
 private void setElement(final List<String> alreadyOpenedDialogIDs) {
 
 	// Get list of opened dialog elements
-   	List<WebBrowserElement> openedDialogElements = getOpenedElements(1/*sec*/);
+	List<WebBrowserElement> openedDialogElements = getOpenedElements(shortTimeout());
 
-   	// Keep only dialogs which where not already opened
-   	Iterator<WebBrowserElement> iterator = openedDialogElements.iterator();
-   	List<WebBrowserElement> dialogElements = new ArrayList<WebBrowserElement>();
-   	while (iterator.hasNext()) {
-   		WebBrowserElement openedDialogElement = iterator.next();
-   		String dialogID = openedDialogElement.getAttribute("id");
-   		if (alreadyOpenedDialogIDs == null || !alreadyOpenedDialogIDs.contains(dialogID)) {
-   			dialogElements.add(openedDialogElement);
-   		}
-   	}
+	// Keep only dialogs which where not already opened
+	Iterator<WebBrowserElement> iterator = openedDialogElements.iterator();
+	List<WebBrowserElement> dialogElements = new ArrayList<WebBrowserElement>();
+	while (iterator.hasNext()) {
+		WebBrowserElement openedDialogElement = iterator.next();
+		String dialogID = openedDialogElement.getAttribute("id");
+		if (alreadyOpenedDialogIDs == null || !alreadyOpenedDialogIDs.contains(dialogID)) {
+			dialogElements.add(openedDialogElement);
+		}
+	}
 
-   	// Go through the map to see if there's any doubled opened dialog
-   	final int size = dialogElements.size();
-   	switch (size) {
-   		case 1:
-   			// We got it, store in window and leave the loop
-   			this.element = dialogElements.get(0);
-   			break;
-   		case 0:
-   			// No opened dialog was found
-   			debugPrintln("WARNING: No opened dialog was found after having clicked on open element.");
-   			break;
-   		default:
-   			// Apparently, there are several dialogs opened, hence close all but the last one
-   			debugPrintln("WARNING: "+size+" dialogs have been found after having clicked on open element, keep the last one and close all others");
-   			for (int i=0; i<size-1; i++) {
-	   			WebBrowserElement windowElement = dialogElements.get(i);
-	   			By buttonLocator = getCloseButtonLocator(false);
-	   			if (buttonLocator == null) {
-	   				throw new ScenarioFailedError("Several dialogs are opened and they cannot be be cancelled.");
-	   			}
-   				debugPrintln("	-> close dialog '"+windowElement+"' by clicking on "+buttonLocator+" button.");
-	   			windowElement.findElement(buttonLocator).click();
-   			}
-   			this.element = dialogElements.get(size-1);
-			debugPrintln("	-> keep dialog '"+this.element+"'.");
-   			sleep(2);
-   			break;
-   	}
+	// Go through the map to see if there's any doubled opened dialog
+	final int size = dialogElements.size();
+	switch (size) {
+		case 1:
+			// We got it, store in window and leave the loop
+			this.element = dialogElements.get(0);
+			break;
+		case 0:
+			// No opened dialog was found
+			debugPrintln("WARNING: No opened dialog was found after having clicked on open element.");
+			break;
+		default:
+			// Apparently, there are several dialogs opened, hence close all but the last one
+			debugPrintln("WARNING: " + size + " dialogs have been found after having clicked on open element, keep the last one and close all others");
+			for (int i = 0; i < size - 1; i++) {
+				WebBrowserElement windowElement = dialogElements.get(i);
+				By buttonLocator = getCloseButtonLocator(false);
+				if (buttonLocator == null) {
+					throw new ScenarioFailedError("Several dialogs are opened and they cannot be be cancelled.");
+				}
+				debugPrintln("	-> close dialog '" + windowElement + "' by clicking on " + buttonLocator + " button.");
+				windowElement.findElement(buttonLocator).click();
+			}
+			this.element = dialogElements.get(size - 1);
+			debugPrintln("	-> keep dialog '" + this.element + "'.");
+			sleep(2);
+			break;
+	}
 }
 
 /**
