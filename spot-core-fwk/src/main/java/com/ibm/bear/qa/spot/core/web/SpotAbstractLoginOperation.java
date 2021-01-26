@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -237,7 +237,7 @@ protected int shortTimeout() {
  * Store the user as logged int for the corresponding page application.
  */
 protected void storeUserAsLoggedInApplication() {
-	this.page.topology.login(this.page.browser.getCurrentUrl(), this.user);
+	this.page.topology.login(this.page.getLocation(), this.user);
 }
 
 /**

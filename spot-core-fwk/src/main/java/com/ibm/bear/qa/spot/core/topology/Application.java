@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -27,35 +27,61 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
 /**
  * Abstract class for a topology application.
  * <p>
- * An application is identified by its {@link #location} which is assumed to be
- * the prefix for any web page URL of this application.
+ * An application is identified by its {@link #location} which is assumed to be the prefix for any
+ * web page URL of this application.
  * </p><p>
  * It's also assumed that this location is the concatenation of two strings:
  * <ol>
- * <li>the server address: expected format is <code>https:<i>Server_DNS_Name</i>:<i>port_value</i></code>
- * (e.g. <code>https://jbslnxvh02.ottawa.ibm.com:9443</code>)</li>
- * <li>the context root: usually a simple name (e.g. <code>jts</code>)</li>
+ * <li>the server address: expected format is
+ * <code>https:<i>Server_DNS_Name</i>:<i>port_value</i></code> </li>
+ * <li>the context root: usually a simple name</li>
  * </ol>
  * </p><p>
- * A user might be stored in the application let the topology know who is
- * connected to this application.
+ * A user might be stored in the application let the topology know who is connected to this
+ * application.
  * </p><p>
  * An application is responsible to provide web pages address to client.
  * </p><p>
- * Following functionalities are also defined by this page:
+ * This class defines following internal API methods:
  * <ul>
- * <li>{@link #getPageUrl(String)}: Return the page URL from
- * the given link.</li>
- * <li>{@link #getTitle()}: Return the application title.</li>
+ * <li>{@link #equals(Object)}: Compares the argument to the receiver, and answers true</li>
+ * <li>{@link #getContextRoot()}: Return the context root of the application.</li>
+ * <li>{@link #getHost()}: Return the host of the machine on which the current application is installed.</li>
+ * <li>{@link #getHostUrl()}: Return the host URL of the machine on which the current application is installed.</li>
+ * <li>{@link #getLocation()}: The application location.</li>
+ * <li>{@link #getLoginOperation(WebPage,User)}: Return the login operation which should be used with the current application.</li>
+ * <li>{@link #getName()}: Returns the application name.</li>
+ * <li>{@link #getPageUrl(String)}: Return the modified page URL if necessary.</li>
+ * <li>{@link #getPageUrlWithAdditionalPath(String)}: Return a page URL with an optional additional path.</li>
+ * <li>{@link #getProductName()}: Returns the application product name.</li>
+ * <li>{@link #getSuffix()}: Returns the application suffix.</li>
+ * <li>{@link #getTitle()}: Returns the application title.</li>
+ * <li>{@link #getType()}: Returns the application type.</li>
+ * <li>{@link #getTypeSuffix()}: Returns the type suffix.</li>
+ * <li>{@link #getUserInfo()}: Return the user info used in application URL.</li>
+ * <li>{@link #hasNoUser()}: Tells whether the application has an user connected or not.</li>
+ * <li>{@link #hashCode()}: Answers an integer hash code for the receiver. Any two</li>
+ * <li>{@link #isUserConnected(User)}: Tells whether the given user is connected to the current application or not.</li>
+ * <li>{@link #login(User)}: Login the given user to the application.</li>
+ * <li>{@link #logout()}: Logout all users from the application.</li>
+ * <li>{@link #logout(User)}: Logout the given user from the application.</li>
+ * <li>{@link #needLogin(User)}: Tells whether the current application would need login for the given user.</li>
+ * <li>{@link #setName(String)}: Set the application name.</li>
+ * <li>{@link #toString()}: Answers a string containing a concise, human-readable</li>
+ * <li>{@link #useUms()}: Returns if the application is using UMS.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #isApplicationFor(String)}: Tells whether the given URL address matches the current application or not.</li>
  * </ul>
  * </p>
  */
 abstract public class Application {
 
 	// The url prefix for any web pages of this application
-	private URL appliUrl;
-	String location;
-	String server;
+	protected URL url;
+	final String location, shortLocation;
 	String contextRoot;
 
 	// The user connected to the application
@@ -67,9 +93,9 @@ abstract public class Application {
 
 protected Application(final String url, final boolean ums) {
 	try {
-		URL fullUrl = new URL(url);
-
-		String path = fullUrl.getPath();
+		this.url = new URL(url);
+		String path = this.url.getPath();
+		String filePath = EMPTY_STRING;
 		if (path.length() > 0) {
 			StringTokenizer pathTokenizer = new StringTokenizer(path, "/");
 			StringBuilder safePath = new StringBuilder();
@@ -77,22 +103,24 @@ protected Application(final String url, final boolean ums) {
 				this.contextRoot = pathTokenizer.nextToken();
 				safePath.append('/').append(this.contextRoot);
 			}
-//			this.appliUrl = new URL(fullUrl.getProtocol(), fullUrl.getHost(), fullUrl.getPort(), "/"+this.contextRoot);
-			this.appliUrl = fullUrl;
-			this.location = new URL(fullUrl.getProtocol(), fullUrl.getHost(), fullUrl.getPort(), safePath.toString()).toExternalForm();
+			filePath = safePath.toString();
 			if (pathTokenizer.countTokens() > 0) {
-				debugPrintln("Info: path for application '"+this.location+"' contains several segments. Context root ("+this.contextRoot+") was initialized with first one.");
+				debugPrintln("Info: path for application '"+this.url+"' contains several segments. Context root ("+this.contextRoot+") was initialized with first one.");
 			}
-
-		} else {
-			this.appliUrl = fullUrl;
-			this.location = url;
 		}
-		this.server = this.appliUrl.getAuthority();
-    }
+		String appLocation = new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), filePath).toExternalForm();
+		this.shortLocation = appLocation;
+		if (this.url.getQuery() != null) {
+			appLocation += "?" + this.url.getQuery();
+		}
+		if (this.url.getRef() != null) {
+			appLocation += "#" + this.url.getRef();
+		}
+		this.location = appLocation;
+	}
 	catch (MalformedURLException e) {
 		throw new ScenarioFailedError(e.getMessage());
-    }
+	}
 	this.useUms = ums;
 }
 
@@ -127,7 +155,7 @@ public String getContextRoot() {
  * @return The host name as a {@link String}
  */
 public String getHost() {
-	return this.appliUrl.getHost();
+	return this.url.getHost();
 }
 
 /**
@@ -139,7 +167,11 @@ public String getHost() {
  * @return The host url as a {@link String}
  */
 public String getHostUrl() {
-	return this.appliUrl.getProtocol()+"://"+this.server;
+	String hostUrl = this.url.getProtocol()+"://"+getHost();
+	if (this.url.getPort() >= 0) {
+		hostUrl += ":" + this.url.getPort();
+	}
+	return hostUrl;
 }
 
 /**
@@ -150,6 +182,20 @@ public String getHostUrl() {
 public String getLocation() {
 	return this.location;
 }
+
+/**
+ * Return the login operation which should be used with the current application.
+ * <p>
+ * This method might return <code>null</code> in case no login operation is
+ * necessary to access the application (typically when using basic auth in
+ * application URL).
+ * </p>
+ * @param page The page on which the login operation will occur
+ * @param appUser The user which needs to be logged to the application
+ * @return The login operation to be used or <code>null</code> if there's no
+ * necessary login operation
+ */
+public abstract SpotAbstractLoginOperation getLoginOperation(WebPage page, User appUser);
 
 /**
  * Returns the application name.
@@ -165,15 +211,6 @@ public String getName() {
 }
 
 /**
- * Return the login operation which should be used with the current application.
- *
- * @param page The page on which the login operation will occur
- * @param appUser The user which needs to be logged to the application
- * @return The login operation to be used
- */
-public abstract SpotAbstractLoginOperation getLoginOperation(WebPage page, User appUser);
-
-/**
  * Return the modified page URL if necessary.
  * <p>
  * Default is not to modify the page url.
@@ -185,21 +222,38 @@ public String getPageUrl(final String pageUrl) {
 }
 
 /**
+ * Return a page URL with an optional additional path.
+ *
+ * @param path The path to add to the application URL to get page
+ * @return The page URL
+ */
+public String getPageUrlWithAdditionalPath(final String path) {
+	String pageUrl;
+	try {
+		String newPath = (path == null || path.isEmpty()) ? this.url.getPath() : (this.url.getPath().isEmpty() ? path : path+"/"+this.url.getPath());
+		pageUrl = new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), newPath).toExternalForm();
+	} catch (MalformedURLException ex) {
+		throw new ScenarioFailedError(ex);
+	}
+	if (this.url.getQuery() != null) {
+		pageUrl += "?" + this.url.getQuery();
+	}
+	if (this.url.getRef() != null) {
+		pageUrl += "#" + this.url.getRef();
+	}
+	if (this.url.getUserInfo() != null) {
+		pageUrl = this.url.getProtocol()+"://"+this.url.getUserInfo()+"@"+pageUrl.substring(pageUrl.indexOf("://")+3);
+	}
+	return pageUrl;
+}
+
+/**
  * Returns the application product name.
  *
  * @return The application product name as a {@link String}.
  */
 public String getProductName() {
 	throw new ScenarioFailedError(this+" has no associated product.");
-}
-
-/**
- * Returns the application server.
- *
- * @return The application server as a {@link String}.
- */
-public String getServer() {
-	return this.server;
 }
 
 /**
@@ -223,16 +277,6 @@ public String getTitle() {
 }
 
 /**
- * Returns if the application is using UMS.
- *
- * @return <code>true</code> if the application is using UMS,
- * <code>false</code> otherwise.
- */
-public boolean useUms() {
-	return this.useUms;
-}
-
-/**
  * Returns the application type.
  *
  * @return The application type as a {@link String}.
@@ -250,6 +294,17 @@ public String getType() {
  */
 public String getTypeSuffix() {
 	return EMPTY_STRING;
+}
+
+/**
+ * Return the user info used in application URL.
+ *
+ * @return The user information as <code>"&lt;user ID&gt;:&lt;user pwd&gt;@"</code>
+ * or <code>null</code> if no user info was used in application URL
+ */
+public String getUserInfo() {
+	String userInfo = this.url.getUserInfo();
+	return userInfo == null ? EMPTY_STRING : userInfo+"@";
 }
 
 @Override
@@ -270,12 +325,20 @@ public boolean hasNoUser() {
 /**
  * Tells whether the given URL address matches the current application or not.
  *
- * @param url The URL address
+ * @param pageUrl The URL address
  * @return <code>true</code> if the address belongs to the current application,
  * <code>false</code> otherwise
  */
-protected boolean isApplicationFor(final String url) {
-	return url.startsWith(this.location);
+protected boolean isApplicationFor(final String pageUrl) {
+	try {
+		URL testUrl = new URL(pageUrl);
+		testUrl = new URL(testUrl.getProtocol(), testUrl.getHost(), testUrl.getPort(), testUrl.getPath());
+		return testUrl.toExternalForm().startsWith(this.shortLocation);
+	}
+	catch (@SuppressWarnings("unused") MalformedURLException ex) {
+		// skip
+	}
+	return false;
 }
 
 /**
@@ -393,4 +456,13 @@ public final String toString() {
 	return builder.toString();
 }
 
+/**
+ * Returns if the application is using UMS.
+ *
+ * @return <code>true</code> if the application is using UMS,
+ * <code>false</code> otherwise.
+ */
+public boolean useUms() {
+	return this.useUms;
+}
 }

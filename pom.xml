@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-core-root</artifactId>
-	<version>3.2.0</version>
+	<version>3.4.0</version>
 	<packaging>pom</packaging>
 
 	<name>Root for SPOT Core projects</name>
@@ -53,5 +53,13 @@
 			</plugin>
 			-->
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/messages*.properties</include>
+				</includes>
+			</resource>
+		</resources>
 	</build>
 </project>

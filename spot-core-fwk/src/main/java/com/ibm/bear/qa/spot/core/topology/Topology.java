@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -184,7 +184,7 @@ public boolean login(final String location, final User user) {
 				}
 			}
 		} else {
-			List<Application> serverApplications = this.servers.get(application.server);
+			List<Application> serverApplications = this.servers.get(application.getHost());
 			for (Application appli: serverApplications) {
 				appli.login(user);
 			}
@@ -206,7 +206,7 @@ public boolean logout(final String location) {
 
 	// Get all application on the same server than the application
 	Application application = getApplication(location);
-	List<Application> serverApplications = this.servers.get(application.server);
+	List<Application> serverApplications = this.servers.get(application.getHost());
 
 	// Get applications needing login on the server
 	boolean appliUserChanged = false;
@@ -297,9 +297,9 @@ public boolean onSameHost(final Application firstApp, final Application secondAp
  * @param application The application to add the server for
  */
 protected void updateServer(final Application application) {
-	List<Application> serverApplications = this.servers.get(application.server);
+	List<Application> serverApplications = this.servers.get(application.getHost());
 	if (serverApplications == null) {
-		this.servers.put(application.server, serverApplications = new ArrayList<Application>());
+		this.servers.put(application.getHost(), serverApplications = new ArrayList<Application>());
 	}
 	serverApplications.add(application);
 }

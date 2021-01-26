@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -101,7 +101,7 @@ public abstract class WebPage implements SpotPage {
 	private int verifyTries = 1;
 
 	// NLS messages
-	final protected NlsMessages nlsMessages;
+	final private NlsMessages nlsMessages;
 
 	// Additional information
 	protected String[] data;
@@ -1159,6 +1159,15 @@ abstract protected By getLoggedUserElementLocator();
  */
 final protected SpotAbstractLoginOperation getLoginOperation(final User pageUser) {
 	return getApplication().getLoginOperation(this, pageUser);
+}
+
+/**
+ * Return the NLS messages manager.
+ *
+ * @return The NLS message or <code>null</code> if page does not manage NLS messages
+ */
+protected NlsMessages getNlsMessages() {
+	return this.nlsMessages;
 }
 
 /**

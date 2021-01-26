@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -247,7 +247,7 @@ public WebPage getPage() {
  * @return The messages as {@link NlsMessages}.
  */
 protected NlsMessages getNlsMessages() {
-	return this.page.nlsMessages;
+	return this.page.getNlsMessages();
 }
 
 /**

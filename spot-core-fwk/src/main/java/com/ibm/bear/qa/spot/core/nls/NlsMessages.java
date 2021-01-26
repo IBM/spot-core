@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -26,18 +26,21 @@ public abstract class NlsMessages {
 	 * Supported locales to run scenario.
 	 */
 	public enum Supported {
+		FR(Locale.FRENCH),
 		US(Locale.US);
 		Locale locale;
 		Supported(final Locale loc) {
 			this.locale = loc;
 		}
+
 		protected Locale getLocale() {
-        	return this.locale;
-        }
+			return this.locale;
+		}
+
 		@Override
-        public String toString() {
-	        return this.locale.toString();
-        }
+		public String toString() {
+			return this.locale.toString();
+		}
 	}
 
 	/* Fields */
@@ -63,7 +66,7 @@ public NlsMessages() {
 			selectedLocale = new Locale(language, country);
 		}
 	} else {
-		selectedLocale = Supported.valueOf(locale).getLocale();
+		selectedLocale = Supported.valueOf(locale.toUpperCase()).getLocale();
 	}
 	this.scenarioLocale = selectedLocale;
 
@@ -89,7 +92,7 @@ abstract protected String bundleName();
  * @param key The key of the searched string in messages properties file.
  * @return The string value as a {@link String}.
  */
-public final String getNLSString(final String key) {
+protected final String getNLSString(final String key) {
 	try {
 		return this.scenarioBundle.getString(key);
 	}
@@ -99,5 +102,4 @@ public final String getNLSString(final String key) {
 		return fakeValue;
 	}
 }
-
 }

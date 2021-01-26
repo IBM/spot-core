@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -22,6 +22,7 @@ import java.util.*;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 
+import com.ibm.bear.qa.spot.core.nls.SpotNlsMessages;
 import com.ibm.bear.qa.spot.core.params.ScenarioParametersFile;
 import com.ibm.bear.qa.spot.core.params.ScenarioParametersManager;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
@@ -62,6 +63,9 @@ public class ScenarioUtils {
 	public static final String DEBUG_ENTERING_METHOD_INDENTATION = "		+";
 	private static final int DEBUG_ENTERING_METHOD_INDENTATION_LENGTH = DEBUG_ENTERING_METHOD_INDENTATION.length();
 	public static final String DEBUG_ENTERING_METHOD_TEXT = DEBUG_ENTERING_METHOD_INDENTATION + " Entering method %s";
+
+	// NLS Messages
+	public static final SpotNlsMessages NLS_MESSAGES = new SpotNlsMessages();
 
 	/* Data */
 	public static final String[] NO_DATA = new String[0];

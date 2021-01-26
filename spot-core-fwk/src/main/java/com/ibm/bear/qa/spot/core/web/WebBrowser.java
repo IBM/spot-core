@@ -3084,7 +3084,9 @@ private void typeText(final WebBrowserElement element, final String text, final 
 	element.moveToElement();
 
 	// Type text
-	if (clear) element.clear();
+	if (clear) {
+		element.clear();
+	}
 	if (user == null) {
 		element.sendKeys(text);
 	} else {

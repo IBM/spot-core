@@ -113,6 +113,9 @@ public class WebBrowserElement implements WebElement, Locatable {
 		"arguments[0].dispatchEvent(forceHoverEvent);";
 //	private final static String MOVE_TO_ELEMENT = "arguments[0].scrollIntoView(true);";
 
+	/* Constants */
+	private static final CharSequence[] NIL_KEYS_SEQUENCE = new CharSequence[] { Keys.SPACE, Keys.BACK_SPACE };
+
 	/**
 	 * The maximum of attempts when recovering the current web element.
 	 */
@@ -359,14 +362,15 @@ private void catchWebDriverException(final WebDriverException wde, final String 
 /**
  * {@inheritDoc}
  * <p>
- * Catch {@link WebDriverException} and retry the operation until success or
- * {@link #MAX_RECOVERY_ATTEMPTS} attempts has been made.
+ * Note that after the selenium clear operation is done, 2 keyboard keys (see
+ * {@link #NIL_KEYS_SEQUENCE}) are pressed to simulate a true manual clear.
+ * These keyboards hits do not add any text but by using the keyboard that
+ * triggers corresponding events to activate potential javascript listeners.
  * </p>
  */
 @Override
 public void clear() {
 	debugPrintEnteringMethod();
-//	if (DEBUG) debugPrintln("			(clearing "+this+")");
 
 	// Select the frame again if necessary
 	if (this.frame != this.browser.frame) {
@@ -378,6 +382,7 @@ public void clear() {
 		while (true) {
 			try {
 				this.webElement.clear();
+				this.webElement.sendKeys(NIL_KEYS_SEQUENCE);
 				if (DEBUG) debugPrintln("			 ( -> done.)");
 				return;
 			}
