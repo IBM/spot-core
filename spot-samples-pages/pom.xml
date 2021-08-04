@@ -5,18 +5,18 @@
 	<parent>
 		<groupId>com.ibm.bear.qa.spot</groupId>
 		<artifactId>spot-core-root</artifactId>
-		<version>3.4.0</version>
+		<version>3.5.6</version>
 	</parent>
 	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-samples-pages</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.6</version>
 	<name>Framework implementation for SPOT Core samples</name>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.ibm.bear.qa.spot</groupId>
 			<artifactId>spot-core-fwk</artifactId>
-			<version>3.4.0</version>
+			<version>3.5.6</version>
 		</dependency>
 	</dependencies>
 </project>
