@@ -132,6 +132,11 @@ protected void initDriver() {
 			// TODO Uncomment when version Selenium 4 will be used (see https://github.com/SeleniumHQ/selenium/issues/5540)
 //			.addPreference("browser.link.open_newwindow.restriction", 0)
 //			.addPreference("browser.link.open_newwindow", 1)
+//	if (this.manager.isHeadless()) {
+//		debugPrintln("WARNING: Firefox is running in Headless mode !!!");
+//		firefoxOptions.addArguments("--headless");
+//		firefoxOptions.addPreference("unhandledPromptBehavior", "dismiss");
+//	}
 	firefoxOptions.merge(firefoxCapabilities);
 	debugPrintln("		  -> firefox options: "+firefoxOptions);
 
@@ -162,6 +167,11 @@ protected void initProfile() {
 	// Set browser locale
 	if (this.manager.getLocale() != null) {
 		this.firefoxProfile.setPreference("intl.accept_languages", this.manager.getLocale());
+	}
+
+	// Set private mode for browser if requested
+	if (this.manager.isInPrivateMode()) {
+		this.firefoxProfile.setPreference("browser.privatebrowsing.autostart", true);
 	}
 }
 

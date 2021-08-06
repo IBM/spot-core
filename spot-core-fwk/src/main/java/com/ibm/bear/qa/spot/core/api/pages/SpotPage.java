@@ -17,10 +17,12 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
 /**
  * Interface to define framework web page object API.
  * <p>
- * Available API methods on such object are:
+ * This class defines following public API methods of {@link SpotPage} interface:
  * <ul>
- * <li>{@link #getLocation()}: Return the page location used when creating the object.</li>
- * <li></li>
+ * <li>{@link #getLocation()}: Return the page location used when creating it.</li>
+ * <li>{@link #getTitle()}: Return the page title.</li>
+ * <li>{@link #refresh()}: Refresh the page content using</li>
+ * </ul>
  * </p>
  */
 public interface SpotPage {

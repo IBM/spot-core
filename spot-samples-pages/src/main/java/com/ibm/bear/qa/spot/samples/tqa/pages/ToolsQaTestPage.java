@@ -14,10 +14,13 @@ package com.ibm.bear.qa.spot.samples.tqa.pages;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintEnteringMethod;
 
+import java.util.List;
+
 import org.openqa.selenium.By;
 
 import com.ibm.bear.qa.spot.core.config.Config;
 import com.ibm.bear.qa.spot.core.config.User;
+import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
 import com.ibm.bear.qa.spot.samples.tqa.api.ToolsQaTestDialogsContainer;
 import com.ibm.bear.qa.spot.samples.tqa.api.ToolsQaTestTextBoxContainer;
@@ -129,17 +132,39 @@ protected void load() {
 }
 
 private ToolsQaGroupMenu openGroupMenu(final Group group) {
+
 	// Get group elements
-	WebBrowserElement groupElement = getGroupElement(group);
-	WebBrowserElement buttonElement = groupElement.waitForMandatoryElement(By.xpath(".//div[@class='icon']"));
-	WebBrowserElement menuElement = groupElement.waitForMandatoryVisibleOrHiddenElement(By.tagName("ul"));
+	List<WebBrowserElement> groupElements = waitForElements(By.className("element-group"));
 
-	// Select group and expand it
-	ToolsQaGroupMenu groupMenu = new ToolsQaGroupMenu(this, menuElement);
-	groupMenu.open(buttonElement);
+	// Look for given group
+	for (WebBrowserElement groupElement: groupElements) {
 
-	// Return opened menu
-	return groupMenu;
+		// Get text and button elements
+		WebBrowserElement textElement = groupElement.waitForMandatoryElement(By.className("header-text"));
+		WebBrowserElement buttonElement = groupElement.waitForMandatoryElement(By.xpath(".//div[@class='icon']"));
+
+		// If group is found, select it and expand it
+		if (textElement.getText().contains(group.getLabel())) {
+			// Get menu element
+			WebBrowserElement menuElement = groupElement.waitForMandatoryVisibleOrHiddenElement(By.tagName("ul"));
+
+			// Select group and expand it
+			ToolsQaGroupMenu groupMenu = new ToolsQaGroupMenu(this, menuElement);
+			groupMenu.open(buttonElement);
+
+			// Return opened menu
+			return groupMenu;
+		}
+
+		// Close opened groups
+		WebBrowserElement listElement = groupElement.waitForMandatoryVisibleOrHiddenElement(By.className("element-list"));
+		if (listElement.getAttributeClass().contains("show")) {
+			buttonElement.click();
+		}
+	}
+
+	// We should have found the group
+	throw new ScenarioFailedError("Cannot find group '"+group+"'.");
 }
 
 /**

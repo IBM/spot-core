@@ -14,13 +14,13 @@ package com.ibm.bear.qa.spot.core.topology;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
 import com.ibm.bear.qa.spot.core.config.User;
-import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
-import com.ibm.bear.qa.spot.core.scenario.errors.SpotImplementationError;
+import com.ibm.bear.qa.spot.core.scenario.errors.*;
 import com.ibm.bear.qa.spot.core.web.SpotAbstractLoginOperation;
 import com.ibm.bear.qa.spot.core.web.WebPage;
 
@@ -33,8 +33,9 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
  * It's also assumed that this location is the concatenation of two strings:
  * <ol>
  * <li>the server address: expected format is
- * <code>https:<i>Server_DNS_Name</i>:<i>port_value</i></code> </li>
- * <li>the context root: usually a simple name</li>
+ * <code>https:<i>Server_DNS_Name</i>:<i>port_value</i></code> (e.g.
+ * <code>https://jbslnxvh02.ottawa.ibm.com:9443</code>)</li>
+ * <li>the context root: usually a simple name (e.g. <code>jts</code>)</li>
  * </ol>
  * </p><p>
  * A user might be stored in the application let the topology know who is connected to this
@@ -52,7 +53,7 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
  * <li>{@link #getLoginOperation(WebPage,User)}: Return the login operation which should be used with the current application.</li>
  * <li>{@link #getName()}: Returns the application name.</li>
  * <li>{@link #getPageUrl(String)}: Return the modified page URL if necessary.</li>
- * <li>{@link #getPageUrlWithAdditionalPath(String)}: Return a page URL with an optional additional path.</li>
+ * <li>{@link #getPageUrlForUser(String,User)}: Return a new page URL for the given page location associated with given user.</li>
  * <li>{@link #getProductName()}: Returns the application product name.</li>
  * <li>{@link #getSuffix()}: Returns the application suffix.</li>
  * <li>{@link #getTitle()}: Returns the application title.</li>
@@ -68,11 +69,11 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
  * <li>{@link #needLogin(User)}: Tells whether the current application would need login for the given user.</li>
  * <li>{@link #setName(String)}: Set the application name.</li>
  * <li>{@link #toString()}: Answers a string containing a concise, human-readable</li>
- * <li>{@link #useUms()}: Returns if the application is using UMS.</li>
  * </ul>
  * </p><p>
  * This class also defines or overrides following methods:
  * <ul>
+ * <li>{@link #getPageUrlForUser(URL,String,User)}: Return a new page URL with an optional additional path with an associated user.</li>
  * <li>{@link #isApplicationFor(String)}: Tells whether the given URL address matches the current application or not.</li>
  * </ul>
  * </p>
@@ -88,12 +89,20 @@ abstract public class Application {
 	final protected List<User> users = new ArrayList<>();
 	private String name;
 
-	// Flag to indicate whether the application is using UMS or not
-	final protected boolean useUms;
+	// Class to perform login operation
+	protected final Class<? extends SpotAbstractLoginOperation> loginOperationClass;
 
-protected Application(final String url, final boolean ums) {
+protected Application(final String url) {
+	this(url, (Class<? extends SpotAbstractLoginOperation>) null);
+}
+
+protected Application(final String url, final Class<? extends SpotAbstractLoginOperation> loginClass) {
+	this.loginOperationClass = loginClass;
 	try {
 		this.url = new URL(url);
+		if (this.url.getUserInfo() != null && loginClass != null) {
+			throw new ScenarioImplementationError("Cannot use Basic Authentication with a login operation "+getClassSimpleName(loginClass));
+		}
 		String path = this.url.getPath();
 		String filePath = EMPTY_STRING;
 		if (path.length() > 0) {
@@ -121,11 +130,6 @@ protected Application(final String url, final boolean ums) {
 	catch (MalformedURLException e) {
 		throw new ScenarioFailedError(e.getMessage());
 	}
-	this.useUms = ums;
-}
-
-protected Application(final String url) {
-	this(url, false);
 }
 
 @Override
@@ -195,7 +199,18 @@ public String getLocation() {
  * @return The login operation to be used or <code>null</code> if there's no
  * necessary login operation
  */
-public abstract SpotAbstractLoginOperation getLoginOperation(WebPage page, User appUser);
+public final SpotAbstractLoginOperation getLoginOperation(final WebPage page, final User appUser) {
+	if (this.loginOperationClass == null) {
+		return null;
+	}
+	try {
+		Constructor<? extends SpotAbstractLoginOperation> constructor = this.loginOperationClass.getConstructor(WebPage.class, User.class);
+		return constructor.newInstance(page, appUser);
+	}
+	catch (Exception ex) {
+		throw new ScenarioImplementationError(ex);
+	}
+}
 
 /**
  * Returns the application name.
@@ -222,29 +237,50 @@ public String getPageUrl(final String pageUrl) {
 }
 
 /**
- * Return a page URL with an optional additional path.
- *
- * @param path The path to add to the application URL to get page
+ * Return a new page URL for the given page location associated with given user.
+ * <p>
+ * This method is useful when Basic Authentication is used to automatically
+ * inject user credentials in page URL.
+ * </p>
+ * @param pageLocation The page location to get URL
+ * @param user The user associated with the page
  * @return The page URL
  */
-public String getPageUrlWithAdditionalPath(final String path) {
-	String pageUrl;
+public String getPageUrlForUser(final String pageLocation, final User user) {
 	try {
-		String newPath = (path == null || path.isEmpty()) ? this.url.getPath() : (this.url.getPath().isEmpty() ? path : path+"/"+this.url.getPath());
-		pageUrl = new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), newPath).toExternalForm();
+		return getPageUrlForUser(new URL(pageLocation), null, user);
 	} catch (MalformedURLException ex) {
 		throw new ScenarioFailedError(ex);
 	}
-	if (this.url.getQuery() != null) {
-		pageUrl += "?" + this.url.getQuery();
+}
+
+/**
+ * Return a new page URL with an optional additional path with an associated user.
+ *
+ * @param pageUrl The initial page URL
+ * @param path The path to add to the application location
+ * @param user The user associated with the location
+ * @return The new page URL
+ */
+protected String getPageUrlForUser(final URL pageUrl, final String path, final User user) {
+	URL newUrl;
+	String newLocation;
+	try {
+		newUrl = new URL(pageUrl.getProtocol(), pageUrl.getHost(), pageUrl.getPort(), path == null ? pageUrl.getPath() : path);
+		newLocation = newUrl.toExternalForm();
+	} catch (MalformedURLException ex) {
+		throw new ScenarioFailedError(ex);
 	}
-	if (this.url.getRef() != null) {
-		pageUrl += "#" + this.url.getRef();
+	if (pageUrl.getQuery() != null) {
+		newLocation += "?" + pageUrl.getQuery();
 	}
-	if (this.url.getUserInfo() != null) {
-		pageUrl = this.url.getProtocol()+"://"+this.url.getUserInfo()+"@"+pageUrl.substring(pageUrl.indexOf("://")+3);
+	if (pageUrl.getRef() != null) {
+		newLocation += "#" + pageUrl.getRef();
 	}
-	return pageUrl;
+	if (user != null && this.loginOperationClass == null && !isUserConnected(user)) {
+		newLocation = pageUrl.getProtocol()+"://"+user.getId()+":"+user.getPassword()+"@"+newLocation.substring(newLocation.indexOf("://")+3);
+	}
+	return newLocation;
 }
 
 /**
@@ -454,15 +490,5 @@ public final String toString() {
 		builder.append(")");
 	}
 	return builder.toString();
-}
-
-/**
- * Returns if the application is using UMS.
- *
- * @return <code>true</code> if the application is using UMS,
- * <code>false</code> otherwise.
- */
-public boolean useUms() {
-	return this.useUms;
 }
 }

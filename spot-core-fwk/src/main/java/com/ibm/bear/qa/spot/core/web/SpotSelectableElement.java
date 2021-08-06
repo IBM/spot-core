@@ -196,7 +196,7 @@ public void select() throws ScenarioFailedError {
 	debugPrintEnteringMethod();
 	pause(200);
 	getSelectionElement().click();
-	if (this.element.browser.isFirefox()) {
+	if (this.element.browser.isFirefox() && !waitUntilSelection(true, false, 1)) {
 		// for an unknown reason, Firefox needs 2 clicks on the element to actually selects it...!?
 		debugPrintln("		  -> Double click for Firefox browser");
 		pause(200);
@@ -217,6 +217,10 @@ public void select() throws ScenarioFailedError {
 }
 
 protected boolean waitUntilSelection(final boolean selected, final boolean fail) {
+	return waitUntilSelection(selected, fail, 3);
+}
+
+private boolean waitUntilSelection(final boolean selected, final boolean fail, final int seconds) {
 	SpotAbstractTimeout timeout = new SpotAbstractTimeout(fail) {
 		@Override
 		protected String getConditionLabel() {
@@ -227,7 +231,7 @@ protected boolean waitUntilSelection(final boolean selected, final boolean fail)
 			return isSelected() == selected;
 		}
 	};
-	return timeout.waitUntil(3);
+	return timeout.waitUntil(seconds);
 }
 
 @Override

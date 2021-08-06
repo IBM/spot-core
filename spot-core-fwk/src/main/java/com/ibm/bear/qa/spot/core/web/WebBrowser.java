@@ -17,6 +17,7 @@ import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 import static com.ibm.bear.qa.spot.core.utils.ByUtils.fixLocator;
 import static com.ibm.bear.qa.spot.core.utils.ByUtils.getLocatorString;
 import static com.ibm.bear.qa.spot.core.utils.FileUtil.createDir;
+import static com.ibm.bear.qa.spot.core.utils.StringUtils.hidePasswordInLocation;
 import static com.ibm.bear.qa.spot.core.web.WebBrowserElement.MAX_RECOVERY_ATTEMPTS;
 
 import java.io.File;
@@ -135,6 +136,8 @@ import com.ibm.bear.qa.spot.core.utils.ByUtils.ComparisonPattern;
  * </p>
  */
 public abstract class WebBrowser implements SearchContext, BrowserConstants {
+
+	private static final String SELECT_ALL_CMD = Keys.chord(getOsName().equals("mac") ? Keys.COMMAND : Keys.CONTROL, "a");
 
 	/*Enumerations */
 	/**
@@ -777,12 +780,12 @@ public void closeOtherWindows() {
 	removedPages = new ArrayList<>();
 	if (this.pagesCache.size() > 1) {
 		debugPrintln("Cache has extra pages. Clean them by comparing their URL to browser URL:");
-		debugPrintln(" - browser url: "+getUrl());
+		debugPrintln(" - browser url: "+hidePasswordInLocation(getUrl().toString()));
 		for (WebPage page: this.pagesCache) {
 			if (!page.matchBrowserUrl()) {
 				debugPrintln(" - page which does not match browser content:");
-				debugPrintln("   + location: "+page.getLocation());
-				debugPrintln("   + URL: "+page.getUrl());
+				debugPrintln("   + location: "+hidePasswordInLocation(page.getLocation()));
+				debugPrintln("   + URL: "+hidePasswordInLocation(page.getUrl()));
 				removedPages.add(page);
 			}
 		}
@@ -794,8 +797,8 @@ public void closeOtherWindows() {
 			debugPrintln("	WARNING: the cache should only have one entry after the cleanup!");
 			debugPrintln("		Here's pages cache content:");
 			for (WebPage page: this.pagesCache) {
-				debugPrintln("		 - page location: "+page.getLocation());
-				debugPrintln("		   (URL: "+page.getUrl()+")");
+				debugPrintln("		 - page location: "+hidePasswordInLocation(page.getLocation()));
+				debugPrintln("		   (URL: "+hidePasswordInLocation(page.getUrl())+")");
 			}
 			debugPrintStackTrace(1);
 		}
@@ -807,16 +810,16 @@ public void closeOtherWindows() {
 			if (mainPageUrl.startsWith(mainPage.location)) {
 				debugPrintln("WARNING: "+message);
 				debugPrintln(" => Assuming that browser URL is the actual page location:");
-				debugPrintln("      - page old location: "+mainPage.getLocation());
-				debugPrintln("      - page new location: "+mainPageUrl);
-				debugPrintln("      - browser url: "+getUrl());
+				debugPrintln("      - page old location: "+hidePasswordInLocation(mainPage.getLocation()));
+				debugPrintln("      - page new location: "+hidePasswordInLocation(mainPageUrl));
+				debugPrintln("      - browser url: "+hidePasswordInLocation(getUrl().toString()));
 				debugPrintln("        => replace page old location with new one...");
 				mainPage.location = mainPageUrl;
 			} else {
 				println("WARNING: "+message);
-				println(" - page location: "+mainPage.getLocation());
-				println(" - page URL: "+mainPage.getUrl());
-				println(" - browser url: "+getUrl());
+				println(" - page location: "+hidePasswordInLocation(mainPage.getLocation()));
+				println(" - page URL: "+hidePasswordInLocation(mainPage.getUrl()));
+				println(" - browser url: "+hidePasswordInLocation(getUrl().toString()));
 				println("        => do nothing as there's no evidence that page or browser URL was the correct page location...");
 			}
 		}
@@ -1379,18 +1382,19 @@ public <P extends WebPage> List<P> getCachedPages(final Class<P> pageClass) {
  * @see WebDriver#get(String)
  */
 public final void get(final WebPage page) {
-	debugPrintEnteringMethod("page", page.location);
+	String hiddenPasswordLocation = hidePasswordInLocation(page.location);
+	debugPrintEnteringMethod("page", hiddenPasswordLocation);
 
 	// URL has changed, load the new one
 	String currentUrl = this.driver.getCurrentUrl();
 	String pageLocation = page.location;
-	if (pageLocation.equals(currentUrl)) {
+	if (!page.forceReload && pageLocation.equals(currentUrl)) {
 		if (DEBUG) debugPrintln("INFO: browser was already at '"+pageLocation+"'.");
 	} else {
 		if (DEBUG) {
-			debugPrintln("		+ browser get: "+pageLocation);
-			debugPrintln("		  -> driver url: "+currentUrl);
-			debugPrintln("		  -> stored location: "+this.location);
+			debugPrintln("		+ browser get: "+hiddenPasswordLocation);
+			debugPrintln("		  -> driver url: "+hidePasswordInLocation(currentUrl));
+			debugPrintln("		  -> stored location: "+hidePasswordInLocation(this.location));
 		}
 
 		// Get current location
@@ -1400,7 +1404,7 @@ public final void get(final WebPage page) {
 		acceptPrivateConnection();
 
 		// Purge alerts if necessary
-		purgeAlerts("Alerts observed when getting page "+pageLocation);
+		purgeAlerts("Alerts observed when getting page "+hidePasswordInLocation(pageLocation));
 
 		// Wait 2 seconds that browser URL changes (only if not in login operation)
 		if (!currentUrl.endsWith("login")) { // TODO Check whether this test can be removed as it was before CLM SaaS implementation
@@ -1421,6 +1425,19 @@ public final void get(final WebPage page) {
 
 	// Store new location and handle
 	this.location = pageLocation;
+	if (page.user != null) {
+		String basicAuth = page.user.getId()+":"+page.user.getPassword()+"@";
+		if (pageLocation.contains(basicAuth)) {
+			// If basic authentication has been done, then remove it from page URL in order
+			// to avoid issue with fetch operation (see https://stackoverflow.com/a/44588777)
+			// and reload the page with new location
+			String newLocation = pageLocation.replaceAll(basicAuth, EMPTY_STRING);
+			sleep(1);
+			this.driver.get(newLocation);
+			this.location = this.driver.getCurrentUrl();
+			page.location = newLocation;
+		}
+	}
 	page.handle = this.driver.getWindowHandle();
 
 	// Dump the info that there was a page redirection
@@ -1512,7 +1529,7 @@ public WebDriver getDriverForPerformance() {
  */
 public abstract String getDriverInfo();
 
-private JavascriptExecutor getJavascriptExecutor() {
+JavascriptExecutor getJavascriptExecutor() {
 	return (JavascriptExecutor) this.driver;
 }
 
@@ -1557,6 +1574,16 @@ public <P extends WebPage> P getPage(final Class<P> pageClass) {
  */
 public PerfManager getPerfManager() {
 	return this.perfManager;
+}
+
+/**
+ * Get the current page title.
+ *
+ * @return The page title
+ * @see WebDriver#getTitle()
+ */
+public final String getTitle() {
+	return this.driver.getTitle();
 }
 
 /**
@@ -2022,7 +2049,7 @@ public int purgeAlerts(final String action) {
  */
 public void refresh() {
 	debugPrintEnteringMethod();
-	debugPrintln("		  -> current browser url: "+getCurrentUrl());
+	debugPrintln("		  -> current browser url: "+hidePasswordInLocation(getCurrentUrl()));
 	this.driver.navigate().refresh();
 	purgeAlerts("While refreshing page...");
 }
@@ -2035,8 +2062,8 @@ public void refreshManagingLogin(final WebPage currentPage) {
 	refresh();
 
 	if (currentPage != null && currentPage.getUser() != null) {
-		debugPrintln("		  -> page location: "+currentPage.getLocation());
-		debugPrintln("		  -> page url: "+currentPage.getUrl());
+		debugPrintln("		  -> page location: "+hidePasswordInLocation(currentPage.getLocation()));
+		debugPrintln("		  -> page url: "+hidePasswordInLocation(currentPage.getUrl()));
 		SpotAbstractLoginOperation logOperation = currentPage.getLoginOperation(currentPage.getUser());
 		if (logOperation != null && logOperation.isExpectingLogin()) {
 			debugPrintln("		  -> page is expecting login operation, perform it...");
@@ -2878,7 +2905,7 @@ public void switchToOpenedWindow(final String urlInWindow) throws NoSuchWindowEx
 	long timeout = System.currentTimeMillis() + 30000; // Wait 30 seconds by default
 	if (DEBUG) {
 		debugPrintln("		  -> main window handle: "+this.mainWindowHandle);
-		debugPrintln("		  -> looking for handle of URL : "+urlInWindow);
+		debugPrintln("		  -> looking for handle of URL : "+hidePasswordInLocation(urlInWindow));
 	}
 	while (System.currentTimeMillis() < timeout) {
 		Iterator<String> handles = getWindowHandles().iterator();
@@ -2886,7 +2913,7 @@ public void switchToOpenedWindow(final String urlInWindow) throws NoSuchWindowEx
 			String handle = handles.next();
 			if (!handle.equals(this.mainWindowHandle)) {
 				this.driver.switchTo().window(handle);
-				if (DEBUG) debugPrintln("		  -> found handle with URL: "+this.url);
+				if (DEBUG) debugPrintln("		  -> found handle with URL: "+hidePasswordInLocation(this.url));
 				if (getCurrentUrl().startsWith(urlInWindow)) {
 					// We've found the corresponding handle, hence store it as main and return
 					this.mainWindowHandle = handle;
@@ -2900,7 +2927,7 @@ public void switchToOpenedWindow(final String urlInWindow) throws NoSuchWindowEx
 	}
 
 	// Window with expected url was not found, fail the execution
-	throw new ScenarioFailedError("Cannot find an opened browser window or tab with url: "+urlInWindow);
+	throw new ScenarioFailedError("Cannot find an opened browser window or tab with url: "+hidePasswordInLocation(urlInWindow));
 }
 
 /**
@@ -3081,11 +3108,20 @@ private void typeText(final WebBrowserElement element, final String text, final 
 	}
 
 	// Move to element that will help to trigger javascript events
-	element.moveToElement();
+	if (isFirefox()) {
+		// Due to Firefox bug https://bugzilla.mozilla.org/show_bug.cgi?id=1292178
+		// The moveToElement is not working for Firefox yet, hence trying to simulate it
+		// by using a click() operation instead...
+		element.click();
+		debugPrintln("			 ( -> done by simulating the move with click operation as Firefox is used.)");
+	} else {
+		element.moveToElement();
+	}
 
 	// Type text
 	if (clear) {
-		element.clear();
+		element.sendKeys(SELECT_ALL_CMD);
+		element.sendKeys(Keys.BACK_SPACE);
 	}
 	if (user == null) {
 		element.sendKeys(text);

@@ -19,6 +19,7 @@ import static com.ibm.bear.qa.spot.core.performance.PerfManager.PERFORMANCE_ENAB
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 import static com.ibm.bear.qa.spot.core.utils.ByUtils.fixLocator;
 import static com.ibm.bear.qa.spot.core.utils.ByUtils.getLocatorString;
+import static com.ibm.bear.qa.spot.core.utils.StringUtils.hidePasswordInLocation;
 
 import java.util.*;
 
@@ -844,7 +845,16 @@ private String getAttribute(final String name, final boolean fail) throws Scenar
 		while (true) {
 			try {
 				String attribute = this.webElement.getAttribute(name);
-				if (DEBUG) debugPrintln("			 ( -> \""+attribute+"\")");
+				if (DEBUG) {
+					debugPrint("			 ( -> \"");
+					if (attribute == null) {
+						debugPrintln("null\")");
+					}
+					else {
+						debugPrintln(name.equals("href") ? hidePasswordInLocation(attribute):attribute);
+						debugPrintln("\")");
+					}
+				}
 				if (attribute == null && fail) {
 					throw new ScenarioFailedError("Cannot find attribute '"+name+"' in web element "+this);
 				}
@@ -1120,10 +1130,7 @@ public String getFullLocator() {
 }
 
 private JavascriptExecutor getJavascriptExecutor() {
-	if (this.context instanceof WebDriver) {
-		return (JavascriptExecutor) this.context;
-	}
-	return ((WebBrowserElement)this.context).getJavascriptExecutor();
+	return this.browser.getJavascriptExecutor();
 }
 
 /**

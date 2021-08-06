@@ -14,13 +14,14 @@ package com.ibm.bear.qa.spot.core.dialog;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
-import java.util.*;
+import java.util.List;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.ElementNotInteractableException;
 
 import com.ibm.bear.qa.spot.core.api.elements.SpotDialog;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
+import com.ibm.bear.qa.spot.core.timeout.SpotDisplayedTimeout;
 import com.ibm.bear.qa.spot.core.timeout.SpotEnabledTimeout;
 import com.ibm.bear.qa.spot.core.web.*;
 
@@ -119,7 +120,7 @@ private void clickOnOpenElement(final WebBrowserElement openElement, final int w
 		return;
 	}
 
-	// Check whether the open element is still avaialble while applying workaround
+	// Check whether the open element is still available while applying workaround
 	if (workaround > 0 && !openElement.isDisplayed(false)) {
 		if (DEBUG) debugPrintln("		  -> element is no longer displayed, the dialog might have been already opened, hence give up...");
 		return;
@@ -135,7 +136,7 @@ private void clickOnOpenElement(final WebBrowserElement openElement, final int w
 			}
 		}
 
-		// Check whether the open element is still avaialble while applying workaround
+		// Check whether the open element is still available while applying workaround
 		if (workaround > 0 && !openElement.isDisplayed(false)) {
 			if (DEBUG) debugPrintln("		  -> element is no longer displayed, the dialog might have been already opened, hence give up...");
 			return;
@@ -144,19 +145,13 @@ private void clickOnOpenElement(final WebBrowserElement openElement, final int w
 		// Check that the element is enabled (necessary for button)
 		if (workaround == 0) {
 			SpotEnabledTimeout timeout = new SpotEnabledTimeout(openElement, true);
-			timeout.waitUntil(shortTimeout());
-		}
-
-		// Check whether the open element is still avaialble while applying workaround
-		if (workaround > 0 && !openElement.isDisplayed(false)) {
-			if (DEBUG) debugPrintln("		  -> element is no longer displayed, the dialog might have been already opened, hence give up...");
-			return;
+			timeout.waitUntil(openDialogTimeout());
 		}
 
 		// Scroll if necessary
 		scrollIfNecessary(openElement);
 
-		// Check whether the open element is still avaialble while applying workaround
+		// Check whether the open element is still available while applying workaround
 		if (workaround > 0 && !openElement.isDisplayed(false)) {
 			if (DEBUG) debugPrintln("		  -> element is no longer displayed, the dialog might have been already opened, hence give up...");
 			return;
@@ -165,7 +160,7 @@ private void clickOnOpenElement(final WebBrowserElement openElement, final int w
 		// Click on the element
 		openElement.click();
 
-		// Handle confirmation dialogs that might pop-up. New since 5.0.2, only implemented where required.
+		// Handle confirmation dialogs that might pop-up
 		handleConfirmationPopup();
 	}
 	finally {
@@ -192,7 +187,10 @@ protected void close(final boolean validate) {
 
 	// Initialize the element if it has not been done yet
 	if (this.element == null) {
-		setElement(null);
+		setElement();
+		if (this.element == null) {
+			throw new WaitElementTimeoutError("Cannot find any dialog with corresponding locator: "+this.locator);
+		}
 	}
 
 	// Now we can close safely
@@ -205,8 +203,8 @@ protected void close(final boolean validate) {
  * @param seconds timeout in seconds before which the dialog should close
  */
 public final void closedBeforeTimeout(final int seconds) {
-	if (isOpenedBeforeTimeout(shortTimeout())) {
-	    waitWhileDisplayed(seconds);
+	if (isOpenedBeforeTimeout(openDialogTimeout())) {
+		waitWhileDisplayed(seconds);
 	}
 }
 
@@ -239,20 +237,6 @@ protected void closeAction(final boolean validate) {
 	}
 }
 
-private List<String> getAlreadyOpenedDialogIDs() {
-
-	// Get list of opened dialog elements
-	List<WebBrowserElement> dialogElements = getOpenedElements(0/* sec */);
-
-	// Return the IDs list
-	List<String> dialogIDs = new ArrayList<String>(dialogElements.size());
-	Iterator<WebBrowserElement> iterator = dialogElements.iterator();
-	while (iterator.hasNext()) {
-		dialogIDs.add(iterator.next().getAttribute("id"));
-	}
-	return dialogIDs;
-}
-
 /**
  * Handle possible confirmation popup dialog.
  * <p>
@@ -260,11 +244,8 @@ private List<String> getAlreadyOpenedDialogIDs() {
  * dialog, another pop-up dialog appears, e.g., to confirm before an action is
  * finished. In order to keep the opening of general dialogs at this class
  * level, need to push the ability to handle miscellaneous pop-ups down to the
- * sub-classes. Those sub-class implementations should be limited to specific
- * cases, e.g., a confirmation dialog that appears (as of 5.0.2) when adding
- * test cases to a test suite.
+ * sub-classes.
  * </p>
- * @since 5.0.2
  */
 protected void handleConfirmationPopup() {
 	// do nothing;
@@ -278,32 +259,93 @@ public WebBrowserElement open(final WebBrowserElement webElement) {
 	this.openingElement = webElement;
 
 	// Get list of already opened dialog IDs
-	List<String> alreadyOpenedDialogIDs = getAlreadyOpenedDialogIDs();
+	List<WebBrowserElement> alreadyOpenedDialogElements = getOpenedElements(0/* sec */);
+	if (alreadyOpenedDialogElements.size() > 0) {
+		throw new ScenarioFailedError("There are "+alreadyOpenedDialogElements.size()+" dialogs already opened before having clicked on opening element.");
+	}
 
 	// Click on element which opens the dialog
 	clickOnOpenElement(this.openingElement, 0);
+	long startTime = System.currentTimeMillis();
 
 	// Wait for dialog web element
-	setElement(alreadyOpenedDialogIDs);
+	setElement();
 
-	// Loop until having got the web element
-	debugPrintln("		  -> timeout=" + (this.max * shortTimeout()) + " seconds");
-	int count = 0;
-	while (this.element == null) {
-		if (count++ > this.max) {
-			throw new WaitElementTimeoutError("Failing to open the dialog " + this);
-		}
-		// Workaround
+	// Check if dialog has been well opened, in case not, try to apply a workaround
+	debugPrintln("		  -> timeout=" + (this.max * openDialogTimeout()) + " seconds");
+	if (this.element == null) {
 		debugPrintln("Workaround: click on " + this.openingElement + " to open dialog again as previous click didn't work...");
 		try {
-			clickOnOpenElement(this.openingElement, count);
+			debugPrintln("	-> Click a second time on the opening element "+this.openingElement.getLocator());
+			clickOnOpenElement(this.openingElement, 1);
 		}
-		catch (WebDriverException wde) {
-			// Workaround
-			debugPrintException(wde);
-			debugPrintln("Workaround: exception occurred during the click might be because the dialog finally opened!?");
+		catch (ElementNotInteractableException ecie) {
+			debugPrintln("Not interactable exception occurred during the second click:");
+			debugPrintException(ecie);
+			debugPrintln("Might be due because the dialog finally opened, we'll check that later...");
 		}
-		setElement(alreadyOpenedDialogIDs);
+
+		// Check if the menu can be found after the second click
+		debugPrintln("	-> Try to store the dialog element a second time...");
+		setElement();
+
+		// Check whether the dialog has been finally found or not
+		if (this.element == null) {
+			debugPrintln("	-> Figure out whether a dialog is already opened...");
+			WebBrowserElement dialogElement = this.browser.findElement(By.cssSelector("div[role='dialog']"));
+			if (dialogElement != null) {
+				println();
+				println("Workaround applied when trying to open dialog "+getClassSimpleName(getClass())+":");
+				printStackTrace(1);
+				println();
+				println("Although searched opened dialog was not found, an opened dialog has been found using standard css selector \"div[role='dialog']\"...");
+				println("Hence, assume this is the correct one which was not found due to an invalid locator: \""+this.locator+"\"");
+				println("Continue the scenario execution normally, but the invalid selector must be fixed !!!");
+				this.element = dialogElement;
+			} else {
+				// Dialog is still not found, give up
+				throw new WaitElementTimeoutError("Failing to open the dialog " + this);
+			}
+		} else {
+			debugPrintln("	-> Wait to check whether the second click has opened another new dialog or not...");
+			debugPrintln("	-> Compute a timeout using the time it took to open the first dialog...");
+			int timeout = (int) ((System.currentTimeMillis() - startTime) / 1000) + shortTimeout();
+			SpotDisplayedTimeout displayedTimeout = new SpotDisplayedTimeout(this.element, false);
+			if (displayedTimeout.waitWhile(timeout)) {
+				debugPrintln("	-> The initial dialog becomes stale, hence reset the dialog element...");
+				this.element = null;
+				debugPrintln("	-> Try to see if a new dialog has replaced it...");
+				setElement();
+				if (this.element == null) {
+					throw new WaitElementTimeoutError("Failing to open the dialog " + this);
+				}
+			} else {
+				// Search again for dialog elements as a second click might have opened two dialogs
+				List<WebBrowserElement> openedDialogElements = getOpenedElements(0/* sec */);
+				switch (openedDialogElements.size()) {
+					case 2:
+						// It seems there are 2 dialogs opened after having click a second time on opening button
+						// hence close the first one
+						debugPrintln("WARNING: " + openedDialogElements.size() + " dialogs have been found after having clicked on open element, keep the last one and close all others");
+						WebBrowserElement windowElement = openedDialogElements.get(0);
+						By buttonLocator = getCloseButtonLocator(false);
+						if (buttonLocator == null) {
+							throw new ScenarioFailedError("Several dialogs are opened and they cannot be be cancelled.");
+						}
+						debugPrintln("	-> close dialog '" + windowElement + "' by clicking on " + buttonLocator + " button.");
+						windowElement.findElement(buttonLocator).click();
+						this.element = openedDialogElements.get(1);
+						debugPrintln("	-> keep dialog '" + this.element + "'.");
+						sleep(1);
+						break;
+					case 1:
+						this.element = openedDialogElements.get(0);
+						break;
+					default:
+						throw new ScenarioFailedError("There are "+alreadyOpenedDialogElements.size()+" dialogs already opened before having clicked on opening element.");
+				}
+			}
+		}
 	}
 
 	// Wait for extra loading end if necessary
@@ -325,6 +367,17 @@ public WebBrowserElement open(final WebBrowserElement webElement) {
 }
 
 /**
+ * Return the timeout to wait for the dialog to be opened after having clicked on opening element.
+ * <p>
+ * Default value for this timeout is {@link #shortTimeout()}.
+ * </p>
+ * @return The timeout
+ */
+protected int openDialogTimeout() {
+	return shortTimeout();
+}
+
+/**
  * Get the element on an already opened dialog.
  *
  * @return The dialog web element
@@ -333,9 +386,9 @@ public WebBrowserElement open(final WebBrowserElement webElement) {
  */
 public WebBrowserElement opened() throws WaitElementTimeoutError {
 	debugPrintEnteringMethod();
-	setElement(null);
+	setElement();
 	if (this.element == null) {
-		throw new WaitElementTimeoutError("Cannot find any dialog with corresponding xpath: "+this.locator);
+		throw new WaitElementTimeoutError("Cannot find any dialog with corresponding locator: "+this.locator);
 	}
 	return this.element;
 }
@@ -362,49 +415,24 @@ protected void selectDialogFrame() {
 	this.browser.selectFrame(getFrame());
 }
 
-private void setElement(final List<String> alreadyOpenedDialogIDs) {
+private void setElement() {
 
 	// Get list of opened dialog elements
-	List<WebBrowserElement> openedDialogElements = getOpenedElements(shortTimeout());
-
-	// Keep only dialogs which where not already opened
-	Iterator<WebBrowserElement> iterator = openedDialogElements.iterator();
-	List<WebBrowserElement> dialogElements = new ArrayList<WebBrowserElement>();
-	while (iterator.hasNext()) {
-		WebBrowserElement openedDialogElement = iterator.next();
-		String dialogID = openedDialogElement.getAttribute("id");
-		if (alreadyOpenedDialogIDs == null || !alreadyOpenedDialogIDs.contains(dialogID)) {
-			dialogElements.add(openedDialogElement);
-		}
-	}
+	List<WebBrowserElement> openedDialogElements = getOpenedElements(openDialogTimeout());
 
 	// Go through the map to see if there's any doubled opened dialog
-	final int size = dialogElements.size();
+	final int size = openedDialogElements.size();
 	switch (size) {
 		case 1:
 			// We got it, store in window and leave the loop
-			this.element = dialogElements.get(0);
+			this.element = openedDialogElements.get(0);
 			break;
 		case 0:
 			// No opened dialog was found
 			debugPrintln("WARNING: No opened dialog was found after having clicked on open element.");
 			break;
 		default:
-			// Apparently, there are several dialogs opened, hence close all but the last one
-			debugPrintln("WARNING: " + size + " dialogs have been found after having clicked on open element, keep the last one and close all others");
-			for (int i = 0; i < size - 1; i++) {
-				WebBrowserElement windowElement = dialogElements.get(i);
-				By buttonLocator = getCloseButtonLocator(false);
-				if (buttonLocator == null) {
-					throw new ScenarioFailedError("Several dialogs are opened and they cannot be be cancelled.");
-				}
-				debugPrintln("	-> close dialog '" + windowElement + "' by clicking on " + buttonLocator + " button.");
-				windowElement.findElement(buttonLocator).click();
-			}
-			this.element = dialogElements.get(size - 1);
-			debugPrintln("	-> keep dialog '" + this.element + "'.");
-			sleep(2);
-			break;
+			throw new ScenarioFailedError(size+" dialogs are opened at the same time.");
 	}
 }
 
@@ -427,7 +455,10 @@ protected void waitForLoadingEnd() {
 @Override
 protected void waitWhileDisplayed(final int seconds) throws WaitElementTimeoutError {
 	if (this.element == null) {
-		setElement(null);
+		setElement();
+		if (this.element == null) {
+			throw new WaitElementTimeoutError("Cannot find any dialog with corresponding locator: "+this.locator);
+		}
 	}
 	super.waitWhileDisplayed(seconds);
 }

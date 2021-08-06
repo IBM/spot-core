@@ -15,6 +15,9 @@ package com.ibm.bear.qa.spot.core.nls;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.getParameterValue;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.println;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -94,7 +97,15 @@ abstract protected String bundleName();
  */
 protected final String getNLSString(final String key) {
 	try {
-		return this.scenarioBundle.getString(key);
+		String string = this.scenarioBundle.getString(key);
+		if (this.scenarioLocale.getLanguage().equals("fr")) {
+			ByteBuffer inputBuffer = ByteBuffer.wrap(string.getBytes());
+			CharBuffer data = StandardCharsets.UTF_8.decode(inputBuffer);
+			ByteBuffer outputBuffer = StandardCharsets.ISO_8859_1.encode(data);
+			String french = new String(outputBuffer.array());
+			return french;
+		}
+		return string;
 	}
 	catch (@SuppressWarnings("unused") MissingResourceException e) {
 		String fakeValue = '!' + key + '!';

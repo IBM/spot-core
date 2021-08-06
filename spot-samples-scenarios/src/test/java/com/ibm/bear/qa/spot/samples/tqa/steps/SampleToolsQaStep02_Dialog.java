@@ -37,7 +37,7 @@ import com.ibm.bear.qa.spot.samples.tqa.scenario.SampleToolsQaScenarioStepRunner
  * </p>
  */
 @RunWith(SampleToolsQaScenarioStepRunner.class)
-public class SampleToolsQaStep01_Dialog extends SampleToolsQaScenarioStep {
+public class SampleToolsQaStep02_Dialog extends SampleToolsQaScenarioStep {
 
 /**
  * Test <b>Small Modal</b> dialog.

@@ -21,5 +21,6 @@ interface SpotNlsMessageKeys {
 	String SPOT_DIALOG_APPLY_LABEL = "spot.dialog.apply";
 	String SPOT_DIALOG_CANCEL_LABEL = "spot.dialog.cancel";
 	String SPOT_DIALOG_CREATE_LABEL = "spot.dialog.create";
+	String SPOT_DIALOG_OK_LABEL = "spot.dialog.ok";
 	String SPOT_DIALOG_SAVE_LABEL = "spot.dialog.save";
 }

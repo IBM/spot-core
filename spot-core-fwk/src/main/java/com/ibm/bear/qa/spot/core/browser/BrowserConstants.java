@@ -30,6 +30,7 @@ public interface BrowserConstants {
 	String BROWSER_KIND_ID = "browserKind";
 	String BROWSER_LOCALE_ID = "browserLocale";
 	String BROWSER_HEADLESS_ID = "browserHeadless";
+	String BROWSER_PRIVATE_ID = "browserPrivate";
 
 	// Browser kinds
 	int BROWSER_KIND_FIREFOX = 1;

@@ -17,6 +17,7 @@ import static com.ibm.bear.qa.spot.core.config.Timeouts.DELAY_BEFORE_CLICK_LINK_
 import static com.ibm.bear.qa.spot.core.performance.PerfManager.PERFORMANCE_ENABLED;
 import static com.ibm.bear.qa.spot.core.performance.PerfManager.USER_ACTION_NOT_PROVIDED;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.utils.StringUtils.hidePasswordInLocation;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
@@ -87,8 +88,9 @@ public abstract class WebPage implements SpotPage {
 	private Application application;
 	final protected User user;
 
-	// Info telling whether workaround has been applied
+	// Info telling whether a refresh has been applied or force a reload
 	protected boolean refreshed = false;
+	boolean forceReload;
 
 	// Timeouts
 	private int timeout;
@@ -121,32 +123,32 @@ public abstract class WebPage implements SpotPage {
  */
 protected WebPage(final String url, final Config config, final User user) {
 
-	// Init fields
-	this.location = url;
-    this.config = config;
-
-	// Store Clm topology
+	// Initialize configuration, topology and configuration
+	this.config = config;
 	this.topology = config.getTopology();
-	this.application = this.topology.getApplication(this.location);
+	this.application = this.topology.getApplication(url);
+
+	// Get page location and check whether login is necessary or not
 	this.user = user;
+	this.location = this.application.getPageUrlForUser(url, user);
 	if (user == null || ((!this.topology.needLogin(this.location, user) && getApplication().isUserConnected(user)))) {
 		this.loginOperation = null;
 	} else {
 		this.loginOperation = getLoginOperation(user);
 	}
 
-    // Init browser
+	// Init browser
 	this.browser = BrowsersManager.getInstance().getBrowser(user);
 
-    // Init timeouts to make their access faster and also allow each page to change them easily
-    this.timeout = config.getDefaultTimeout();
-    this.openTimeout = config.getOpenPageTimeout();
-    this.shortTimeout = config.getShortTimeout();
-    this.delayBeforeLinkClick = DELAY_BEFORE_CLICK_LINK_TIMEOUT;
-    this.delayAfterLinkClick = DELAY_AFTER_CLICK_LINK_TIMEOUT;
+	// Init timeouts to make their access faster and also allow each page to change them easily
+	this.timeout = config.getDefaultTimeout();
+	this.openTimeout = config.getOpenPageTimeout();
+	this.shortTimeout = config.getShortTimeout();
+	this.delayBeforeLinkClick = DELAY_BEFORE_CLICK_LINK_TIMEOUT;
+	this.delayAfterLinkClick = DELAY_AFTER_CLICK_LINK_TIMEOUT;
 
-    // Init NLS messages
-    this.nlsMessages = initNlsMessages();
+	// Init NLS messages
+	this.nlsMessages = initNlsMessages();
 }
 
 /**
@@ -175,9 +177,10 @@ protected static <P extends WebPage> P createPage(final String location, final C
 // TODO Move page creation to WebBrowser
 @SuppressWarnings("unchecked")
 protected static <P extends WebPage> P createPage(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
+	String newlocation = hidePasswordInLocation(location);
 	if (DEBUG) {
-		debugPrintln("		+ Create page "+location+ " for user "+user);
-		debugPrintln("		  -> location: "+location);
+		debugPrintln("		+ Create page "+newlocation+ " for user "+user);
+		debugPrintln("		  -> location: "+newlocation);
 		debugPrintln("		  -> user: "+user);
 		debugPrintln("		  -> class:    "+pageClass.getName());
 	}
@@ -191,9 +194,8 @@ protected static <P extends WebPage> P createPage(final String location, final C
 	// If page does not exist create it
 	if (page == null) {
 		page = createPageInstance(location, config, user, pageClass, data);
-		if (DEBUG) debugPrintln("		  -> store page at "+locationKey+": "+locationKey);
 	} else {
-		if (DEBUG) debugPrintln("		  - > found page at "+locationKey+": "+locationKey);
+		if (DEBUG) debugPrintln("		  - > found page at "+newlocation+": "+hidePasswordInLocation(page.location));
 		if (page.getClass() != pageClass && page.getClass().getSuperclass() != pageClass) {
 			throw new ScenarioFailedError("Unexpected page class '"+getClassSimpleName(page.getClass())+"', expecting '"+getClassSimpleName(pageClass)+"' instead.");
 		}
@@ -205,12 +207,12 @@ protected static <P extends WebPage> P createPage(final String location, final C
 			page.login(user);
 		}
 
-	   	// Refresh page data
-	   	page.data = data;
+		// Refresh page data
+		page.data = data;
 	}
 
 	// Add page to history
-   	browser.cachePage(page);
+	browser.cachePage(page);
 
 	// Return the page
 	return page;
@@ -426,6 +428,7 @@ protected static <P> P createPageInstance(final String location, final Config co
  * Reopen the given page.
  * <p>
  * This specific method is used when restarting the browser on the given page.
+ * It can also be used to force the page reloading.
  * </p>
  * @param page The page to reopen
  * @param user The user associated with the page. It's necessary because the
@@ -433,7 +436,17 @@ protected static <P> P createPageInstance(final String location, final Config co
  * @return The instance of the class associate with the page.
  */
 public static WebPage reopenPage(final WebPage page, final SpotUser user) {
-	return openPage(page.location, USER_ACTION_NOT_PROVIDED, page.config, (User) user, page.getClass(), page.data);
+	debugPrintEnteringMethod("page", page.location, "user", user.getId());
+	page.forceReload = true;
+	WebPage reopenedPage = null;
+	try {
+		reopenedPage = openPage(page.location, USER_ACTION_NOT_PROVIDED, page.config, (User) user, page.getClass(), page.data);
+	} finally {
+		if (reopenedPage != null) {
+			reopenedPage.forceReload = false;
+		}
+	}
+	return reopenedPage;
 }
 
 /**
@@ -543,7 +556,7 @@ protected WebBrowserElement check(final By locator) {
  * The result of the check operation will be verified.
  * </p><p>
  * Note that this method can also be used to 'select' a radio button, i.e.,
- * when the argument 'on' is <code>true</code>.  Technically, there is no way to
+ * when the argument 'on' is <code>true</code>. Technically, there is no way to
  * 'unselect' a radio button (without selecting some other radio button), so this
  * method should not be used with a radio button and <code>false</code>.
  * </p><p>
@@ -568,7 +581,7 @@ protected WebBrowserElement check(final By locator, final boolean on) {
  * and checking the result if specified.
  * <p>
  * Note that this method can also be used to 'select' a radio button, i.e.,
- * when the argument 'on' is <code>true</code>.  Technically, there is no way to
+ * when the argument 'on' is <code>true</code>. Technically, there is no way to
  * 'unselect' a radio button (without selecting some other radio button), so this
  * method should not be used with a radio button and <code>false</code>.
  * </p><p>
@@ -1015,16 +1028,16 @@ protected WebBrowserElement findElement(final By locator) {
  */
 public final WebPage get() {
 	if (DEBUG) {
-		debugPrintln("		+ get page content ("+this.location+")");
-		debugPrintln("		  -> browser URL: "+this.browser.getCurrentUrl());
+		debugPrintln("		+ get page content ("+hidePasswordInLocation(this.location)+")");
+		debugPrintln("		  -> browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl()));
 		debugPrintln("		  -> current user: "+getUser());
 	}
 
 	// Do nothing if the page is already loaded
-	if (this.loginOperation == null && isLoaded()) {
+	if (!this.forceReload && this.loginOperation == null && isLoaded()) {
 		if (DEBUG) {
 			debugPrintln("		  -> page was already loaded");
-			debugPrintln("		  -> page URL: "+getUrl());
+			debugPrintln("		  -> page URL: "+hidePasswordInLocation(getUrl()));
 		}
 
 		// Set page handle
@@ -1046,7 +1059,7 @@ public final WebPage get() {
 	long start = System.currentTimeMillis();
 	if (DEBUG) {
 		debugPrintln("		  -> loading page...");
-		debugPrintln("		  -> page URL: "+getUrl());
+		debugPrintln("		  -> page URL: "+hidePasswordInLocation(getUrl()));
 	}
 
 	// Start server timer
@@ -1068,8 +1081,8 @@ public final WebPage get() {
 	// Returned opened page
 	if (DEBUG) {
 		debugPrintln("		  -> page loaded in "+elapsedTimeString(start));
-		debugPrintln("		  -> browser URL: "+this.browser.getCurrentUrl());
-		debugPrintln("		  -> page URL: "+getUrl());
+		debugPrintln("		  -> browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl()));
+		debugPrintln("		  -> page URL: "+hidePasswordInLocation(getUrl()));
 	}
 	return this;
 }
@@ -1107,6 +1120,15 @@ public WebBrowser getBrowser() {
  */
 public Config getConfig() {
 	return this.config;
+}
+
+/**
+ * Return the value of the <code>document.title</code>.
+ *
+ * @return The page document title
+ */
+public String getDocumentTitle() {
+	return this.browser.getTitle();
 }
 
 /**
@@ -1190,12 +1212,12 @@ protected abstract By getRootElementLocator();
 /**
  * {@inheritDoc}
  * <p>
- * By default the page has an empty title...
+ * By default page title is the value of the <code>document.title</code>.
  * </p>
  */
 @Override
 public String getTitle() {
-	return EMPTY_STRING;
+	return getDocumentTitle();
 }
 
 /**
@@ -1315,6 +1337,7 @@ protected boolean isLoaded() {
  * </p>
  */
 protected void load() {
+	debugPrintEnteringMethod();
 
 	/* TODO Improve this test as it would have side effect when re-running tests if it was activated...
 	// Do not set the browser location already matches current page one
@@ -1329,8 +1352,14 @@ protected void load() {
 	this.browser.get(this);
 
 	// Login if necessary
-	if (this.loginOperation != null) {
-		if (DEBUG) debugPrintln("		  -> should login");
+	if (this.loginOperation == null) {
+		// No direct login is necessary but we need to store user in application if it uses basic auth
+		if (this.application.getUserInfo() != null && this.user != null) {
+			debugPrintln("		  -> directly login user "+this.user.getId()+" to application");
+			this.application.login(this.user);
+		}
+	} else {
+		debugPrintln("		  -> login necessary while loading the page");
 		this.loginOperation.performLogin();
 		this.loginOperation = null;
 	}
@@ -1435,8 +1464,8 @@ protected boolean matchBrowserUrl() {
 	String pageUrl = getUrl();
 	if (DEBUG) {
 		debugPrintln("		+ Test whether page location matches current browser URL or not.");
-		debugPrintln("		  -> page url: "+pageUrl);
-		debugPrintln("		  -> page location: "+this.location);
+		debugPrintln("		  -> page url: "+hidePasswordInLocation(pageUrl));
+		debugPrintln("		  -> page location: "+hidePasswordInLocation(this.location));
 	}
 
 	// Special case when restarting the browser after it has died
@@ -1454,12 +1483,12 @@ protected boolean matchBrowserUrl() {
 		pageUrlURL = new URL(URLDecoder.decode(pageUrl, "UTF-8"));
 		pageLocationURL = new URL(URLDecoder.decode(this.location, "UTF-8"));
 		if (DEBUG) {
-			debugPrintln("		  -> browser URL: "+pageUrlURL);
-			debugPrintln("		  -> page URL: "+pageLocationURL);
+			debugPrintln("		  -> browser URL: "+hidePasswordInLocation(pageUrlURL.toString()));
+			debugPrintln("		  -> page URL: "+hidePasswordInLocation(pageLocationURL.toString()));
 		}
 		if (!pageUrlURL.getProtocol().equals(pageLocationURL.getProtocol()) ||
-		        !pageUrlURL.getHost().equals(pageLocationURL.getHost()) ||
-		        pageUrlURL.getPort() != pageLocationURL.getPort()) {
+				!pageUrlURL.getHost().equals(pageLocationURL.getHost()) ||
+				pageUrlURL.getPort() != pageLocationURL.getPort()) {
 			if (DEBUG) debugPrintln("		  -> NO MATCH: protocol, host or port does not match");
 			return false;
 		}
@@ -1525,9 +1554,9 @@ protected boolean matchBrowserUrl() {
 	boolean match = pageUrlString.startsWith(pageUrlFromLocation);
 	if (DEBUG) {
 		if (match) {
-			debugPrintln("		  -> MATCH: page URL ("+pageUrlString+") matches page location ("+pageUrlFromLocation+")");
+			debugPrintln("		  -> MATCH: page URL ("+hidePasswordInLocation(pageUrlFromLocation)+") matches page location ("+hidePasswordInLocation(pageUrlFromLocation)+")");
 		} else {
-			debugPrintln("		  -> NO MATCH: page URL ("+pageUrlString+") does not match page location ("+pageUrlFromLocation+")");
+			debugPrintln("		  -> NO MATCH: page URL ("+hidePasswordInLocation(pageUrlString)+") does not match page location ("+hidePasswordInLocation(pageUrlFromLocation)+")");
 		}
 	}
 	return match;
@@ -1929,7 +1958,7 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 	String linkUrl = linkElement.getAttribute("href");
 	String linkString = linkElement.toString();
 	if (DEBUG) {
-		debugPrintln("		  -> link URL: "+linkUrl);
+		debugPrintln("		  -> link URL: "+hidePasswordInLocation(linkUrl));
 		debugPrintln("		  -> link string: "+linkString);
 	}
 	Set<String> handles = this.browser.getWindowHandles(/*check:*/false);
@@ -1947,7 +1976,7 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 	}
 	String currentPageClass = currentPage == null ? null : getClassSimpleName(currentPage.getClass());
 	String pageUrl = getUrl();
-	if (DEBUG) debugPrintln("		  -> page URL: "+pageUrl);
+	if (DEBUG) debugPrintln("		  -> page URL: "+hidePasswordInLocation(pageUrl));
 	if (pageUrl.equals(linkUrl) && currentPage != null && currentPage.getClass().equals(openedPageClass)) {
 		if (DEBUG) debugPrintln("		  -> Browser is already on the expected page, hence do nothing...");
 		return (P) currentPage;
@@ -2009,20 +2038,21 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 	// Note: if the url is the same but the class of the page is different, we will get here.
 	// The workaround will be skipped but the page will be opened properly.
 	String newPageUrl = getUrl();
-	if (DEBUG) debugPrintln("	- page URL: "+newPageUrl);
+	String hiddenPasswordLocation = hidePasswordInLocation(newPageUrl);
+	if (DEBUG) debugPrintln("	- page URL: "+hiddenPasswordLocation);
 	if (!newPageUrl.equals(linkUrl)) {
 		// Check whether a new handle has been opened
 		// Check that the browser URL has changed after the click
-		if (DEBUG) debugPrintln("		  -> page URL: "+newPageUrl);
-		long stimeout = shortTimeout()*1000 + System.currentTimeMillis();
+		if (DEBUG) debugPrintln("		  -> page URL: "+hiddenPasswordLocation);
+		long stimeout = timeout()*1000 + System.currentTimeMillis();
 		int count = 0;
 		while (pageUrl.equals(newPageUrl = getUrl())) {
 			if (DEBUG && count == 0) {
 				debugPrintln("================================================================================");
 				debugPrintln("WARNING: Browser URL hasn't changed after having clicked on "+linkString);
-				debugPrintln("	- browser URL: "+this.browser.getCurrentUrl());
-				debugPrintln("	- page URL: "+newPageUrl);
-				debugPrintln("	- expected URL: "+linkUrl);
+				debugPrintln("	- browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl()));
+				debugPrintln("	- page URL: "+hiddenPasswordLocation);
+				debugPrintln("	- expected URL: "+hidePasswordInLocation(linkUrl));
 				debugPrintln("	- stack trace:");
 				debugPrintStackTrace(1);
 			}
@@ -2110,7 +2140,7 @@ public void refresh() {
 	if (!this.location.equals(browserUrl)) {
 		this.browser.cachePage(this);
 		this.location = browserUrl;
-		if (DEBUG) debugPrintln("		  -> the page location has been replaced with browser URL: '"+browserUrl+"'");
+		if (DEBUG) debugPrintln("		  -> the page location has been replaced with browser URL: '"+hidePasswordInLocation(browserUrl)+"'");
 	}
 
 	// Wait for the end of the page loading
@@ -2181,7 +2211,7 @@ protected void scrollToMakeElementVisible(final WebBrowserElement webElement) {
  */
 public void scrollDown() {
 	debugPrintEnteringMethod();
-    this.browser.scrollOnePageDown();
+	this.browser.scrollOnePageDown();
 }
 
 /**
@@ -2197,7 +2227,7 @@ public void scrollUp() {
  */
 public void scrollToTop() {
 	debugPrintEnteringMethod();
-    this.browser.scrollPageTop();
+	this.browser.scrollPageTop();
 }
 
 /**
@@ -2379,7 +2409,7 @@ final public int timeout() {
 
 @Override
 public String toString() {
-	return "Web page at location '"+this.location+"' ("+getApplication()+", url: "+getUrl()+")";
+	return "Web page at location '"+hidePasswordInLocation(this.location)+"' ("+getApplication()+", url: "+hidePasswordInLocation(getUrl())+")";
 }
 
 /**
@@ -2613,9 +2643,9 @@ protected void verifyPageUser() throws ScenarioFailedError {
 		println("INFO: User name '"+loggedUserElement.getText()+"' does not match expected one: '"+getUser().getName()+"'");
 		println("     Workaround this issue by forcing a login with "+getUser());
 
-		// It may be the case that a re-try will let us login properly.  However, if there is a disconnect
+		// It may be the case that a re-try will let us login properly. However, if there is a disconnect
 		// between the server's info (name/id) and the properties files, we'll be stuck in a loop
-		// between get(), verifyPageUser(), login().  To avoid that, only try MAX_RECOVERY_TRIES
+		// between get(), verifyPageUser(), login(). To avoid that, only try MAX_RECOVERY_TRIES
 		// to login/get/verify.
 		if (this.verifyTries++ >= MAX_RECOVERY_TRIES) {
 			throw new ScenarioFailedError("User with id '" + getUser().getId() + "' is not going to be able to login because their name '"
@@ -3051,9 +3081,9 @@ protected void waitForLoadingPageEnd() {
 		if (System.currentTimeMillis() > waitTimeout) {
 			this.browser.takeScreenshotWarning("LoadTimeout_"+getClassSimpleName(getClass()));
 			println("WARNING: Page "+this+" never finish to load!");
-			println("	- browser URL: "+this.browser.getCurrentUrl().replaceAll("%20", SPACE_STRING));
-			println("	- location: "+this.location);
-			println("	- page URL: "+getTopology().getPageUrl(this.location).replaceAll("%20", SPACE_STRING));
+			println("	- browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl().replaceAll("%20", SPACE_STRING)));
+			println("	- location: "+hidePasswordInLocation(this.location));
+			println("	- page URL: "+hidePasswordInLocation(getTopology().getPageUrl(this.location).replaceAll("%20", SPACE_STRING)));
 			println("	- stack trace: ");
 			printStackTrace(2);
 			println();

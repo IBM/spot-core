@@ -129,6 +129,11 @@ protected void initProfile() {
 	if (hasDownloadDir()) {
 		initDownloadDir();
 	}
+
+	// Set private mode for browser if requested
+	if (this.manager.isInPrivateMode()) {
+		this.options.addArguments("--incognito");
+	}
 }
 
 @Override

@@ -12,7 +12,8 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.config;
 
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.getParameterValue;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.println;
 
 import java.util.Base64;
 
@@ -124,21 +125,10 @@ public User(final String prefix, final String user) {
 
 	// Check that we got at least an ID, a name and a password
 	if (this.name == null || this.id == null || this.password == null) {
-		StringBuilder messageBuilder = new StringBuilder("Missing user information:");
-		String separator = EMPTY_STRING;
-		if (this.id == null) {
-			messageBuilder.append(" ID");
-			separator = ", ";
-		}
-		if (this.name == null) {
-			messageBuilder.append(separator).append(" name");
-			separator = ", ";
-		}
-		if (this.password == null) {
-			messageBuilder.append(separator).append(" password");
-			separator = ", ";
-		}
-		messageBuilder.append(" cannot be null.");
+		StringBuilder messageBuilder = new StringBuilder("Invalid user information: ");
+		messageBuilder.append(" id=").append(this.id == null ? "<!missing!>" : this.id);
+		messageBuilder.append(" name=").append(this.name == null ? "<!missing!>" : this.name);
+		messageBuilder.append(" pwd=").append(this.password == null ? "<!missing!>" : this.password);
 		throw new ScenarioFailedError(messageBuilder.toString());
 	}
 

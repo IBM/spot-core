@@ -34,7 +34,7 @@ import com.ibm.bear.qa.spot.samples.tqa.scenario.SampleToolsQaScenarioStepRunner
  * </p>
  */
 @RunWith(SampleToolsQaScenarioStepRunner.class)
-public class SampleToolsQaStep00_TextBox extends SampleToolsQaScenarioStep {
+public class SampleToolsQaStep01_TextBox extends SampleToolsQaScenarioStep {
 
 /**
  * Test <b>Full Name</b> simple input field.

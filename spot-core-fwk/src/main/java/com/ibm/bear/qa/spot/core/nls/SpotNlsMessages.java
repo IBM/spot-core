@@ -77,6 +77,18 @@ public String getDialogCreateButtonLabel() {
 }
 
 /**
+ * Return the dialog <b>Ok</b> button label.
+ * <p>
+ * Note that this description is NLS compatible and will depend on the Locale selected when running the scenario.
+ * </p>
+ *
+ * @return The corresponding NLS string
+ */
+public String getDialogOkButtonLabel() {
+	return getNLSString(SPOT_DIALOG_OK_LABEL);
+}
+
+/**
  * Return the dialog <b>Save</b> button label.
  * <p>
  * Note that this description is NLS compatible and will depend on the Locale selected when running the scenario.

@@ -23,6 +23,7 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
+import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 import com.ibm.bear.qa.spot.core.web.WebBrowser;
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
 
@@ -101,16 +102,22 @@ protected void initDriver() {
 
 	// Set driver properties
 	System.setProperty("webdriver.edge.driver", this.manager.getPath());
-	this.options = new EdgeOptions();
 
-    // Create driver
+	// Create driver
 	this.driver = new EdgeDriver(this.options);
 	this.driver.manage().timeouts().implicitlyWait(250, TimeUnit.MILLISECONDS);
 }
 
 @Override
 protected void initProfile() {
-	// Do nothing
+
+	// Created Edge options
+	this.options = new EdgeOptions();
+
+	// Set private mode for browser if requested
+	if (this.manager.isInPrivateMode()) {
+		throw new ScenarioFailedError("MS Edge is not supporting private mode with Selenium 3.");
+	}
 }
 
 @Override

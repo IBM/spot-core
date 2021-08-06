@@ -77,6 +77,16 @@ public SpotSimpleTableElement(final WebPage page, final By locator) {
 	super(page, locator);
 }
 
+/**
+ * Create a table element with the given page and web element.
+ *
+ * @param page The page in which the table element belongs to
+ * @param element The table web element
+ */
+public SpotSimpleTableElement(final WebPage page, final WebBrowserElement element) {
+	super(page, element);
+}
+
 @Override
 protected By getHeaderElementsLocator() {
 	return HEADERS_LOCATOR;

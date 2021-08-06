@@ -14,6 +14,7 @@
 package com.ibm.bear.qa.spot.core.topology;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.utils.StringUtils.hidePasswordInLocation;
 
 import java.util.*;
 
@@ -68,7 +69,7 @@ public void addApplication(final Application application) {
 public Application getApplication(final String url) {
 	for (Application application: this.applications) {
 		if (application.isApplicationFor(url)) {
-			if (DEBUG) debugPrintln("		  -> found application '"+application+"' for URL: "+url);
+			if (DEBUG) debugPrintln("		  -> found application '"+application+"' for URL: "+hidePasswordInLocation(url));
 			return application;
 		}
 	}
@@ -169,23 +170,25 @@ public boolean login(final String location, final User user) {
 	// Get the application matching the given location
 	Application application = getApplication(location);
 	if (application == null) {
-		throw new ScenarioFailedError("Cannot find any application at the given location: "+location);
+		throw new ScenarioFailedError("Cannot find any application at the given location: "+hidePasswordInLocation(location));
 	}
 
 	// Login to the application belonging the given location
 	boolean login = application.login(user);
 
-	// Propagate user login to other server applications
+	// Propagate user login to other applications
 	if (login) {
-		if (application.useUms) {
-			for (Application appli: this.applications) {
-				if (appli != application && appli.useUms) { // != is intentional
-					appli.login(user);
-				}
+		// First propagate to other applications using same login operation
+		for (Application appli: this.applications) {
+			if (appli != application && appli.loginOperationClass == application.loginOperationClass) { // != is intentional
+				appli.login(user);
 			}
-		} else {
-			List<Application> serverApplications = this.servers.get(application.getHost());
-			for (Application appli: serverApplications) {
+		}
+
+		// Second propagate to other applications on same server
+		List<Application> serverApplications = this.servers.get(application.getHost());
+		for (Application appli: serverApplications) {
+			if (appli != application) { // != is intentional
 				appli.login(user);
 			}
 		}
@@ -241,7 +244,8 @@ public void logoutApplications() {
  * <code>false</code> otherwise.
  */
 public boolean needLogin(final String location, final User user) {
-	debugPrintEnteringMethod("location", location, "user", user);
+	String hiddenPasswordLocation = hidePasswordInLocation(location);
+	debugPrintEnteringMethod("location", hiddenPasswordLocation, "user", user);
 	if (user == null) {
 		throw new IllegalArgumentException("Need a user to decide whether login is needed or not.");
 	}
@@ -249,7 +253,7 @@ public boolean needLogin(final String location, final User user) {
 	// If application does not need login, then return
 	Application application = getApplication(location);
 	if (application == null) {
-		throw new ScenarioFailedError("Cannot find any application for user '"+user.getId()+"' with location: "+location);
+		throw new ScenarioFailedError("Cannot find any application for user '"+user.getId()+"' with location: "+hiddenPasswordLocation);
 	}
 	if (!application.needLogin(user)) {
 		return false;
@@ -301,6 +305,8 @@ protected void updateServer(final Application application) {
 	if (serverApplications == null) {
 		this.servers.put(application.getHost(), serverApplications = new ArrayList<Application>());
 	}
-	serverApplications.add(application);
+	if (!serverApplications.contains(application)) {
+		serverApplications.add(application);
+	}
 }
 }

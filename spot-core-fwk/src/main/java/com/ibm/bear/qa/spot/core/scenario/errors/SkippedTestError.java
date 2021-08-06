@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2020 IBM Corporation and others.
+* Copyright (c) 2012, 2021 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -10,16 +10,18 @@
 * Contributors:
 *     IBM Corporation - initial API and implementation
 **********************************************************************/
-package com.ibm.bear.qa.spot.samples.tqa.topology;
+package com.ibm.bear.qa.spot.core.scenario.errors;
 
-import com.ibm.bear.qa.spot.core.topology.Application;
+import com.ibm.bear.qa.spot.core.utils.StepBlocker;
 
 /**
- * Class to manage the <b>ToolsQA</b> web application.
+ * Error raised when a test is skipped due to an error occurred in a previous step test.
+ *
+ * @see StepBlocker
  */
-public class ToolsQaApplication extends Application {
+public class SkippedTestError extends ScenarioFailedError {
 
-public ToolsQaApplication(final String url) {
-	super(url);
+public SkippedTestError(final String message) {
+	super(message);
 }
 }

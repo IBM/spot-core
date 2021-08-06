@@ -325,6 +325,17 @@ public boolean isHeadless() {
 }
 
 /**
+ * Tells whether browser is headless or not.
+ * <p>
+ * Default is not headless.
+ * </p>
+ * @return <code>true</code> if browser is headless, <code>false</code> otherwise
+ */
+public boolean isInPrivateMode() {
+	return getParameterBooleanValue(BROWSER_PRIVATE_ID);
+}
+
+/**
  * Open a new browser for the given page.
  * <p>
  * Note that it closes the existing user browser if one is already opened
@@ -369,6 +380,7 @@ void printBrowserInfo(final WebBrowser browser) {
 	println("	- " + browser.getName()+" version: "+browser.getVersion());
 	println("	- " + browser.getDriverInfo());
 	println("	- Browser is headless = " + isHeadless());
+	println("	- Browser in private mode = " + isInPrivateMode());
 	println("	- Browser window size = " + browser.getWindowSize());
 	println("	- Browser window position = " + browser.getWindowPosition());
 }

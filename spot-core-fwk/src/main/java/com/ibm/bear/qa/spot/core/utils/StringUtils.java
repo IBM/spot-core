@@ -13,14 +13,15 @@
 package com.ibm.bear.qa.spot.core.utils;
 
 /**
- * Class to provide utilities around {@link String}.
+ * Class to provide utilities around {@link String} .
  * <p>
- * Availables methods of this utility class are:
+ * This class defines following internal API methods:
  * <ul>
  * <li>{@link #cleanWhiteCharacters(String)}: Clean the given string from any white spaces characters.</li>
  * <li>{@link #convertLineDelimitersToUnix(String)}: Convert line delimiters of the given string to Unix instead of Windows.</li>
- * <li>{@link #equalsNonWhitespaces(String, String)}: Compare the two given strings ignoring all white spaces.</li>
+ * <li>{@link #equalsNonWhitespaces(String,String)}: Compare the two given strings ignoring all white spaces.</li>
  * <li>{@link #getSafeStringForPath(String)}: Return a string from the given one which will be safe to be used in file path.</li>
+ * <li>{@link #hidePasswordInLocation(String)}: Return the location with hidden password.</li>
  * <li>{@link #removeWhiteCharacters(String)}: Remove all white spaces from the given string.</li>
  * </ul>
  * </p>
@@ -96,6 +97,24 @@ public static boolean equalsNonWhitespaces(final String str1, final String str2)
  */
 public static String getSafeStringForPath(final String str) {
 	return str.replaceAll(" ", "_");
+}
+
+/**
+ * Return the location with hidden password.
+ *
+ * @param location The location
+ * @return The location without password in clear.
+ */
+public static String hidePasswordInLocation(final String location) {
+	String newlocation = location;
+	if (location != null) {
+		int passwordEndIndex = location.indexOf('@');
+		if (passwordEndIndex > 0) {
+			int passwordStartIndex = location.indexOf(':', 6)+1;
+			newlocation = location.substring(0, passwordStartIndex+1)  + "******" + location.substring(passwordEndIndex, location.length());
+		}
+	}
+	return newlocation;
 }
 
 /**

@@ -16,8 +16,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite.SuiteClasses;
 
 import com.ibm.bear.qa.spot.core.utils.SpotScenario;
-import com.ibm.bear.qa.spot.samples.tqa.steps.SampleToolsQaStep00_TextBox;
-import com.ibm.bear.qa.spot.samples.tqa.steps.SampleToolsQaStep01_Dialog;
+import com.ibm.bear.qa.spot.samples.tqa.steps.*;
 
 /**
  * Scenario to test basic functionalities of <b>Sample Tools QA</b>.
@@ -25,8 +24,9 @@ import com.ibm.bear.qa.spot.samples.tqa.steps.SampleToolsQaStep01_Dialog;
 @SpotScenario
 @RunWith(SampleToolsQaScenarioRunner.class)
 @SuiteClasses({
-	SampleToolsQaStep00_TextBox.class,
-	SampleToolsQaStep01_Dialog.class,
+	SampleToolsQaStep00_General.class,
+	SampleToolsQaStep01_TextBox.class,
+	SampleToolsQaStep02_Dialog.class,
 })
 public class SampleToolsQaScenario {
 }
