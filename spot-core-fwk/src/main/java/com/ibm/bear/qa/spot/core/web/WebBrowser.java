@@ -30,9 +30,7 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.UnreachableBrowserException;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Sets;
 import com.ibm.bear.qa.spot.core.api.SpotUser;
 import com.ibm.bear.qa.spot.core.browser.BrowserConstants;
@@ -137,8 +135,6 @@ import com.ibm.bear.qa.spot.core.utils.ByUtils.ComparisonPattern;
  */
 public abstract class WebBrowser implements SearchContext, BrowserConstants {
 
-	private static final String SELECT_ALL_CMD = Keys.chord(getOsName().equals("mac") ? Keys.COMMAND : Keys.CONTROL, "a");
-
 	/*Enumerations */
 	/**
 	 * Possible state for clickable workaround
@@ -156,8 +152,8 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 		final TargetLocator targetLocator;
 
 		FramesScanner() {
-		    this.targetLocator = WebBrowser.this.driver.switchTo();
-	    }
+			this.targetLocator = WebBrowser.this.driver.switchTo();
+		}
 
 		/**
 		 * Find the elements matching the given locator in the current browser page
@@ -244,6 +240,7 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 
 	// Selenium specific
 	public static final String JAVASCRIPT_ERROR_ALERT_PATTERN = "JavaScript Error: \"(e|h) is null\"";
+	private static final String SELECT_ALL_CMD = Keys.chord(getOsName().equals("mac") ? Keys.COMMAND : Keys.CONTROL, "a");
 
 	/*
 	 * Fields
@@ -251,8 +248,8 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 	// Pages cache
 	final List<WebPage> pagesCache = new ArrayList<>();
 
-    // Browser manager
-    protected BrowsersManager manager;
+	// Browser manager
+	protected BrowsersManager manager;
 
 	// Selenium driver
 	protected WebDriver driver;
@@ -490,14 +487,14 @@ void catchWebDriverException(final WebDriverException wde, final String title, f
 	// Give up right now if the exception is too serious
 	if (!isSafari() && !(wde instanceof StaleElementReferenceException)) {
 		debugPrintln("Fatal exception occured when "+title+"'... give up");
-    	debugPrintException(wde);
+		debugPrintException(wde);
 		throw wde;
 	}
 
 	// If max retry has been reached, then really throw the WDE exception
 	if (count > MAX_RECOVERY_ATTEMPTS) {
 		debugPrintln("More than 10 exceptions occured when "+title+"'... give up");
-    	debugPrintException(wde);
+		debugPrintException(wde);
 		throw wde;
 	}
 
@@ -1336,36 +1333,6 @@ public <P extends WebPage> P focusOnPage(final Class<P> pageClass) {
 }
 
 /**
- * Return the list of cached pages of the given class.
- * <p>
- * Focus means that only the given page will be kept opened in the current browser.
- * All other opened pages will be closed and removed from cache.
- * </p><p>
- * <b>Warning</b>: This is a no-op if the given page is not opened in the current
- * browser (ie. it's not found in the cache).
- * </p>
- * @return The current page as a {@link WebPage} or <code>null</code>
- * if the page is not found in the cache.
- */
-@SuppressWarnings("unchecked")
-public <P extends WebPage> List<P> getCachedPages(final Class<P> pageClass) {
-	debugPrintEnteringMethod("pageClass", pageClass);
-	int size = this.pagesCache.size();
-	List<WebPage> pages = new ArrayList<>();
-	for (int i=size-1; i>=0; i--) {
-		WebPage page = this.pagesCache.get(i);
-		Class<? extends WebPage> cachedPageClass = page.getClass();
-		while (cachedPageClass != null) {
-			if (cachedPageClass.equals(pageClass)) {
-				pages.add(page);
-			}
-			cachedPageClass = (Class<? extends WebPage>) cachedPageClass.getSuperclass();
-		}
-	}
-	return (List<P>) pages;
-}
-
-/**
  * Open the given page in the browser.
  * <p>
  * This is a no-op if either the browser url or the driver url are already at the
@@ -1446,6 +1413,36 @@ public final void get(final WebPage page) {
 		// Info
 		if (DEBUG) debugPrintln("INFO: URL of page '"+pageLocation+"' has changed to '"+this.driver.getCurrentUrl()+"' just after having been loaded.");
 	}
+}
+
+/**
+ * Return the list of cached pages of the given class.
+ * <p>
+ * Focus means that only the given page will be kept opened in the current browser.
+ * All other opened pages will be closed and removed from cache.
+ * </p><p>
+ * <b>Warning</b>: This is a no-op if the given page is not opened in the current
+ * browser (ie. it's not found in the cache).
+ * </p>
+ * @return The current page as a {@link WebPage} or <code>null</code>
+ * if the page is not found in the cache.
+ */
+@SuppressWarnings("unchecked")
+public <P extends WebPage> List<P> getCachedPages(final Class<P> pageClass) {
+	debugPrintEnteringMethod("pageClass", pageClass);
+	int size = this.pagesCache.size();
+	List<WebPage> pages = new ArrayList<>();
+	for (int i=size-1; i>=0; i--) {
+		WebPage page = this.pagesCache.get(i);
+		Class<? extends WebPage> cachedPageClass = page.getClass();
+		while (cachedPageClass != null) {
+			if (cachedPageClass.equals(pageClass)) {
+				pages.add(page);
+			}
+			cachedPageClass = (Class<? extends WebPage>) cachedPageClass.getSuperclass();
+		}
+	}
+	return (List<P>) pages;
 }
 
 abstract protected Capabilities getCapabilities();
@@ -1924,15 +1921,15 @@ public void moveToElement(final WebBrowserElement element, final boolean entirel
 	}
 
 	// Put the mouse into the middle of the element
-    try {
-	    this.actions.moveToElement(webElement).build().perform();
-    } catch (WebDriverException wde) {
+	try {
+		this.actions.moveToElement(webElement).build().perform();
+	} catch (WebDriverException wde) {
 		if (DEBUG) {
 			debugPrintException(wde);
 			debugPrintln("		  -> catching WebDriverException while trying to move to an element"+(element.isInFrame()?" (which was in a frame)":"")+", hence do nothing...");
 		}
 		return;
-    }
+	}
 }
 
 /**
@@ -2080,7 +2077,7 @@ public void refreshManagingLogin(final WebPage currentPage) {
  * </p>
  */
 public void resetEmbeddedFrame() {
-    WebBrowserFrame currentFrame = getCurrentFrame();
+	WebBrowserFrame currentFrame = getCurrentFrame();
 	if (DEBUG) debugPrintln("		+ Reset embedded frame "+currentFrame);
 	if (currentFrame instanceof WebEmbeddedFrame) {
 		WebEmbeddedFrame embeddedFrame = (WebEmbeddedFrame) currentFrame;
@@ -2132,7 +2129,7 @@ public void resetFrame(final boolean store) {
  */
 public void scrollOnePageDown() {
 	debugPrintEnteringMethod();
-    executeScript("window.scrollBy(0, window.innerHeight);");
+	executeScript("window.scrollBy(0, window.innerHeight);");
 }
 
 /**
@@ -2140,7 +2137,7 @@ public void scrollOnePageDown() {
  */
 public void scrollOnePageUp() {
 	debugPrintEnteringMethod();
-    executeScript("window.scrollBy(0, -window.innerHeight);");
+	executeScript("window.scrollBy(0, -window.innerHeight);");
 }
 
 /**
@@ -2159,7 +2156,7 @@ public void scrollPageTo(final WebBrowserElement element) {
  */
 public void scrollPageTop() {
 	debugPrintEnteringMethod();
-    executeScript("window.scrollTo(0,0);");
+	executeScript("window.scrollTo(0,0);");
 }
 
 /**
@@ -2331,7 +2328,7 @@ public WebBrowserElement[] select(final WebBrowserElement listElement, final By 
 						// optionsLoop to continue with searching for the remaining elements.
 						continue optionsLoop;
 					}
-                }
+				}
 			}
 		}
 
@@ -2764,11 +2761,11 @@ private void setWindow(final Dimension dimension, final Point location) {
  */
 public void shiftClick(final WebBrowserElement destination) {
 	this.actions.keyDown(Keys.SHIFT)
-	    .moveToElement(destination)
-	    .click()
-	    .keyUp(Keys.SHIFT)
-	    .build()
-	    .perform();
+		.moveToElement(destination)
+		.click()
+		.keyUp(Keys.SHIFT)
+		.build()
+		.perform();
 }
 
 /**
@@ -2962,19 +2959,19 @@ private void takeScreenshot(final String fileName, final int kind) {
 	try {
 		// Take snapshot
 		sleep(2);
-   	    File snapshotFile = ((TakesScreenshot)this.driver).getScreenshotAs(OutputType.FILE);
-	    try {
-	        File destFile = FileUtil.copyFile(snapshotFile, currentSnapshotsDir, destFileName);
-		    println("		  -> screenshot available at " + destFile.getAbsolutePath());
-        } catch (IOException e) {
-	        printException(e);
-		    println("		  -> cannot copy "+snapshotFile.getAbsolutePath()+" to "+currentSnapshotsDir+File.separator+destFileName+"!!!");
-        }
+   		File snapshotFile = ((TakesScreenshot)this.driver).getScreenshotAs(OutputType.FILE);
+		try {
+			File destFile = FileUtil.copyFile(snapshotFile, currentSnapshotsDir, destFileName);
+			println("		  -> screenshot available at " + destFile.getAbsolutePath());
+		} catch (IOException e) {
+			printException(e);
+			println("		  -> cannot copy "+snapshotFile.getAbsolutePath()+" to "+currentSnapshotsDir+File.separator+destFileName+"!!!");
+		}
 	} catch (Throwable th) {
 		// Catch if any exception occurs but which should not prevent
 		// test to succeed at this stage...
 		th.printStackTrace();
-    }
+	}
 }
 
 /**
@@ -3139,59 +3136,25 @@ private void typeText(final WebBrowserElement element, final String text, final 
 /**
  * Wait until have found the element using given locator.
  * <p>
- * Note that:
- * <ul>
- * <li>the search occurs in the entire page or in the current frame if there's
- * one selected in the browser (see {@link #hasFrame()})</li>
- * <li>hidden element will be ignored</li>
- * <li>it will fail if:
- * <ol>
- * <li>the element is not found before timeout seconds</li>
- * <li>there's more than one element found</li>
- * </ol></li>
- * </ul>
- * </p>
- * </p>
- * @param locator Locator to find the element in the current page.
- * @param timeout The time to wait before giving up the research
- * @return The web element as {@link WebBrowserElement}
- * @throws WaitElementTimeoutError if no element was found before the timeout and asked to fail
- * @throws MultipleVisibleElementsError if several elements are found and only single one was expected
- */
-public WebBrowserElement waitForElement(final By locator, final int timeout) {
-	return waitForElement(null, locator, true/*fail*/, timeout, true/*displayed*/, true/*single*/);
-}
-
-/**
- * Wait until have found the element using given locator.
- * <p>
  * Only fail if specified and after having waited the given timeout.
  * </p>
  * @param parentElement The element from where the search must start.
- * If <code>null</code> then element is expected in the current page.
+ * If <code>null</code> then element is searched in the entire current page.
  * @param locator Locator to find the element in the current page.
- * @param fail Tells whether to fail if none of the locators is find before timeout
+ * @param fail Tells whether to fail if none of the locators is found before timeout
  * @param timeout The time to wait before giving up the research
- * @param displayed When <code>true</code> then only displayed element can be returned.
+ * @param displayed When <code>true</code> then only a displayed element can be returned.
  * When <code>false</code> then the returned element can be either displayed or hidden.
  * @param single Tells whether a single element is expected
  * @return The web element as {@link WebBrowserElement} or <code>null</code>
  * if no element was found before the timeout and asked not to fail
  * @throws WaitElementTimeoutError if no element was found before the timeout and asked to fail
- * @throws MultipleVisibleElementsError if several elements are found and only single one was expected
+ * @throws MultipleElementsFoundError if several elements are found and only single one was expected
  */
 public WebBrowserElement waitForElement(final WebBrowserElement parentElement, final By locator, final boolean fail, final int timeout, final boolean displayed, final boolean single) {
 	if (DEBUG) {
 		debugPrintEnteringMethod("parentElement", parentElement, "locator", getLocatorString(locator), "fail", fail, "timeout", timeout, "displayed", displayed, "single", single);
 	}
-	/*
-	if (DEBUG) {
-		debugPrint("		+ waiting for element: [");
-		if (parentElement != null) debugPrint(parentElement.getFullPath()+"]//[");
-		debugPrint(locator+"]");
-		debugPrintln(" (fail="+fail+", timeout="+timeout+", displayed="+displayed+", single="+single+")");
-	}
-	*/
 
 	// Wait for all elements
 	List<WebBrowserElement> foundElements = waitForElements(parentElement, locator, fail, timeout, displayed);
@@ -3200,7 +3163,7 @@ public WebBrowserElement waitForElement(final WebBrowserElement parentElement, f
 	if (size == 0) return null;
 	if (!PERFORMANCE_ENABLED&&size > 1) {
 		if (single) {
-			throw new MultipleVisibleElementsError(foundElements);
+			throw new MultipleElementsFoundError(foundElements);
 		}
 		debugPrintln("WARNING: found more than one elements ("+size+"), return the first one!");
 	}
@@ -3210,56 +3173,12 @@ public WebBrowserElement waitForElement(final WebBrowserElement parentElement, f
 }
 
 /**
- * Wait until have found one of element using the given search locators.
- * <p>
- * Fail only if specified and after having waited the given timeout.
- * </p>
- * @param parentElement The element from where the search must start.
- * If <code>null</code> then element is expected in the current page.
- * @param locators Search locators of the expected elements.
- * @param fail Tells whether to fail if none of the locators is find before timeout
- * @param timeout The time to wait before giving up the research
- * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws WaitElementTimeoutError if no element was found before the timeout and asked to fail
- */
-public WebBrowserElement waitForElement(final WebBrowserElement parentElement, final By[] locators, final boolean fail, final int timeout) {
-	if (DEBUG) {
-		debugPrintEnteringMethod("parentElement", parentElement, "locators", getTextFromList(locators), "fail", fail, "timeout", timeout);
-	}
-	/*
-	if (DEBUG) {
-		debugPrintln("		+ waiting until finding one of following elements: ");
-		if (parentElement != null) debugPrintln("		  - parent: "+parentElement.getFullPath());
-		debugPrintln("		  - elements: ");
-		for (By locator: locators) {
-			debugPrintln("			* "+locator);
-		}
-	}
-	*/
-
-	// Wait for first found element
-	WebBrowserElement[] multipleElements = waitForMultipleElements(parentElement, locators, fail, timeout);
-	if (multipleElements != null) {
-		for (WebBrowserElement foundElement: multipleElements) {
-			if (foundElement != null) return foundElement;
-		}
-	}
-
-	// No found element
-	if (fail) {
-		throw new WaitElementTimeoutError("Cannot find any of the researched elements.");
-	}
-	return null;
-}
-
-/**
  * Wait until have found one or several elements using given locator.
  * <p>
  * Only fail if specified and after having waited the given timeout.
  * </p>
  * @param parentElement The element from where the search must start.
- * If <code>null</code> then element is expected in the current page.
+ * If <code>null</code> then element is searched in the entire current page.
  * @param locator Locator to find the element in the current page.
  * @param fail Tells whether to fail if none of the locators is find before timeout
  * @param timeout The time to wait before giving up the research
@@ -3274,13 +3193,6 @@ public List<WebBrowserElement> waitForElements(final WebBrowserElement parentEle
 	if (DEBUG) {
 		debugPrintEnteringMethod("parentElement", parentElement, "locator", getLocatorString(locator), "fail", fail, "timeout", timeout, "displayed", displayed);
 	}
-	/*
-	if (DEBUG) {
-		debugPrint("		+ waiting for elements: [");
-		if (parentElement != null) debugPrint(parentElement.getFullPath()+"]//[");
-		debugPrintln(locator+"]");
-	}
-	*/
 
 	// Init counters
 	final int max = timeout << 2;
@@ -3353,83 +3265,71 @@ public List<WebBrowserElement> waitForElements(final WebBrowserElement parentEle
 }
 
 /**
- * Wait until at least one element is found using each of the given locator.
+ * Wait until have found one displayed element of the given locators list.
  * <p>
- * That method stores each found element using the given locators in the
- * the returned array, hence it may have more than one non-null slot.
+ * That method stores the found element in the returned array, at the same
+ * position of the locator used to found it in the given locators array. All other
+ * returned array positions are null.
  * </p><p>
- * Note that the method stop to search as soon as at least one element is found.
- * Hence, when several elements are found and returned in the array, that means
- * they have been found in the same loop. The timeout is only reached when
- * <b>no</b> element is found...
+ * Note that the method stop to search as soon as a first element is found. Which
+ * means that the returned array will contain only one element if one has been found.
+ * The timeout is reached when <b>no</b> element is found...
  * </p><p>
- * Note also that only displayed elements are returned.
+ * Note also that hidden elements are not returned.
  * </p>
  * @param parentElement The parent element where to start to search from,
  * if <code>null</code>, then search in the entire page content
- * @param locators List of locators to use to find the elements in the current page.
+ * @param locators List of locators used to search elements in the entire current page.
  * @param fail Tells whether to fail if none of the locators is find before timeout
  * @param timeout The time to wait before giving up the research
- * @return An array with one non-null slot per element found before timeout
- * occurs or <code>null</code> if none was found and it has been asked not to fail.
+ * @return An array with one element if one is found before timeout occurs or
+ * <code>null</code> if none was found and it has been asked not to fail.
  * @throws WaitElementTimeoutError if no element is found before the timeout occurs
  * and it has been asked to fail.
  */
-public WebBrowserElement[] waitForMultipleElements(final WebBrowserElement parentElement, final By[] locators, final boolean fail, final int timeout) {
-	return waitForMultipleElements(parentElement, locators, null/*displayed*/, fail, timeout);
+public WebBrowserElement[] waitForFirstDisplayedElementInList(final WebBrowserElement parentElement, final By[] locators, final boolean fail, final int timeout) {
+	if (DEBUG) {
+		debugPrintEnteringMethod("parentElement", parentElement, "locators", getTextFromList(locators), "displayFlags", "fail", fail, "timeout", timeout);
+	}
+	return waitForFirstElementInList(parentElement, locators, /*displayFlags:*/ null, fail, timeout);
 }
 
 /**
- * Wait until at least one element is found using each of the given locator.
+ * Wait until have found one element of the given locators list.
  * <p>
- * That method stores each found element using the given locators in the
- * the returned array, hence it may have more than one non-null slot.
+ * That method stores the found element in the returned array, at the same
+ * position of the locator used to found it in the given locators array. All other
+ * returned array positions are null.
  * </p><p>
- * Note that the method stop to search as soon as at least one element is found.
- * Hence, when several elements are found and returned in the array, that means
- * they have been found in the same loop. The timeout is only reached when
- * <b>no</b> element is found...
+ * Note that the method stop to search as soon as a first element is found. Which
+ * means that the returned array will contain only one element if one has been found.
+ * The timeout is reached when <b>no</b> element is found...
  * </p><p>
- * Note also that only displayed elements are returned.
+ * Note also that the found element if any in the returned array can be either
+ * displayed or hidden.
  * </p>
  * @param parentElement The parent element where to start to search from,
  * if <code>null</code>, then search in the entire page content
- * @param locators List of locators to use to find the elements in the current page.
+ * @param locators List of locators used to search elements.
  * @param displayFlags List of flag telling whether the corresponding element should
  * be displayed or not. If <code>null</code>, then it's assumed that all elements
  * have to be displayed.
  * @param fail Tells whether to fail if none of the locators is find before timeout
  * @param timeout The time to wait before giving up the research
- * @return An array with one non-null slot per element found before timeout
- * occurs or <code>null</code> if none was found and it has been asked not to fail.
+ * @return An array with one element if one is found before timeout occurs or
+ * <code>null</code> if none was found and it has been asked not to fail.
  * @throws WaitElementTimeoutError if no element is found before the timeout occurs
  * and it has been asked to fail.
  */
-public WebBrowserElement[] waitForMultipleElements(final WebBrowserElement parentElement, final By[] locators, final boolean[] displayFlags, final boolean fail, final int timeout) {
+public WebBrowserElement[] waitForFirstElementInList(final WebBrowserElement parentElement, final By[] locators, final boolean[] displayFlags, final boolean fail, final int timeout) {
 	if (DEBUG) {
 		debugPrintEnteringMethod("parentElement", parentElement, "locators", getTextFromList(locators), "displayFlags", getTextFromBooleans(displayFlags,"displayed","hidden"), "fail", fail, "timeout", timeout);
 	}
+
 	// Check arrays length
 	if (displayFlags != null && displayFlags.length != locators.length) {
 		throw new RuntimeException("Invalid lengthes of arrays: "+locators.length+" xpaths and "+displayFlags.length+" displayed flags.");
 	}
-	/*
-	StringBuilder locatorBuilder = new StringBuilder();
-	if (DEBUG) {
-		debugPrint("		+ waiting for multiple elements (fail="+fail+", timeout="+timeout+"): ");
-		String sep = "";
-		int i=0;
-		for (By locator: locators) {
-			locatorBuilder.append(sep+"'"+locator+"'");
-			if (displayFlags != null) {
-				boolean displayed = displayFlags[i++];
-				locatorBuilder.append(" ("+(displayed?"displayed":"hidden")+")");
-			}
-			sep = ", ";
-		}
-		debugPrintln(locatorBuilder.toString());
-	}
-	*/
 
 	// Init
 	final int max = timeout << 2;
@@ -3487,6 +3387,35 @@ public WebBrowserElement[] waitForMultipleElements(final WebBrowserElement paren
 }
 
 /**
+ * Wait until have found a mandatory displayed element using given locator.
+ * <p>
+ * Note that:
+ * <ul>
+ * <li>the search occurs in the entire page or in the current frame if there's
+ * one selected in the browser (see {@link #hasFrame()})</li>
+ * <li>hidden element will be ignored</li>
+ * <li>it will fail if:
+ * <ol>
+ * <li>the element is not found before timeout seconds</li>
+ * <li>there's more than one element found</li>
+ * </ol></li>
+ * </ul>
+ * </p>
+ * </p>
+ * @param locator Locator to find the element in the current page.
+ * @param timeout The time to wait before giving up the research
+ * @return The web element as {@link WebBrowserElement}
+ * @throws WaitElementTimeoutError if no element was found before the timeout and asked to fail
+ * @throws MultipleElementsFoundError if several elements are found and only single one was expected
+ */
+public WebBrowserElement waitForMandatoryDisplayedElement(final By locator, final int timeout) {
+	if (DEBUG) {
+		debugPrintEnteringMethod("locator", getLocatorString(locator), "timeout", timeout);
+	}
+	return waitForElement(null, locator, true/*fail*/, timeout, true/*displayed*/, true/*single*/);
+}
+
+/**
  * Returns the text for the given element if it matches one of the given ones or
  * <code>null</code> if none matches before the given timeout.
  *
@@ -3502,21 +3431,7 @@ public WebBrowserElement[] waitForMultipleElements(final WebBrowserElement paren
  * and if it's asked to fail.
  */
 public String waitForText(final WebBrowserElement element, final boolean fail, final int timeout, final String... texts) {
-	if (DEBUG) {
-		debugPrintEnteringMethod("element", element, "fail", fail, "timeout", timeout, "texts", getTextFromList(texts));
-	}
-
-	/* Get the text web element
-	if (DEBUG) {
-		debugPrint("		+ wait for texts: ");
-		String separator = "";
-		for (String msg : texts) {
-			debugPrint(separator + "\"" + msg + "\"");
-			separator = ", ";
-		}
-		debugPrintln();
-	}
-	*/
+	debugPrintEnteringMethod("element", element, "fail", fail, "timeout", timeout, "texts", getTextFromList(texts));
 
 	// Timeout Loop until timeout is reached
 	int count = 0;
@@ -3560,91 +3475,6 @@ public String waitForText(final WebBrowserElement element, final boolean fail, f
 	return null;
 }
 
-/*
- * DISCARDED As now browser can have several handles...
- */
-///**
-// * Wait for a popup window to be opened and/or closed.
-// * <p>
-// * The possible state to wait for are:
-// * <ul>
-// * <li>0: Wait for the popup window to be opened.</li>
-// * <li>1: Wait for the popup window to be closed.</li>
-// * <li>2: Wait for the popup window to be opened, then closed.</li>
-// * </ul>
-// * </p>
-// * @param state The expected state for the popup window, see above for the
-// * valid values.
-// * @param seconds Timeout in seconds to wait for the expected popup window
-// * status
-// * @param fail Tells whether to fail (ie. throw a {@link ScenarioFailedError}) if
-// * the popup window state does not match the expected one
-// * @return <code>true</code> if the popup window behaved as expected,
-// * <code>false</code> otherwise when no failure is expected
-// * @throws ScenarioFailedError if the popup window does not behave as expected
-// * and failure was requested
-// */
-//public boolean waitForPopupWindowState(final PopupWindowState state, final int seconds, final boolean fail) throws ScenarioFailedError {
-//	if (DEBUG) {
-//		debugPrintln("		+ Wait for a popup window to "+state);
-//	}
-//
-//	// Wait for popup to be opened if necessary
-//	long timeout = seconds * 1000 + System.currentTimeMillis();
-//	if (state != PopupWindowState.CLOSED) {
-//		while (!hasPopupWindow()) {
-//			if (System.currentTimeMillis() > timeout) {
-//				if (fail) {
-//					throw new ScenarioFailedError("Popup window never comes up.");
-//				}
-//				println("WARNING: Popup window never comes up.");
-//				return false;
-//			}
-//			pause(100);
-//		}
-//	}
-//
-//	// Accept certificate
-//	if (isInternetExplorer()) {
-//
-//		// Switch to the popup window
-//		if (DEBUG) debugPrintln("		  -> main window handle "+this.mainWindowHandle);
-//		Iterator<String> iterator = getWindowHandles().iterator();
-//		while (iterator.hasNext()) {
-//			String handle = iterator.next();
-//			if (!handle.equals(this.mainWindowHandle)) {
-//				if (DEBUG) debugPrintln("		  -> switch to window handle "+handle);
-//				this.driver.switchTo().window(handle);
-//				break;
-//			}
-//		}
-//
-//		// Accept certificate
-//		acceptInternetExplorerCertificate();
-//
-//		// Back to main window
-//		switchToMainWindow();
-//	}
-//
-//	// Wait for popup to be closed if necessary
-//	timeout = seconds * 1000 + System.currentTimeMillis();
-//	if (state != PopupWindowState.OPENED) {
-//		while (hasPopupWindow()) {
-//			if (System.currentTimeMillis() > timeout) {
-//				if (fail) {
-//					throw new ScenarioFailedError("Popup window never close down.");
-//				}
-//				println("WARNING: Popup window never close down.");
-//				return false;
-//			}
-//			pause(100);
-//		}
-//	}
-//
-//	// Popup window state is correct
-//	return true;
-//}
-
 /**
  * Returns whether one of the given text is present in the current displayed page
  * content.
@@ -3664,9 +3494,7 @@ public String waitForText(final WebBrowserElement element, final boolean fail, f
  * was reached.
  */
 public WebBrowserElement waitForTextPresent(final WebBrowserElement parentElement, final boolean fail, final int timeout, final boolean displayed, final boolean single, final ComparisonPattern pattern, final String... texts) {
-	if (DEBUG) {
-		debugPrintEnteringMethod("parentElement", parentElement, "fail", fail, "timeout", timeout, "displayed", displayed, "single", single, "pattern", pattern, "texts", getTextFromList(texts));
-	}
+	debugPrintEnteringMethod("parentElement", parentElement, "fail", fail, "timeout", timeout, "displayed", displayed, "single", single, "pattern", pattern, "texts", getTextFromList(texts));
 
 	// Create the search locator
 	By	textBy = ByUtils.xpathMatchingTexts(pattern, false/*all*/, texts);
@@ -3674,10 +3502,6 @@ public WebBrowserElement waitForTextPresent(final WebBrowserElement parentElemen
 	// Return the element found
 	return waitForElement(parentElement, textBy, fail, timeout, displayed, single);
 
-}
-
-public <V> V waitUntil(final Function<WebDriver, V> function) {
-	return new WebDriverWait(this.driver, Timeouts.DEFAULT_TIMEOUT).until(function);
 }
 
 ClickableWorkaroundState workaroundForNotClickableException(final ClickableWorkaroundState state, final WebBrowserElement element, final WebDriverException wde) {

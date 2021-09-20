@@ -183,7 +183,7 @@ public String getText() {
  * </p>
  */
 protected void initSelectionElement() {
-	this.selectionElement = this.selectionLocator == null ? this.element : this.element.waitForMandatoryElement(this.selectionLocator);
+	this.selectionElement = this.selectionLocator == null ? this.element : this.element.waitShortlyForMandatoryDisplayedChildElement(this.selectionLocator);
 }
 
 @Override

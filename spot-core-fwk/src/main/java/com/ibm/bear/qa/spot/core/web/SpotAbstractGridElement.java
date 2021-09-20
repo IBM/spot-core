@@ -195,7 +195,9 @@ protected List<WebBrowserElement> getRowElements(final boolean displayed) {
 	String text = bodyEmptyElement == null ? EMPTY_STRING : bodyEmptyElement.getText();
 	switch (text) {
 		case EMPTY_STRING:
-			return this.element.waitForElements(getRowElementsLocator(), shortTimeout(), displayed);
+			return displayed
+				? this.element.waitForPotentialDisplayedChildrenElements(getRowElementsLocator(), shortTimeout())
+				: this.element.waitForPotentialChildrenElements(getRowElementsLocator(), shortTimeout());
 		case THERE_ARE_NO_ITEMS_TO_DISPLAY:
 		case NO_ITEMS_TO_DISPLAY:
 			return NO_BROWSER_ELEMENT_FOUND;
@@ -254,10 +256,10 @@ protected SortMode getSortMode(final WebBrowserElement hElement) {
  * The status message element.
  * <p>
  * Note that this element is not relative to the current wrapped web element,
- * explaining why this a {@link WebBrowser#waitForElement(By, int)} which is used
- * instead of {@link #waitForMandatoryElement(By)} method...
+ * explaining why it uses {@link WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)}
+ * method instead of {@link #waitShortlyForMandatoryChildElement(By)}...
  * </p><p>
- * TODO Se if there wouldn't be a better place to implement this method (eg {@link WebPage}...
+ * TODO See if there wouldn't be a better place to implement this method (eg {@link WebPage}...
  * </p>
  * @return The corresponding web element
  * @throws WaitElementTimeoutError If the element is not found or not visible in the page
@@ -283,8 +285,8 @@ public WebBrowserElement waitForTableToBeLoaded() {
 	statusTimeout.waitWhile(openTimeout());
 
 	// Get empty and loading elements
-	final WebBrowserElement bodyEmptyElement = this.element.waitForMandatoryVisibleOrHiddenElement(By.cssSelector(".gridxBodyEmpty"));
-	final WebBrowserElement loadElement = this.element.waitForMandatoryVisibleOrHiddenElement(By.className("gridxLoad"));
+	final WebBrowserElement bodyEmptyElement = this.element.waitShortlyForMandatoryChildElement(By.cssSelector(".gridxBodyEmpty"));
+	final WebBrowserElement loadElement = this.element.waitShortlyForMandatoryChildElement(By.className("gridxLoad"));
 
 	// Wait for loading operation end
 	SpotAbstractTimeout timeout = new SpotAbstractTimeout() {

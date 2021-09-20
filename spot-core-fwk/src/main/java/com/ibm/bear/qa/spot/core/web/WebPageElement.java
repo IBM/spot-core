@@ -29,24 +29,59 @@ import com.ibm.bear.qa.spot.core.topology.Application;
 import com.ibm.bear.qa.spot.core.topology.Topology;
 
 /**
- * This class manage a web element belonging to a web page and add some actions and functionalities that anyone can use.
- * It also add some specific operations only accessible to the class hierarchy.
+ * This class manage a web element belonging to a web page and add some actions and functionalities
+ * that anyone can use. It also add some specific operations only accessible to the class hierarchy.
  * <p>
- * There's no public actions at this root level, only common operations for subclasses usage:
+ * This class defines following internal API methods:
  * <ul>
- * <li>{@link #check(By, boolean)}: Set or unset the check-box found inside the current page using the given search mechanism.</li>
- * <li>{@link #check(WebBrowserElement, boolean)}: Set/Unset the given check-box web element.</li>
- * <li>{@link #findElementInFrames(By)}: Find an element inside a frame of the window using the given mechanism.</li>
+ * <li>{@link #getPage()}: Return the web page in which the current element belongs to.</li>
+ * <li>{@link #shortTimeout()}: Return the short timeout used on the page.</li>
+ * <li>{@link #timeout()}: Return the general timeout used on the page.</li>
+ * <li>{@link #waitForMandatoryDisplayedPageElementWithTimeout(By,int)}: Wait until have found a mandatory web element using the given locator and a specific timeout.</li>
+ * <li>{@link #waitForPotentialDisplayedPageElementWithTimeout(By,int)}: Wait until have found a potential web element using the given locator with a specific timeout.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #check(By,boolean)}: Set or unset the check-box found inside the current page using the given locator.</li>
+ * <li>{@link #check(WebBrowserElement,boolean)}: Set/Unset the given check-box web element.</li>
+ * <li>{@link #check(WebBrowserElement,By,boolean)}: Set or unset the check-box found inside the given parent web element using the given locator.</li>
+ * <li>{@link #click(By)}: Click on the web element found in the current page using the given locator.</li>
+ * <li>{@link #click(WebBrowserElement,By)}: Click on the web element found using the given locator relatively to the given parent web element.</li>
+ * <li>{@link #clickButton(By)}: Click on the button found in the current page using the given locator.</li>
+ * <li>{@link #enterText(WebBrowserElement,String)}: Enter the given text in the given text element.</li>
+ * <li>{@link #getApplication()}: Return the application associated with the current page.</li>
+ * <li>{@link #getConfig()}: Return the configuration associated with the current page.</li>
+ * <li>{@link #getFrame()}: Return the frame used inside the wrapped element.</li>
+ * <li>{@link #getNlsMessages()}: Return the NLS messages associated with the web page.</li>
+ * <li>{@link #getTopology()}: Return the current test topology that the current page belongs to.</li>
+ * <li>{@link #getUser()}: Return the user used when the page was loaded.</li>
+ * <li>{@link #hasFrame()}: Return whether a frame is used for the page element or not.</li>
+ * <li>{@link #openPageUsingBrowser(Class,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
+ * <li>{@link #openPageUsingLink(WebBrowserElement,Class,String...)}: Click on the given link assuming that it will open the given page.</li>
+ * <li>{@link #openTimeout()}: Return the timeout while opening the page.</li>
  * <li>{@link #resetFrame()}: Reset the current frame for the current window.</li>
- * <li>{@link #select(By, String)}: Select the given item in the given list element found.</li>
- * <li>{@link #select(WebBrowserElement, String)}: Select the given item in the given list element found.</li>
+ * <li>{@link #resetTimeout()}: Reset current timeout.</li>
+ * <li>{@link #scrollToMakeElementVisible(WebBrowserElement)}: Scroll the current page window to make the given web element visible.</li>
+ * <li>{@link #select(By,String)}: Select the given item in the given list element found.</li>
+ * <li>{@link #select(WebBrowserElement,String)}: Select the given item in the given list element found.</li>
  * <li>{@link #selectFrame()}: Select the frame in which the current window is expected to be found.</li>
+ * <li>{@link #startTimeout(int,String)}: Start a timeout of the given seconds;</li>
  * <li>{@link #storeBrowserFrame()}: Store the browser the frame.</li>
  * <li>{@link #switchToBrowserFrame()}: Switch to initial browser frame.</li>
- * <li>{@link #switchToStoredFrame()}: Switch to stored frame.</li>
- * <li>{@link #typeText(WebBrowserElement, By, String)}: Type a text into an input web element found inside the given parent web element using the given mechanism.</li>
- * <li>{@link #waitForElement(By)}: Wait until having found an element searched using the given mechanism.</li>
- * <li>{@link #waitForElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given mechanism.</li>
+ * <li>{@link #switchToStoredFrame()}: Switch to element frame.</li>
+ * <li>{@link #testTimeout()}: Test whether the current timeout has been reached or not.</li>
+ * <li>{@link #typePassword(WebBrowserElement,SpotUser)}: Type a password into the given input web element.</li>
+ * <li>{@link #typeText(By,String)}: Type a text into an input web element found in the current page using the given locator.</li>
+ * <li>{@link #typeText(WebBrowserElement,By,String)}: Type a text into an input web element found inside the given parent web element using the given locator.</li>
+ * <li>{@link #typeText(WebBrowserElement,String)}: Type a text into the given input web element found.</li>
+ * <li>{@link #waitForFirstMandatoryDisplayedPageElementInList(By...)}: Wait until have found and identify one of the elements using the given locators list.</li>
+ * <li>{@link #waitForMandatoryDisplayedPageElement(By)}: Wait until have found the web element using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedPageElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedPageElementsWithTimeout(By,int)}: Wait until have found some (ie. at least one) web elements using the given locator and a specific timeout.</li>
+ * <li>{@link #waitForMandatoryPageElement(By)}: Wait until have found a possibly hidden web element using the given locator.</li>
+ * <li>{@link #waitForPotentialDisplayedPageElementsWithTimeout(By,int)}: Wait until have potentially found some (ie. at least one) web elements using the given locator and a specific timeout.</li>
+ * <li>{@link #workaround(String)}: TODO Add a javadoc with a meaningful summary to this method !</li>
  * </ul>
  * </p>
  */
@@ -162,13 +197,6 @@ protected WebBrowserElement click(final By locator) {
 }
 
 /**
- * @see WebPage#click(By, By)
- */
-protected WebBrowserElement click(final By parentLocator, final By locator) {
-	return this.page.click(parentLocator, locator);
-}
-
-/**
  * @see WebPage#click(WebBrowserElement, By)
  */
 protected WebBrowserElement click(final WebBrowserElement parentElement, final By locator) {
@@ -183,29 +211,16 @@ protected WebBrowserElement clickButton(final By locator) {
 }
 
 /**
- * Find an element inside a frame of the window using the given mechanism.
+ * Enter the given text in the given text element.
  * <p>
- * TODO Try to get rid off this method by selecting the frame explicitly before
- * looking for an element.
+ * Note that the text element content will be replaced by the given text (ie. cleared
+ * before typing the text in it. Note also that the <b>Enter</b> key will be hit after
+ * having typing the text in the text element.
  * </p>
- * @param by The mechanism use to find the element
- * @return The found web element as {@link WebBrowserElement} or
- * <code>null</code> if the element is not found.
- * @deprecated Do not use this method but apply the recommended TODO...
+ * @see WebBrowser#typeText(WebBrowserElement, String, org.openqa.selenium.Keys, boolean, int)
  */
-@Deprecated
-protected WebBrowserElement findElementInFrames(final By by) {
-
-	// Get the element in the appropriate frame
-	WebBrowserElement foundElement = this.browser.findElementInFrames(by);
-
-	// Assign the found frame to current window
-	if (foundElement != null) {
-		this.frames[2] = this.browser.getCurrentFrame();
-	}
-
-	// Store the browser frame
-	return foundElement;
+protected void enterText(final WebBrowserElement inputElement, final String text) {
+	this.browser.typeText(inputElement, text, Keys.ENTER, /*clear:*/true, timeout());
 }
 
 /**
@@ -233,21 +248,21 @@ protected WebBrowserFrame getFrame() {
 }
 
 /**
- * Return the web page in which the current element belongs to.
- *
- * @return The page as a subclass of {@link WebPage}
- */
-public WebPage getPage() {
-	return this.page;
-}
-
-/**
  * Return the NLS messages associated with the web page.
  *
  * @return The messages as {@link NlsMessages}.
  */
 protected NlsMessages getNlsMessages() {
 	return this.page.getNlsMessages();
+}
+
+/**
+ * Return the web page in which the current element belongs to.
+ *
+ * @return The page as a subclass of {@link WebPage}
+ */
+public WebPage getPage() {
+	return this.page;
 }
 
 /**
@@ -431,7 +446,8 @@ protected void switchToStoredFrame() {
 /**
  * Test whether the current timeout has been reached or not.
  *
- * @throws ScenarioFailedError If the timeout has been reached or if no timeout
+ * @throws ScenarioFailedError If no timeout was set.
+ * @throws WaitElementTimeoutError If the timeout has been reached
  * was set.
  */
 protected void testTimeout() {
@@ -464,10 +480,10 @@ protected WebBrowserElement typeText(final By locator, final String text) {
 }
 
 /**
- * @see WebPage#typeText(WebBrowserElement, By, String)
+ * @see WebPage#typeTextWithParent(WebBrowserElement, By, String)
  */
 protected WebBrowserElement typeText(final WebBrowserElement parentElement, final By locator, final String text) {
-	return this.page.typeText(parentElement, locator, text);
+	return this.page.typeTextWithParent(parentElement, locator, text);
 }
 
 /**
@@ -478,100 +494,59 @@ protected void typeText(final WebBrowserElement inputElement, final String text)
 }
 
 /**
- * Enter the given text in the given text element.
- * <p>
- * Note that the text element content will be replaced by the given text (ie. cleared
- * before typing the text in it. Note also that the <b>Enter</b> key will be hit after
- * having typing the text in the text element.
- * </p>
- * @see WebBrowser#typeText(WebBrowserElement, String, org.openqa.selenium.Keys, boolean, int)
+ * @see WebPage#waitForFirstMandatoryDisplayedElementInList(By...)
  */
-protected void enterText(final WebBrowserElement inputElement, final String text) {
-	this.browser.typeText(inputElement, text, Keys.ENTER, /*clear:*/true, timeout());
+protected WebBrowserElement[] waitForFirstMandatoryDisplayedPageElementInList(final By... locators) {
+	return this.page.waitForFirstMandatoryDisplayedElementInList(locators);
 }
 
 /**
- * @see WebPage#waitForElement(By)
+ * @see WebPage#waitForMandatoryDisplayedElement(By)
  */
-protected WebBrowserElement waitForElement(final By locator) {
-	return this.page.waitForElement(locator);
+protected WebBrowserElement waitForMandatoryDisplayedPageElement(final By locator) {
+	return this.page.waitForMandatoryDisplayedElement(locator);
 }
 
 /**
- * @see WebPage#waitForElement(By, boolean)
+ * @see WebPage#waitForMandatoryDisplayedElements(By)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean displayed) {
-	return this.page.waitForElement(locator, displayed);
+protected List<WebBrowserElement> waitForMandatoryDisplayedPageElements(final By locator) {
+	return this.page.waitForMandatoryDisplayedElements(locator);
 }
 
 /**
- * @see WebPage#waitForElement(By, boolean, int)
+ * @see WebPage#waitForMandatoryDisplayedElementsWithTimeout(By, int)
  */
-public WebBrowserElement waitForElement(final By locator, final boolean fail, final int timeout) {
-	return this.page.waitForElement(locator, fail, timeout);
+protected List<WebBrowserElement> waitForMandatoryDisplayedPageElementsWithTimeout(final By locator, final int timeout) {
+	return this.page.waitForMandatoryDisplayedElementsWithTimeout(locator, timeout);
 }
 
 /**
- * @see WebPage#waitForElement(By, boolean, int, boolean)
+ * @see WebPage#waitForMandatoryDisplayedElementWithTimeout(By, int)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean fail, final int timeout, final boolean displayed) {
-	return this.page.waitForElement(locator, fail, timeout, displayed);
+public WebBrowserElement waitForMandatoryDisplayedPageElementWithTimeout(final By locator, final int timeout) {
+	return this.page.waitForMandatoryDisplayedElementWithTimeout(locator, timeout);
 }
 
 /**
- * @see WebPage#waitForElement(By, boolean, int, boolean, boolean)
+ * @see WebPage#waitForMandatoryElement(By)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean fail, final int timeout, final boolean displayed, final boolean single) {
-	return this.page.waitForElement(locator, fail, timeout, displayed, single);
+protected WebBrowserElement waitForMandatoryPageElement(final By locator) {
+	return this.page.waitForMandatoryElement(locator);
 }
 
 /**
- * @see WebPage#waitForElements(By)
+ * @see WebPage#waitForPotentialDisplayedElementsWithTimeout(By, int)
  */
-protected List<WebBrowserElement> waitForElements(final By locator) {
-	return this.page.waitForElements(locator);
+protected List<WebBrowserElement> waitForPotentialDisplayedPageElementsWithTimeout(final By locator, final int timeout) {
+	return this.page.waitForPotentialDisplayedElementsWithTimeout(locator, timeout);
 }
 
 /**
- * @see WebPage#waitForElements(By, int)
+ * @see WebPage#waitForPotentialDisplayedElementWithTimeout(By, int)
  */
-protected List<WebBrowserElement> waitForElements(final By locator, final boolean fail, final int timeout) {
-	return this.page.waitForElements(locator, fail, timeout);
-}
-
-/**
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final boolean fail, final int time_out, final boolean displayed) {
-	return this.browser.waitForElements(null, locator, fail, time_out, displayed);
-}
-
-/**
- * @see WebPage#waitForElements(By, int)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final int timeout) {
-	return this.page.waitForElements(locator, timeout);
-}
-
-/**
- * @see WebPage#waitForElements(By, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final boolean fail) {
-	return this.page.waitForElements(locator, fail);
-}
-
-/**
- * @see WebPage#waitForElements(By, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final int timeout, final boolean fail) {
-	return this.page.waitForElements(locator, timeout, fail);
-}
-
-/**
- * @see WebPage#waitForMultipleElements(By...)
- */
-protected WebBrowserElement[] waitForMultipleElements(final By... locators) {
-	return this.page.waitForMultipleElements(locators);
+public WebBrowserElement waitForPotentialDisplayedPageElementWithTimeout(final By locator, final int timeout) {
+	return this.page.waitForPotentialDisplayedElementWithTimeout(locator, timeout);
 }
 
 /**

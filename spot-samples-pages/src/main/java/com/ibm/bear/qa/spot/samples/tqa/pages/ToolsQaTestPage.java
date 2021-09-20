@@ -86,7 +86,7 @@ public ToolsQaTestDialogsContainer getDialogsTest() {
 }
 
 private WebBrowserElement getGroupElement(final Group group) {
-	return waitForElement(By.xpath("//div[@class='element-group' and .//div[@class='header-text' and text()='"+group.getLabel()+"']]"));
+	return waitForMandatoryDisplayedElement(By.xpath("//div[@class='element-group' and .//div[@class='header-text' and text()='"+group.getLabel()+"']]"));
 }
 
 /**
@@ -134,19 +134,19 @@ protected void load() {
 private ToolsQaGroupMenu openGroupMenu(final Group group) {
 
 	// Get group elements
-	List<WebBrowserElement> groupElements = waitForElements(By.className("element-group"));
+	List<WebBrowserElement> groupElements = waitForMandatoryDisplayedElements(By.className("element-group"));
 
 	// Look for given group
 	for (WebBrowserElement groupElement: groupElements) {
 
 		// Get text and button elements
-		WebBrowserElement textElement = groupElement.waitForMandatoryElement(By.className("header-text"));
-		WebBrowserElement buttonElement = groupElement.waitForMandatoryElement(By.xpath(".//div[@class='icon']"));
+		WebBrowserElement textElement = groupElement.waitShortlyForMandatoryDisplayedChildElement(By.className("header-text"));
+		WebBrowserElement buttonElement = groupElement.waitShortlyForMandatoryDisplayedChildElement(By.xpath(".//div[@class='icon']"));
 
 		// If group is found, select it and expand it
 		if (textElement.getText().contains(group.getLabel())) {
 			// Get menu element
-			WebBrowserElement menuElement = groupElement.waitForMandatoryVisibleOrHiddenElement(By.tagName("ul"));
+			WebBrowserElement menuElement = groupElement.waitShortlyForMandatoryChildElement(By.tagName("ul"));
 
 			// Select group and expand it
 			ToolsQaGroupMenu groupMenu = new ToolsQaGroupMenu(this, menuElement);
@@ -157,7 +157,7 @@ private ToolsQaGroupMenu openGroupMenu(final Group group) {
 		}
 
 		// Close opened groups
-		WebBrowserElement listElement = groupElement.waitForMandatoryVisibleOrHiddenElement(By.className("element-list"));
+		WebBrowserElement listElement = groupElement.waitShortlyForMandatoryChildElement(By.className("element-list"));
 		if (listElement.getAttributeClass().contains("show")) {
 			buttonElement.click();
 		}
@@ -178,6 +178,6 @@ public void select(final Group group) {
 }
 
 private WebBrowserElement waitForContainerElement(final boolean fail) {
-	return waitForElement(By.className("container"), fail, fail ? 1 : timeout());
+	return this.browser.waitForElement(null, By.className("container"), fail, fail ? 1 : timeout(), /*displayed:*/ true, /*single:*/ true);
 }
 }

@@ -43,36 +43,307 @@ import com.ibm.bear.qa.spot.core.scenario.errors.*;
 import com.ibm.bear.qa.spot.core.timeout.SpotAbstractTimeout;
 import com.ibm.bear.qa.spot.core.topology.Application;
 import com.ibm.bear.qa.spot.core.topology.Topology;
-import com.ibm.bear.qa.spot.core.utils.ByUtils.ComparisonPattern;
 import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
 
 /**
- * The abstract class for any web page connected to a {@link WebBrowser}.
+ * The abstract class for any web page connected to a {@link WebBrowser} .
  * <p>
- * A web page is created using a {@link #location} which is the initial url sent to
- * the browser to load the page. It may slightly differ from the browser current
- * url after it has been loaded (see {@link #getUrl()}.
- * </p><p>
- * It also stores the configuration used while running the test in order
- * to access any necessary information from it (e.g. timeouts).
- * </p><p>
- * Finally, the web page is also associated with a {@link #getUser()} as its content
- * might slightly or completely differ depending of it. This user let also the page
- * know whether a login operation when a new one is connected to it.
- * </p><p>
- * This class provides the following basic functionalities:
- * <ul>
- * <li>{@link #get()}: get page content.</li>
- * </ul>
- * It also provides several convenient methods to access basic browser functionalities
- * directly from the page:
- * <ul>
- * </ul>
+ * It also stores the configuration used while running the test in order to access any necessary
+ * information from it (e.g. timeouts).
  * </p><p>
  * </p>
  * TODO Rename this class as <b>WebAbstractPage</b>
+ * <p>
+ * This class defines following public API methods of {@link SpotPage} interface:
+ * <ul>
+ * <li>{@link #getLocation()}: Return the page location used when creating it.</li>
+ * <li>{@link #getTitle()}: Return the page title.</li>
+ * <li>{@link #refresh()}: Refresh the page content using {@link WebBrowser#refresh()} and wait for the page to be loaded.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines following internal API methods:
+ * <ul>
+ * <li>{@link #checkHoverTitle(WebBrowserElement,Class)}: Check the hover title of the given link element.</li>
+ * <li>{@link #checkRichHover(WebBrowserElement,Class,String...)}: Check the rich hover of the given link element.</li>
+ * <li>{@link #click(WebBrowserElement,By)}: Click on the web element found using the given locator relatively to</li>
+ * <li>{@link #clickButton(By)}: Click on the button found in the current page using the given locator.</li>
+ * <li>{@link #clickButton(By,boolean)}: Click on the button found in the current page using the given locator.</li>
+ * <li>{@link #equals(Object)}: Compares the argument to the receiver, and answers true</li>
+ * <li>{@link #get()}: Get the page content.</li>
+ * <li>{@link #getApplication()}: Return the application associated with the current page.</li>
+ * <li>{@link #getBrowser()}: Return the browser associated with the current page.</li>
+ * <li>{@link #getConfig()}: Return the configuration associated with the current page.</li>
+ * <li>{@link #getLocationUrl()}: Return the page location used when creating it</li>
+ * <li>{@link #getUrl()}: Return the URL of the page loaded in the browser.</li>
+ * <li>{@link #getUser()}: Return the user used when the page was loaded.</li>
+ * <li>{@link #goBack()}: Move back a single "item" in the browser's history.</li>
+ * <li>{@link #hashCode()}: Answers an integer hash code for the receiver. Any two</li>
+ * <li>{@link #login(User)}: Login the page from current user to the given user.</li>
+ * <li>{@link #login(User,boolean)}: Login the page from current user to the given user.</li>
+ * <li>{@link #logout()}: Perform a logout operation.</li>
+ * <li>{@link #openAndWaitForPage(String,SpotConfig,SpotUser,Class,String...)}: Helper method to open a page and wait until it's finished loading.</li>
+ * <li>{@link #openMenu(By,By)}: Open a menu by clicking on the link element found using the given locator.</li>
+ * <li>{@link #openMenu(By,By,Class)}: Open a menu by clicking on the link element found using the given locator.</li>
+ * <li>{@link #openMenu(WebBrowserElement,By,Class)}: Open a menu by clicking on the given link element.</li>
+ * <li>{@link #openPage(String,Config,User,Class,String...)}: Open the page for the given location.</li>
+ * <li>{@link #openPageUsingBrowser(Class,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
+ * <li>{@link #openPageUsingBrowserWithoutWaiting(Class,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
+ * <li>{@link #openPageUsingHoverTitle(WebRichHover,Class,String...)}: Click on the given hover title to open a new page.</li>
+ * <li>{@link #openPageUsingLink(By,User,Class,String...)}: Click on the link found using the given locator assuming that will open</li>
+ * <li>{@link #openPageUsingLink(WebBrowserElement,By,User,Class,boolean,int,String...)}: Click on the link found using the given locator assuming that will open</li>
+ * <li>{@link #openPageUsingLink(WebBrowserElement,Class,String...)}: Click on the given link assuming that will open a new page.</li>
+ * <li>{@link #openPageUsingLink(WebBrowserElement,Config,User,Class,String...)}: Click on the given link assuming that will open a new page.</li>
+ * <li>{@link #openPageUsingLink(WebBrowserElement,User,Class,String...)}: Click on the given link assuming that will open a new page.</li>
+ * <li>{@link #openTimeout()}: Return the timeout while opening the page.</li>
+ * <li>{@link #parkMouse()}: Park the mouse at a location where links are not found in order to prevent unexpected rich hovers</li>
+ * <li>{@link #reopenPage(WebPage,SpotUser)}: Reopen the given page.</li>
+ * <li>{@link #richHoverOverLink(WebBrowserElement,Class,String...)}: Perform a mouse hovering over the given link element.</li>
+ * <li>{@link #scrollDown()}: Scroll the page down.</li>
+ * <li>{@link #scrollToTop()}: Scroll the page to top.</li>
+ * <li>{@link #scrollUp()}: Scroll the page up.</li>
+ * <li>{@link #shortTimeout()}: Return the short timeout used on the page.</li>
+ * <li>{@link #takeSnapshotFailure(String)}: Takes a failure snapshot.</li>
+ * <li>{@link #takeSnapshotInfo(String)}: Takes an information snapshot.</li>
+ * <li>{@link #takeSnapshotWarning(String)}: Takes a warning snapshot.</li>
+ * <li>{@link #timeout()}: Return the general timeout used on the page.</li>
+ * <li>{@link #toString()}: Answers a string containing a concise, human-readable</li>
+ * <li>{@link #waitForMandatoryDisplayedElement(By)}: Wait until have found the web element using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedElementWithTimeout(By,int)}: Wait until have found a mandatory web element using the given locator and a specific timeout.</li>
+ * <li>{@link #waitForFirstMandatoryDisplayedElementInList(By...)}: Wait until have found and identify one of the elements using the given locators list.</li>
+ * <li>{@link #waitForPotentialDisplayedElementWithTimeout(By,int)}: Wait until have found a potential web element using the given locator with a specific timeout.</li>
+ * <li>{@link #waitForPotentialElementWithTimeout(By,int)}: Wait until have found the web element using the given locator.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #addPerfResult(RegressionType,String)}: Add a performance result if manager is activated.</li>
+ * <li>{@link #check(By)}: Set on the check-box found in the page using the given locator.</li>
+ * <li>{@link #check(By,boolean)}: Set or unset the check-box found inside the current page using the given locator.</li>
+ * <li>{@link #check(By,boolean,boolean)}: Set or unset the check-box found inside the current page using the given locator</li>
+ * <li>{@link #check(WebBrowserElement)}: Set on the given check-box web element.</li>
+ * <li>{@link #check(WebBrowserElement,boolean)}: Set/Unset the given check-box web element.</li>
+ * <li>{@link #check(WebBrowserElement,By,int,boolean)}: Toggle the check-box found inside the given parent web element using</li>
+ * <li>{@link #click(By)}: Click on the web element found in the current page using the given locator.</li>
+ * <li>{@link #click(By,By)}: Click on the web element found relatively to the parent web element found</li>
+ * <li>{@link #clickButton(By,int)}: Click on the button found in the current page using the given locator.</li>
+ * <li>{@link #clickButton(WebBrowserElement,boolean)}: Click on the given button.</li>
+ * <li>{@link #clickButton(WebBrowserElement,By)}: Click on the button found relatively to the given parent web element.</li>
+ * <li>{@link #clickButton(WebBrowserElement,By,boolean)}: Click on the button found relatively to the given parent web element.</li>
+ * <li>{@link #clickOnLink(By)}: Click on a link element found in the current page using the given locator.</li>
+ * <li>{@link #createPage(String,Config,User,Class)}: Retrieve the existing page for the given location or create it using given config and user if it is the first time the page is requested.</li>
+ * <li>{@link #createPage(String,Config,User,Class,String...)}: Retrieve the existing page for the given location or create it using given config, user and specific data if it is the first time the page is requested.</li>
+ * <li>{@link #createPageInstance(String,Config,User,Class,String...)}: Create a page instance of the given class for the given location using the given configuration, user and data.</li>
+ * <li>{@link #findElement(By)}: Find an element in the current browser page for the given locator.</li>
+ * <li>{@link #getLoggedUserElementLocator()}: Return the locator of the web element displaying the logged user name.</li>
+ * <li>{@link #getLoginOperation(User)}: Return a login operation instance dedicated to the current page and given user.</li>
+ * <li>{@link #getNlsMessages()}: Return the NLS messages manager.</li>
+ * <li>{@link #getRootElement()}: Get the root web element of the current web page.</li>
+ * <li>{@link #getRootElementLocator()}: Return the locator for the root web element of the current web page.</li>
+ * <li>{@link #getTopology()}: Return the current test topology that the current page belongs to.</li>
+ * <li>{@link #hoverOverLink(WebBrowserElement,Class)}: Perform a mouse hovering over the given link element.</li>
+ * <li>{@link #initNlsMessages()}: Initialize and return the NLS messages instance.</li>
+ * <li>{@link #isLoaded()}: Return whether the page is currently loaded or not.</li>
+ * <li>{@link #load()}: Load the current page into the browser.</li>
+ * <li>{@link #matchBrowserUrl()}: Return whether the current page location matches the browser URL or not.</li>
+ * <li>{@link #matchDisplayedUser(User,WebBrowserElement)}: Return whether the displayed user matches the user name or not.</li>
+ * <li>{@link #performLogout()}: Logout the page from current user to new user.</li>
+ * <li>{@link #scrollToMakeElementVisible(WebBrowserElement)}: Scroll the current page window to make the given web element visible.</li>
+ * <li>{@link #select(By,String)}: Select the given item in the list element found using the given locator.</li>
+ * <li>{@link #select(By,String,StringComparisonCriterion...)}: Select the given item in the list element found using the given locator.</li>
+ * <li>{@link #select(WebBrowserElement,String)}: Select the given item in the given list element found.</li>
+ * <li>{@link #setOpenTimeout(int)}: Set the timeout while opening the page.</li>
+ * <li>{@link #setPerfManagerRegressionType(RegressionType,boolean)}: Set regression type on performances manager.</li>
+ * <li>{@link #setPerfManagerUserActionName(String)}: Set user action name on performances manager.</li>
+ * <li>{@link #setShortTimeout(int)}: Set the short timeout used to search for element in the page.</li>
+ * <li>{@link #setTimeout(int)}: Set the timeout used to search for element in the page.</li>
+ * <li>{@link #startPerfManagerServerTimer()}: Starts the perfManager server timer</li>
+ * <li>{@link #stripBrowserUrl(String)}: Strip some section from the browser url.</li>
+ * <li>{@link #typePassword(WebBrowserElement,SpotUser)}: Type a password into the given input web element.</li>
+ * <li>{@link #typeText(By,String)}: Type a text into an input web element found in the current page using the</li>
+ * <li>{@link #typeText(WebBrowserElement,String)}: Type a text into the given input web element found.</li>
+ * <li>{@link #typeTextWithParent(WebBrowserElement,By,String)}: Type a text into an input web element found inside the given parent web element</li>
+ * <li>{@link #verifyPageUser()}: Verify that page user matches the expected one.</li>
+ * <li>{@link #waitForLoadingPageEnd()}: Wait for the page loading to be finished.</li>
+ * <li>{@link #waitForMandatoryDisplayedElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedElementsWithTimeout(By,int)}: Wait until have found some (ie. at least one) web elements using the given locator and a specific timeout.</li>
+ * <li>{@link #waitForMandatoryElement(By)}: Wait until have found a possibly hidden web element using the given locator.</li>
+ * <li>{@link #waitForPotentialDisplayedElementsWithTimeout(By,int)}: Wait until have potentially found some (ie. at least one) web elements using the given locator and a specific timeout.</li>
+ * <li>{@link #waitInitialPageLoading()}: Wait for the page initial load.</li>
+ * <li>{@link #waitInitialPageLoading(boolean)}: Wait for the page initial load.</li>
+ * <li>{@link #workaround(String)}: Execute a workaround to avoid raising the given</li>
+ * </ul>
+ * </p>
  */
 public abstract class WebPage implements SpotPage {
+
+	/**
+	 * Retrieve the existing page for the given location or create it using given config and user if it is the first time the page is requested.
+	 *
+	 * @param <P> The class of the created page
+	 * @param location The location of the page to be created
+	 * @param config The scenario configuration
+	 * @param user The user assoicated with the page
+	 * @param pageClass The class of the created page
+	 * @return The page instance
+	 */
+	// TODO Move page creation to WebBrowser
+	protected static <P extends WebPage> P createPage(final String location, final Config config, final User user, final Class<P> pageClass) {
+		return createPage(location, config, user, pageClass, (String[]) null);
+	}
+
+	/**
+	 * Retrieve the existing page for the given location or create it using given config, user and specific data if it is the first time the page is requested.
+	 *
+	 * @param <P> The class of the created page
+	 * @param location The location of the page to be created
+	 * @param config The scenario configuration
+	 * @param user The user assoicated with the page
+	 * @param pageClass The class of the created page
+	 * @return The page instance
+	 */
+	// TODO Move page creation to WebBrowser
+	@SuppressWarnings("unchecked")
+	protected static <P extends WebPage> P createPage(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
+		String newlocation = hidePasswordInLocation(location);
+		if (DEBUG) {
+			debugPrintln("		+ Create page "+newlocation+ " for user "+user);
+			debugPrintln("		  -> location: "+newlocation);
+			debugPrintln("		  -> user: "+user);
+			debugPrintln("		  -> class:    "+pageClass.getName());
+		}
+
+		// Get the page from cache
+		String locationKey = location;
+		BrowsersManager manager= config.getBrowserManager();
+		WebBrowser browser = manager.getBrowser(user);
+		P page = (P) browser.cachedPage(locationKey, user);
+
+		// If page does not exist create it
+		if (page == null) {
+			page = createPageInstance(location, config, user, pageClass, data);
+		} else {
+			if (DEBUG) debugPrintln("		  - > found page at "+newlocation+": "+hidePasswordInLocation(page.location));
+			if (page.getClass() != pageClass && page.getClass().getSuperclass() != pageClass) {
+				throw new ScenarioFailedError("Unexpected page class '"+getClassSimpleName(page.getClass())+"', expecting '"+getClassSimpleName(pageClass)+"' instead.");
+			}
+			if (user != null && !user.equals(page.getUser())) {
+				if (DEBUG) {
+					String pageUserId = page.getUser() == null ? "no user" : page.getUser().getId();
+					debugPrintln("		  - > change page user from "+pageUserId+" to "+user.getId());
+				}
+				page.login(user);
+			}
+
+			// Refresh page data
+			page.data = data;
+		}
+
+		// Add page to history
+		browser.cachePage(page);
+
+		// Return the page
+		return page;
+	}
+
+	/**
+	 * Create a page instance of the given class for the given location using the given configuration, user and data.
+	 *
+	 * @param <P> The class of the created page
+	 * @param location The location of the page to be created
+	 * @param config The scenario configuration
+	 * @param user The user assoicated with the page
+	 * @param pageClass The class of the created page
+	 * @return The created page instance
+	 */
+	// TODO Move page creation and cache to WebBrowser
+	@SuppressWarnings("unchecked")
+	protected static <P> P createPageInstance(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
+		Exception exception = null;
+		Class<? extends User> userClass = user == null ? User.class : user.getClass();
+		while (userClass.getSuperclass() != null) {
+			Class<? extends Config> configClass = config.getClass();
+			while (configClass.getSuperclass() != null) {
+				try {
+					if (data == null || data.length == 0) {
+						Constructor<P> constructor = pageClass.getConstructor(String.class, configClass, userClass);
+						return constructor.newInstance(location, config, user);
+					}
+					Constructor<P> constructor = pageClass.getConstructor(String.class, configClass, userClass, String[].class);
+					return constructor.newInstance(location, config, user, data);
+				}
+				catch (NoSuchMethodException ex) {
+					if (exception == null) {
+						exception = ex;
+					}
+				}
+				catch (InvocationTargetException ite) {
+					throw new ScenarioFailedError(ite.getTargetException());
+				}
+				catch (Exception ex) {
+					throw new ScenarioFailedError(ex);
+				}
+				configClass = (Class< ? extends Config>) configClass.getSuperclass();
+			}
+			userClass = (Class< ? extends User>) userClass.getSuperclass();
+		}
+		throw new ScenarioImplementationError(exception);
+	}
+
+	/**
+	 * Open the page for the given location.
+	 * <p>
+	 * Note that if it's the first time the page is requested, it's created using provided
+	 * parameters . Otheriwse it's got from the cache.
+	 * </p>
+	 * @param location The url of the page
+	 * @param config The config to use for the requested page
+	 * @param user The user to use on the requested page
+	 * @param pageClass The class associated with the page to open
+	 * @param data Additional CLM information to be stored in the page
+	 * @return The instance of the class associate with the page.
+	 */
+	// TODO Move page creation to WebBrowser
+	public static <P extends WebPage> P openPage(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
+
+		// Create page
+		P page = createPage(location, config, user, pageClass, data);
+
+		// Set performance user action if any
+		if (PERFORMANCE_ENABLED) {
+			page.setPerfManagerUserActionName(USER_ACTION_NOT_PROVIDED);
+		}
+
+		// Get the page content
+		page.get();
+
+		// Return page
+		return page;
+	}
+
+	/**
+	 * Reopen the given page.
+	 * <p>
+	 * This specific method is used when restarting the browser on the given page.
+	 * It can also be used to force the page reloading.
+	 * </p>
+	 * @param page The page to reopen
+	 * @param user The user associated with the page. It's necessary because the
+	 * login information of the provided page might have been reset prior the call...
+	 * @return The instance of the class associate with the page.
+	 */
+	public static WebPage reopenPage(final WebPage page, final SpotUser user) {
+		debugPrintEnteringMethod("page", page.location, "user", user.getId());
+		page.forceReload = true;
+		WebPage reopenedPage = null;
+		try {
+			reopenedPage = openPage(page.location, page.config, (User) user, page.getClass(), page.data);
+		} finally {
+			if (reopenedPage != null) {
+				reopenedPage.forceReload = false;
+			}
+		}
+		return reopenedPage;
+	}
 
 	// The browser in which the current page is displayed
 	protected WebBrowser browser;
@@ -90,6 +361,7 @@ public abstract class WebPage implements SpotPage {
 
 	// Info telling whether a refresh has been applied or force a reload
 	protected boolean refreshed = false;
+
 	boolean forceReload;
 
 	// Timeouts
@@ -169,331 +441,6 @@ protected WebPage(final String url, final Config config, final User user, final 
 	this.data = infos;
 }
 
-// TODO Move page creation to WebBrowser
-protected static <P extends WebPage> P createPage(final String location, final Config config, final User user, final Class<P> pageClass) {
-	return createPage(location, config, user, pageClass, (String[]) null);
-}
-
-// TODO Move page creation to WebBrowser
-@SuppressWarnings("unchecked")
-protected static <P extends WebPage> P createPage(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
-	String newlocation = hidePasswordInLocation(location);
-	if (DEBUG) {
-		debugPrintln("		+ Create page "+newlocation+ " for user "+user);
-		debugPrintln("		  -> location: "+newlocation);
-		debugPrintln("		  -> user: "+user);
-		debugPrintln("		  -> class:    "+pageClass.getName());
-	}
-
-	// Get the page from cache
-	String locationKey = location;
-	BrowsersManager manager= config.getBrowserManager();
-	WebBrowser browser = manager.getBrowser(user);
-	P page = (P) browser.cachedPage(locationKey, user);
-
-	// If page does not exist create it
-	if (page == null) {
-		page = createPageInstance(location, config, user, pageClass, data);
-	} else {
-		if (DEBUG) debugPrintln("		  - > found page at "+newlocation+": "+hidePasswordInLocation(page.location));
-		if (page.getClass() != pageClass && page.getClass().getSuperclass() != pageClass) {
-			throw new ScenarioFailedError("Unexpected page class '"+getClassSimpleName(page.getClass())+"', expecting '"+getClassSimpleName(pageClass)+"' instead.");
-		}
-		if (user != null && !user.equals(page.getUser())) {
-			if (DEBUG) {
-				String pageUserId = page.getUser() == null ? "no user" : page.getUser().getId();
-				debugPrintln("		  - > change page user from "+pageUserId+" to "+user.getId());
-			}
-			page.login(user);
-		}
-
-		// Refresh page data
-		page.data = data;
-	}
-
-	// Add page to history
-	browser.cachePage(page);
-
-	// Return the page
-	return page;
-}
-
-// TODO Move page creation and cache to WebBrowser
-@SuppressWarnings("unchecked")
-protected static <P> P createPageInstance(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
-	Exception exception = null;
-	Class<? extends User> userClass = user == null ? User.class : user.getClass();
-	while (userClass.getSuperclass() != null) {
-		Class<? extends Config> configClass = config.getClass();
-		while (configClass.getSuperclass() != null) {
-			try {
-				if (data == null || data.length == 0) {
-					Constructor<P> constructor = pageClass.getConstructor(String.class, configClass, userClass);
-					return constructor.newInstance(location, config, user);
-				}
-				Constructor<P> constructor = pageClass.getConstructor(String.class, configClass, userClass, String[].class);
-				return constructor.newInstance(location, config, user, data);
-			}
-			catch (NoSuchMethodException ex) {
-				if (exception == null) {
-					exception = ex;
-				}
-			}
-			catch (InvocationTargetException ite) {
-				throw new ScenarioFailedError(ite.getTargetException());
-			}
-			catch (Exception ex) {
-				throw new ScenarioFailedError(ex);
-			}
-			configClass = (Class< ? extends Config>) configClass.getSuperclass();
-		}
-		userClass = (Class< ? extends User>) userClass.getSuperclass();
-	}
-	throw new ScenarioImplementationError(exception);
-}
-
-/* Cache has been moved to WebBrowser... */
-///**
-// * Clear web pages history.
-// */
-//public void clearHistory() {
-//	this.browser.pagesCache.clear();
-//}
-
-//private List<WebPage> getPagesHistory() {
-//	return PAGES_HISTORY.get();
-//}
-
-///**
-// * Return the first page found in the history.
-// *
-// * @param location The page location
-// * @param user The user associated with the page
-// * @return The found page or <code>null</code> if none was found.
-// */
-//public WebPage searchPageInHistory(final String location, final User user) {
-//	final List<WebPage> pagesHistory = this.browser.pagesCache;
-//	int size = pagesHistory.size();
-//	for (int i=size-1; i>=0; i--) {
-//		WebPage page = pagesHistory.get(i);
-//		String pageLocation = page.getLocation();
-//		if (pageLocation.equals(location) && user.equals(page.getUser())) {
-//			return page;
-//		}
-//	}
-//	return null;
-//}
-
-///**
-// * Return the current page displayed on the browser.
-// * <p>
-// * This is the last page of the internal cache.
-// * </p>
-// * @return The current page as a {@link WebPage}.
-// */
-//public static WebPage getCurrentPage() {
-//	final List<WebPage> pagesHistory = getPagesHistory();
-//	int size = pagesHistory.size();
-//	if (size == 0) return null;
-//	return pagesHistory.get(size-1);
-//}
-
-/*
- * Discarded as there's no way to know if user associated with found page
- * would match the expected one. If such need would appear, then it seems
- * that we'd need an additional user agrument to be able to peek the right page.
- */
-///**
-// * Seek the cache to find the instance of the given page class.
-// * <p>
-// * Note that this is a very expensive method which should not be used too
-// * frequently.
-// * </p><p>
-// * TODO Replace the pages cache keys to store class instead location.
-// *
-// * @param pageClass The page class
-// * @return The instance of the class associate with the give page page class or
-// * <code>null</code> if this page hasn't been created yet.
-// */
-// TODO Move page creation and cache to WebBrowser
-//@SuppressWarnings("unchecked")
-//public static <P extends WebPage> P getPage(final Class<P> pageClass) {
-//	if (DEBUG) debugPrintln("		+ Get web page for "+pageClass);
-//
-//	// Get the page from cache
-//	Iterator<WebPage> pageInstances = getPagesHistory().iterator();
-//	while (pageInstances.hasNext()) {
-//		WebPage pageInstance = pageInstances.next();
-//		if (pageInstance.getClass().equals(pageClass)) {
-//			return (P) pageInstance;
-//		}
-//	}
-//
-//	// Return the found page
-//	return null;
-//}
-
-/*
- * Discarded as there's no way to know if user associated with found page
- * would match the expected one. If such need would appear, then it seems
- * that we'd need an additional user agrument to be able to peek the right page.
- */
-///**
-// * Get from the cache the page instance for the given location.
-// *
-// * @param location The page location
-// * @return The instance of the class associate with the page or <code>null</code>
-// * if this page hasn't been created yet.
-// */
-//// TODO Move page creation and cache to WebBrowser
-//public static WebPage getPage(final String location) {
-//	if (DEBUG) debugPrintln("		+ get page "+location);
-//
-//	// Get the page from cache
-//	WebPage page = searchPageInHistory(location);
-//
-//	// The page should have been found
-//	if (page == null) {
-//		if (DEBUG) debugPrintln("		  -> not found.");
-//		int index = location.indexOf('&');
-//		if (index > 0) {
-//			String locationKey = location.substring(0, index);
-//			if (DEBUG) debugPrintln("		  -> try with key="+locationKey);
-//			page = searchPageInHistory(locationKey);
-//		}
-//	}
-//
-//	// Return the found page
-//	return page;
-//}
-
-/*
- * Discarded as there's no way to find which browser would be concerned by following method.
- * If such need would appear, then it seems that we'd need an additional user agrument to be
- * able to use the right browser to open the page
- */
-///**
-// * Retrieve the existing page for the browser current URL. Create it if it's the first
-// * time the page is requested.
-// *
-// * @return The instance of the class associate with the page or <code>null</code>
-// * if no page location matching the browser url is found in the cache...
-// */
-//public static WebPage getPageUsingBrowser(final Config config) {
-//	if (DEBUG) debugPrintln("		+ Get page using browser...");
-//
-//	// Get page url from browser
-//	String currentUrl = config.getBrowser().getCurrentUrl();
-//	if (DEBUG) debugPrintln("		  -> current URL:"+currentUrl);
-//
-//	// Adapt browser url to application
-//	Application application = config.getTopology().getApplication(currentUrl);
-//	String pageUrl = application == null ? currentUrl : application.getPageUrl(currentUrl);
-//	if (DEBUG) debugPrintln("		  -> page URL:"+pageUrl);
-//
-//	// Look for a page location matching the page url in the cache
-//	WebPage page = searchPageInHistory(pageUrl);
-//	if (DEBUG) {
-//		if (page == null) {
-//			debugPrintln("		  -> no page was found!");
-//		} else {
-//			debugPrintln("		  -> page "+page+" was found.");
-//		}
-//	}
-//	return page;
-//}
-
-/*
- * Discarded as there's no way to know if user associated with found page
- * would match the expected one. If such need would appear, then it seems
- * that we'd need an additional user agrument to be able to peek the right page.
- */
-// TODO Move page creation and cache to WebBrowser
-//public static WebPage openPage(final String location) {
-//
-//	// Get the page
-//	WebPage page = getPage(location);
-//	if (page == null) {
-//		throw new ScenarioFailedError("The page with url '"+location+"' was not already created!");
-//	}
-//
-//	// Get the page content
-//	page.get();
-//
-//	// Return page
-//	return page;
-//}
-
-/**
- * Reopen the given page.
- * <p>
- * This specific method is used when restarting the browser on the given page.
- * It can also be used to force the page reloading.
- * </p>
- * @param page The page to reopen
- * @param user The user associated with the page. It's necessary because the
- * login information of the provided page might have been reset prior the call...
- * @return The instance of the class associate with the page.
- */
-public static WebPage reopenPage(final WebPage page, final SpotUser user) {
-	debugPrintEnteringMethod("page", page.location, "user", user.getId());
-	page.forceReload = true;
-	WebPage reopenedPage = null;
-	try {
-		reopenedPage = openPage(page.location, USER_ACTION_NOT_PROVIDED, page.config, (User) user, page.getClass(), page.data);
-	} finally {
-		if (reopenedPage != null) {
-			reopenedPage.forceReload = false;
-		}
-	}
-	return reopenedPage;
-}
-
-/**
- * Retrieve the existing page for the given location. Create it if it is the first time
- * the page is requested.
- *
- * @param location The url of the page
- * @param config The config to use for the requested page
- * @param user The user to use on the requested page
- * @param pageClass The class associated with the page to open
- * @param data Additional CLM information to be stored in the page
- * @return The instance of the class associate with the page.
- */
-// TODO Move page creation to WebBrowser
-public static <P extends WebPage> P openPage(final String location, final Config config, final User user, final Class<P> pageClass, final String... data) {
-	return openPage(location, USER_ACTION_NOT_PROVIDED, config, user, pageClass, data);
-}
-
-/**
- * Retrieve the existing page for the given location. Create it if it is the first time
- * the page is requested.
- *
- * @param location The url of the page
- * @param userAction The user action executed while opening the page
- * @param config The config to use for the requested page
- * @param user The user to use on the requested page
- * @param pageClass The class associated with the page to open
- * @param data Additional CLM information to be stored in the page
- * @return The instance of the class associate with the page.
- */
-protected static <P extends WebPage> P openPage(final String location, final String userAction, final Config config, final User user, final Class<P> pageClass, final String... data) {
-
-	// Create page
-	P page = createPage(location, config, user, pageClass, data);
-
-	// Set performance user action if any
-	if (PERFORMANCE_ENABLED && !userAction.equals(USER_ACTION_NOT_PROVIDED)) {
-		page.setPerfManagerUserActionName(userAction);
-	}
-
-	// Get the page content
-	page.get();
-
-	// Return page
-	return page;
-}
-
 /**
  * Add a performance result if manager is activated.
  * <p>
@@ -541,11 +488,11 @@ protected void addPerfResult(final RegressionType regressionType, final String p
  * @return The check-box web element (as a {@link WebBrowserElement}) found
  * in the page
  *
- * @see #waitForElement(By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#check(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement check(final By locator) {
-	WebBrowserElement element = waitForElement(locator);
+	WebBrowserElement element = waitForMandatoryDisplayedElement(locator);
 	this.browser.check(element, 1/*on*/, true/*validate*/);
 	return element;
 }
@@ -569,7 +516,6 @@ protected WebBrowserElement check(final By locator) {
  * @param on Tells whether the check-box should be set or unset.
  * @return The check-box web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(WebBrowserElement, By)
  * @see WebBrowser#check(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement check(final By locator, final boolean on) {
@@ -595,11 +541,11 @@ protected WebBrowserElement check(final By locator, final boolean on) {
  * @param validate Tells whether the validate check-box after the operation or not
  * @return The check-box web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(WebBrowserElement, By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#check(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement check(final By locator, final boolean on, final boolean validate) {
-	WebBrowserElement element = waitForElement(locator);
+	WebBrowserElement element = waitForMandatoryDisplayedElement(locator);
 	this.browser.check(element, on ? 1 : -1, validate);
 	return element;
 }
@@ -623,7 +569,7 @@ protected boolean check(final WebBrowserElement element) {
 }
 
 /**
- * Set/Unset the given check-box web element .
+ * Set/Unset the given check-box web element.
  * <p>
  * Note that:
  * <ul>
@@ -641,29 +587,6 @@ protected boolean check(final WebBrowserElement element) {
  */
 protected boolean check(final WebBrowserElement element, final boolean on) {
 	return this.browser.check(element, on ? 1 : -1, true/*validate*/);
-}
-
-/**
- * Set on the check-box found inside the given parent web element using
- * the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if the check-box is not found before {@link #timeout()} seconds</li>
- * <li>if the check-box is already checked, then nothing happen</li>
- * <li>validate that the check-box is well checked after having clicked on it</li>
- * </p>
- * @param parentElement The parent element where to start to search from,
- * if <code>null</code>, then search in the entire page content
- * @param locator The locator to find the check-box element in the current
- * page
- * @return The check-box web element (as a {@link WebBrowserElement}) found
- * in the page
- *
- * @see #check(WebBrowserElement, By, int, boolean)
- */
-protected WebBrowserElement check(final WebBrowserElement parentElement, final By locator) {
-	return check(parentElement, locator, 1/*on*/, true/*validate*/);
 }
 
 /**
@@ -686,11 +609,11 @@ protected WebBrowserElement check(final WebBrowserElement parentElement, final B
  * @return The check-box web element (as a {@link WebBrowserElement}) found
  * in the page
  *
- * @see #waitForElement(By, By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#check(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement check(final WebBrowserElement parentElement, final By locator, final int toggle, final boolean validate) {
-	WebBrowserElement element = waitForElement(parentElement, locator);
+	WebBrowserElement element = parentElement.waitShortlyForMandatoryDisplayedChildElement(locator);
 	this.browser.check(element, toggle, validate);
 	return element;
 }
@@ -777,10 +700,11 @@ public <RH extends WebRichHover<? extends WebPage>> RH checkRichHover(final WebB
  * @param locator The locator to find the element in the current page
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowserElement#click()
  */
 protected WebBrowserElement click(final By locator) {
+	debugPrintEnteringMethod("locator", locator);
 	return click((By)null, locator);
 }
 
@@ -800,12 +724,12 @@ protected WebBrowserElement click(final By locator) {
  * from the given parent element if not <code>null</code>
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(By, By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowserElement#click()
  */
 protected WebBrowserElement click(final By parentLocator, final By locator) {
-	if (DEBUG) debugPrintln("		+ Click on "+(parentLocator==null ? "" : parentLocator+"//")+locator);
-	WebBrowserElement parentElement = parentLocator == null ? null : waitForElement(parentLocator);
+	debugPrintEnteringMethod("parentLocator", parentLocator, "locator", locator);
+	WebBrowserElement parentElement = parentLocator == null ? null : waitForMandatoryDisplayedElement(parentLocator);
 	return click(parentElement, locator);
 }
 
@@ -823,17 +747,19 @@ protected WebBrowserElement click(final By parentLocator, final By locator) {
  * @param locator The locator to find the element in the current page
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(WebBrowserElement, By)
+ * @see WebBrowserElement#waitShortlyForMandatoryDisplayedChildElement(By)
  * @see WebBrowserElement#click()
  */
 public WebBrowserElement click(final WebBrowserElement parentElement, final By locator) {
-	if (DEBUG) debugPrintln("		+ Click on "+parentElement+"//"+locator);
+	debugPrintEnteringMethod("parentElement", parentElement, "locator", locator);
 
 	// Store page title in case of perf result
 	String pageTitle = PERFORMANCE_ENABLED ? getTitle() : null;
 
 	// Wait for element
-	WebBrowserElement element = waitForElement(parentElement, locator);
+	WebBrowserElement element = parentElement == null
+		? waitForMandatoryDisplayedElement(locator)
+		: parentElement.waitShortlyForMandatoryDisplayedChildElement(locator);
 
 	// Click on given element
 	element.click();
@@ -859,11 +785,11 @@ public WebBrowserElement click(final WebBrowserElement parentElement, final By l
  * @param buttonBy The locator to find the button in the current page
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#clickButton(WebBrowserElement, int, boolean)
  */
 public WebBrowserElement clickButton(final By buttonBy) {
-	WebBrowserElement button = waitForElement(buttonBy);
+	WebBrowserElement button = waitForMandatoryDisplayedElement(buttonBy);
 	return this.browser.clickButton(button, timeout(), false);
 }
 
@@ -879,11 +805,11 @@ public WebBrowserElement clickButton(final By buttonBy) {
  * been clicked or not.
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#clickButton(WebBrowserElement, int, boolean)
  */
 public WebBrowserElement clickButton(final By buttonBy, final boolean check) {
-	WebBrowserElement button = waitForElement(buttonBy);
+	WebBrowserElement button = waitForMandatoryDisplayedElement(buttonBy);
 	return this.browser.clickButton(button, timeout(), check);
 }
 
@@ -900,11 +826,11 @@ public WebBrowserElement clickButton(final By buttonBy, final boolean check) {
  * @param time_out The time (in seconds) to wait before giving up the research
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#clickButton(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement clickButton(final By buttonBy, final int time_out) {
-	WebBrowserElement button = waitForElement(buttonBy, true/*fail*/, time_out);
+	WebBrowserElement button = this.browser.waitForMandatoryDisplayedElement(buttonBy, time_out);
 	return this.browser.clickButton(button, time_out, false);
 }
 
@@ -940,11 +866,11 @@ protected WebBrowserElement clickButton(final WebBrowserElement button, final bo
  * @param buttonBy The locator to find the button in the current page
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(WebBrowserElement, By)
+ * @see WebBrowserElement#waitShortlyForMandatoryDisplayedChildElement(By)
  * @see WebBrowser#clickButton(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement clickButton(final WebBrowserElement parentElement, final By buttonBy) {
-	WebBrowserElement button = waitForElement(parentElement, buttonBy);
+	WebBrowserElement button = parentElement.waitShortlyForMandatoryDisplayedChildElement(buttonBy);
 	return this.browser.clickButton(button, timeout(), false);
 }
 
@@ -962,11 +888,11 @@ protected WebBrowserElement clickButton(final WebBrowserElement parentElement, f
  * been clicked or not.
  * @return The web element (as a {@link WebBrowserElement}) found in the page
  *
- * @see #waitForElement(WebBrowserElement, By)
+ * @see WebBrowserElement#waitShortlyForMandatoryDisplayedChildElement(By)
  * @see WebBrowser#clickButton(WebBrowserElement, int, boolean)
  */
 protected WebBrowserElement clickButton(final WebBrowserElement parentElement, final By buttonBy, final boolean check) {
-	WebBrowserElement button = waitForElement(parentElement, buttonBy);
+	WebBrowserElement button = parentElement.waitShortlyForMandatoryDisplayedChildElement(buttonBy);
 	return this.browser.clickButton(button, timeout(), check);
 }
 
@@ -1101,7 +1027,7 @@ public Application getApplication() {
 }
 
 WebBrowserElement getBodyElement() {
-	return waitForElement(By.tagName("body"));
+	return waitForMandatoryDisplayedElement(By.tagName("body"));
 }
 
 /**
@@ -1162,7 +1088,7 @@ private WebBrowserElement getLoggedUserElement(final boolean fail, final int wai
 	if (userElementLocator == null) {
 		return null;
 	}
-	return waitForElement(userElementLocator, fail, waitTimeout);
+	return this.browser.waitForElement(null, userElementLocator, fail, waitTimeout, /*displayed:*/ true, /*single:*/ true);
 }
 
 /**
@@ -1199,7 +1125,7 @@ protected NlsMessages getNlsMessages() {
  */
 protected WebBrowserElement getRootElement() {
 	this.browser.resetFrame();
-	return waitForElement(getRootElementLocator());
+	return waitForMandatoryDisplayedElement(getRootElementLocator());
 }
 
 /**
@@ -1563,19 +1489,6 @@ protected boolean matchBrowserUrl() {
 }
 
 /**
- * Strip some section from the browser url.
- * <p>
- * Do nothing by default, subclasses might override to remove some
- * part of the URL which should not be used while comparing page URLs
- * </p>
- * @param browserUrl The url string.
- * @return String Stripped down version of url.
- */
-protected String stripBrowserUrl(final String browserUrl) {
-	return browserUrl;
-}
-
-/**
  * Return whether the displayed user matches the user name or not.
  * <p>
  * Note that this method is only called when page has a logged in a user.
@@ -1586,20 +1499,6 @@ protected String stripBrowserUrl(final String browserUrl) {
  * <code>false</code> otherwise.
  */
 abstract protected boolean matchDisplayedUser(User pageUser, WebBrowserElement loggedUserElement);
-
-/**
- * Park the mouse at a location where links are not found in order to prevent unexpected rich hovers
- * from loading by accident. The parking zone used for this purpose is the (0,0) location of
- * the <body> element, which is the top-left corner of the display area of the browser.
- */
-public void parkMouse() {
-	this.browser.moveToElement(getBodyElement(), 0, 0);
-}
-
-/**
- * Logout the page from current user to new user.
- */
-protected abstract void performLogout();
 
 /**
  * Helper method to open a page and wait until it's finished loading.
@@ -1621,7 +1520,7 @@ private <P extends WebPage> P openAndWaitForPage(final Class<P> pageClass, final
 	}
 
 	// Open the page and for it being loaded
-	P page = openPage(getUrl(), USER_ACTION_NOT_PROVIDED, this.config, getUser(), pageClass, pageData);
+	P page = openPage(getUrl(), this.config, getUser(), pageClass, pageData);
 	page.waitForLoadingPageEnd();
 
 	// Return the opened page
@@ -1641,7 +1540,7 @@ private <P extends WebPage> P openAndWaitForPage(final Class<P> pageClass, final
 public <P extends WebPage> P openAndWaitForPage(final String pageLocation, final SpotConfig newConfig, final SpotUser newUser, final Class<P> pageClass, final String... pageData) {
 
 	// Open the page and for it being loaded
-	P page = openPage(pageLocation, USER_ACTION_NOT_PROVIDED, (Config) newConfig, (User) newUser, pageClass, pageData);
+	P page = openPage(pageLocation, (Config) newConfig, (User) newUser, pageClass, pageData);
 	page.waitForLoadingPageEnd();
 
 	// Return the opened page
@@ -1675,7 +1574,7 @@ public <M extends WebMenu> M openMenu(final By linkLocator, final By menuLocator
 	debugPrintEnteringMethod("menuLocator", menuLocator.toString(), " linkLocator", linkLocator.toString(), "menuClass", getClassSimpleName(menuClass));
 
 	// Get link element to open the menu
-	WebBrowserElement linkElement = waitForElement(linkLocator, false/* do not fail */, openTimeout(), true/* displayed */, false/* first occurrence */);
+	WebBrowserElement linkElement = this.browser.waitForElement(null, linkLocator, false/* do not fail */, openTimeout(), true/* displayed */, false/* first occurrence */);
 	if (linkElement == null) {
 		throw new WaitElementTimeoutError("Cannot find web element '" + linkLocator + "' to open menu.");
 	}
@@ -1792,85 +1691,6 @@ public <P extends WebPage> P openPageUsingLink(final By linkLocator, final User 
 	return openPageUsingLink(null, linkLocator, pageUser, openedPageClass, true/*fail*/, timeout(), info);
 }
 
-/* Discarded as it's not used. That also reduces the number of methods with same name but different signature... */
-///**
-// * Click on the link found using the given locator assuming that will open
-// * a new {@link WebPage page}.
-// * <p>
-// * The opened page URL is got from the application which usually takes it from
-// * the <code>href</code> attribute of the link web element (see
-// * {@link Topology#getPageUrl(String)}.
-// * </p><p>
-// * Note that:
-// * <ul>
-// * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
-// * <li>no additional info is provided to the opened page</li>
-// * </p>
-// * @param linkBy The locator to find the link element in the current page
-// * @param openedPageClass The class associated with the opened page
-// * @param timeOut Seconds to wait before giving up if the web element is not
-// * found.
-// * @return The web page (as a subclass of {@link WebPage}) opened after
-// * having clicked on the link
-// *
-// * @see #openPageUsingLink(WebBrowserElement, By, Class, boolean, int, String...)
-// */
-//public <P extends WebPage> P openPageUsingLink(final By linkBy, final Class<P> openedPageClass, final int timeOut) {
-//	return openPageUsingLink(null, linkBy, openedPageClass, false/*do not fail*/, timeOut);
-//}
-
-/* Discarded as it's not used. That also reduces the number of methods with same name but different signature... */
-///**
-// * Click on the link found using the given locator assuming that will open
-// * a new {@link WebPage page}.
-// * <p>
-// * The opened page URL is got from the application which usually takes it from
-// * the <code>href</code> attribute of the link web element (see
-// * {@link Topology#getPageUrl(String)}.
-// * </p><p>
-// * Note that:
-// * <ul>
-// * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
-// * </p>
-// * @param linkLocator The locator to find the link element in the current page
-// * @param openedPageClass The class associated with the opened page
-// * @param info Provide additional information to store in the page when opening it
-// * @return The web page (as a subclass of {@link WebPage}) opened after
-// * having clicked on the link
-// *
-// * @see #openPageUsingLink(WebBrowserElement, By, Class, boolean, int, String...)
-// */
-//public <P extends WebPage> P openPageUsingLink(final By linkLocator, final Class<P> openedPageClass, final String... info) {
-//	return openPageUsingLink(null, linkLocator, openedPageClass, true/*fail*/, timeout(), info);
-//}
-
-/* Discarded as it's not used. That also reduces the number of methods with same name but different signature... */
-///**
-// * Click on the link found using the given locator assuming that will open
-// * a new {@link WebPage page}.
-// * <p>
-// * The opened page URL is got from the application which usually takes it from
-// * the <code>href</code> attribute of the link web element (see
-// * {@link Topology#getPageUrl(String)}.
-// * </p><p>
-// * Note that:
-// * <ul>
-// * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
-// * <li>no additional info is provided to the opened page</li>
-// * </p>
-// * @param parentElement The parent element where to start to search from,
-// * if <code>null</code>, then search in the entire page content
-// * @param linkBy The locator to find the link element in the current page
-// * @param openedPageClass The class associated with the opened page
-// * @return The web page (as a subclass of {@link WebPage}) opened after
-// * having clicked on the link
-// *
-// * @see #openPageUsingLink(WebBrowserElement, By, Class, boolean, int, String...)
-// */
-//public <P extends WebPage> P openPageUsingLink(final WebBrowserElement parentElement, final By linkBy, final Class<P> openedPageClass) {
-//	return openPageUsingLink(parentElement, linkBy, openedPageClass, true/*fail*/, timeout());
-//}
-
 /**
  * Click on the link found using the given locator assuming that will open
  * a new {@link WebPage page}.
@@ -1915,24 +1735,6 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement parentEle
  */
 public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkElement, final Class<P> openedPageClass, final String... pageData) {
 	return openPageUsingLink(linkElement, getUser(), openedPageClass, pageData);
-}
-
-/**
- * Click on the given link assuming that will open a new page.
- * <p>
- * The opened page URL is got from the application (see
- * {@link Topology#getPageUrl(String)}) which usually takes
- * it from the <code>href</code> attribute of the link web element.
- * </p>
- * @param linkElement The link on which to click
- * @param pageUser The page user
- * @param openedPageClass The class associated with the opened page
- * @param pageData Provide additional information to store in the page when opening it
- * @return The web page (as a subclass of {@link WebPage}) opened after
- * having clicked on the link
- */
-public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkElement, final User pageUser, final Class<P> openedPageClass, final String... pageData) {
-	return openPageUsingLink(linkElement, this.config, pageUser, openedPageClass, pageData);
 }
 
 /**
@@ -2024,12 +1826,12 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 	// Wait that at least for the body element with some content appeared in the page
 	SpotAbstractTimeout childrenTimeout = new SpotAbstractTimeout() {
 		@Override
-		protected String getConditionLabel() {
-			return "Has children";
-		}
-		@Override
 		protected boolean getCondition() {
 			return getBodyElement().getChildren().size() > 0;
+		}
+		@Override
+		protected String getConditionLabel() {
+			return "Has children";
 		}
 	};
 	childrenTimeout.waitUntil(timeout());
@@ -2077,7 +1879,7 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 	}
 
 	// Open the page and wait for it being loaded
-	P page = openPage(newPageUrl, USER_ACTION_NOT_PROVIDED, pageConfig, pageUser, openedPageClass, pageData);
+	P page = openPage(newPageUrl, pageConfig, pageUser, openedPageClass, pageData);
 
 	// Fail to click on links occasionally, which causes ClassCastExceptions
 	// If link failed, directly open page from href property of the link
@@ -2108,6 +1910,103 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 	return page;
 }
 
+/* Discarded as it's not used. That also reduces the number of methods with same name but different signature... */
+///**
+// * Click on the link found using the given locator assuming that will open
+// * a new {@link WebPage page}.
+// * <p>
+// * The opened page URL is got from the application which usually takes it from
+// * the <code>href</code> attribute of the link web element (see
+// * {@link Topology#getPageUrl(String)}.
+// * </p><p>
+// * Note that:
+// * <ul>
+// * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
+// * <li>no additional info is provided to the opened page</li>
+// * </p>
+// * @param linkBy The locator to find the link element in the current page
+// * @param openedPageClass The class associated with the opened page
+// * @param timeOut Seconds to wait before giving up if the web element is not
+// * found.
+// * @return The web page (as a subclass of {@link WebPage}) opened after
+// * having clicked on the link
+// *
+// * @see #openPageUsingLink(WebBrowserElement, By, Class, boolean, int, String...)
+// */
+//public <P extends WebPage> P openPageUsingLink(final By linkBy, final Class<P> openedPageClass, final int timeOut) {
+//	return openPageUsingLink(null, linkBy, openedPageClass, false/*do not fail*/, timeOut);
+//}
+
+/* Discarded as it's not used. That also reduces the number of methods with same name but different signature... */
+///**
+// * Click on the link found using the given locator assuming that will open
+// * a new {@link WebPage page}.
+// * <p>
+// * The opened page URL is got from the application which usually takes it from
+// * the <code>href</code> attribute of the link web element (see
+// * {@link Topology#getPageUrl(String)}.
+// * </p><p>
+// * Note that:
+// * <ul>
+// * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
+// * </p>
+// * @param linkLocator The locator to find the link element in the current page
+// * @param openedPageClass The class associated with the opened page
+// * @param info Provide additional information to store in the page when opening it
+// * @return The web page (as a subclass of {@link WebPage}) opened after
+// * having clicked on the link
+// *
+// * @see #openPageUsingLink(WebBrowserElement, By, Class, boolean, int, String...)
+// */
+//public <P extends WebPage> P openPageUsingLink(final By linkLocator, final Class<P> openedPageClass, final String... info) {
+//	return openPageUsingLink(null, linkLocator, openedPageClass, true/*fail*/, timeout(), info);
+//}
+
+/* Discarded as it's not used. That also reduces the number of methods with same name but different signature... */
+///**
+// * Click on the link found using the given locator assuming that will open
+// * a new {@link WebPage page}.
+// * <p>
+// * The opened page URL is got from the application which usually takes it from
+// * the <code>href</code> attribute of the link web element (see
+// * {@link Topology#getPageUrl(String)}.
+// * </p><p>
+// * Note that:
+// * <ul>
+// * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
+// * <li>no additional info is provided to the opened page</li>
+// * </p>
+// * @param parentElement The parent element where to start to search from,
+// * if <code>null</code>, then search in the entire page content
+// * @param linkBy The locator to find the link element in the current page
+// * @param openedPageClass The class associated with the opened page
+// * @return The web page (as a subclass of {@link WebPage}) opened after
+// * having clicked on the link
+// *
+// * @see #openPageUsingLink(WebBrowserElement, By, Class, boolean, int, String...)
+// */
+//public <P extends WebPage> P openPageUsingLink(final WebBrowserElement parentElement, final By linkBy, final Class<P> openedPageClass) {
+//	return openPageUsingLink(parentElement, linkBy, openedPageClass, true/*fail*/, timeout());
+//}
+
+/**
+ * Click on the given link assuming that will open a new page.
+ * <p>
+ * The opened page URL is got from the application (see
+ * {@link Topology#getPageUrl(String)}) which usually takes
+ * it from the <code>href</code> attribute of the link web element.
+ * </p>
+ * @param linkElement The link on which to click
+ * @param pageUser The page user
+ * @param openedPageClass The class associated with the opened page
+ * @param pageData Provide additional information to store in the page when opening it
+ * @return The web page (as a subclass of {@link WebPage}) opened after
+ * having clicked on the link
+ */
+public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkElement, final User pageUser, final Class<P> openedPageClass, final String... pageData) {
+	return openPageUsingLink(linkElement, this.config, pageUser, openedPageClass, pageData);
+}
+
 /**
  * Return the timeout while opening the page.
  *
@@ -2116,6 +2015,20 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 final public int openTimeout() {
 	return this.openTimeout;
 }
+
+/**
+ * Park the mouse at a location where links are not found in order to prevent unexpected rich hovers
+ * from loading by accident. The parking zone used for this purpose is the (0,0) location of
+ * the <body> element, which is the top-left corner of the display area of the browser.
+ */
+public void parkMouse() {
+	this.browser.moveToElement(getBodyElement(), 0, 0);
+}
+
+/**
+ * Logout the page from current user to new user.
+ */
+protected abstract void performLogout();
 
 /**
  * {@inheritDoc}
@@ -2195,6 +2108,14 @@ public <RH extends WebTextHover> RH richHoverOverLink(final WebBrowserElement li
 }
 
 /**
+ * Scroll the page down.
+ */
+public void scrollDown() {
+	debugPrintEnteringMethod();
+	this.browser.scrollOnePageDown();
+}
+
+/**
  * Scroll the current page window to make the given web element visible.
  * <p>
  * Default is to do nothing. Subclass might want to override this method in order
@@ -2207,11 +2128,11 @@ protected void scrollToMakeElementVisible(final WebBrowserElement webElement) {
 }
 
 /**
- * Scroll the page down.
+ * Scroll the page to top.
  */
-public void scrollDown() {
+public void scrollToTop() {
 	debugPrintEnteringMethod();
-	this.browser.scrollOnePageDown();
+	this.browser.scrollPageTop();
 }
 
 /**
@@ -2220,14 +2141,6 @@ public void scrollDown() {
 public void scrollUp() {
 	debugPrintEnteringMethod();
     this.browser.scrollOnePageDown();
-}
-
-/**
- * Scroll the page to top.
- */
-public void scrollToTop() {
-	debugPrintEnteringMethod();
-	this.browser.scrollPageTop();
 }
 
 /**
@@ -2242,7 +2155,7 @@ public void scrollToTop() {
  * @throws ScenarioFailedError if no item matches the expected selection.
  */
 protected WebBrowserElement select(final By locator, final String selection) {
-	WebBrowserElement listElement = waitForElement(locator);
+	WebBrowserElement listElement = waitForMandatoryDisplayedElement(locator);
 	return select(listElement, selection);
 }
 
@@ -2260,7 +2173,7 @@ protected WebBrowserElement select(final By locator, final String selection) {
  * @throws ScenarioFailedError if no item matches the expected selection.
  */
 protected WebBrowserElement select(final By locator, final String selection, final StringComparisonCriterion... comparisonCriteria) {
-	WebBrowserElement listElement = waitForElement(locator);
+	WebBrowserElement listElement = waitForMandatoryDisplayedElement(locator);
 	WebBrowserElement[] selectedElements = this.browser.select(listElement, By.xpath("./option"), false /* Use Control */, comparisonCriteria, selection);
 	return selectedElements[0];
 }
@@ -2281,7 +2194,12 @@ protected WebBrowserElement select(final WebBrowserElement listElement, final St
 	return selectedElements[0];
 }
 
-final protected void setOpenTimeout(final int timeout) {
+/**
+ * Set the timeout while opening the page.
+ *
+ * @param timeout The time in seconds
+ */
+protected final void setOpenTimeout(final int timeout) {
 	this.openTimeout = timeout;
 }
 
@@ -2321,11 +2239,21 @@ protected void setPerfManagerUserActionName(final String action) throws Scenario
 	}
 }
 
-final protected void setShortTimeout(final int timeout) {
+/**
+ * Set the short timeout used to search for element in the page.
+ *
+ * @param timeout The time in seconds
+ */
+protected final void setShortTimeout(final int timeout) {
 	this.shortTimeout = timeout;
 }
 
-final protected void setTimeout(final int timeout) {
+/**
+ * Set the timeout used to search for element in the page.
+ *
+ * @param timeout The time in seconds
+ */
+protected final void setTimeout(final int timeout) {
 	this.timeout = timeout;
 }
 
@@ -2336,6 +2264,21 @@ final protected void setTimeout(final int timeout) {
  */
 final public int shortTimeout() {
 	return this.shortTimeout;
+}
+
+/**
+ * Starts the perfManager server timer
+ *
+ * @throws ScenarioFailedError If performances are <b>not enabled</b> during
+ * scenario execution. Hence, callers have to check whether the performances are
+ * enabled before calling this method using {@link PerfManager#PERFORMANCE_ENABLED}.
+ */
+protected void startPerfManagerServerTimer() throws ScenarioFailedError {
+	if (PERFORMANCE_ENABLED) {
+		this.browser.perfManager.startServerTimer();
+	} else {
+		throw new ScenarioFailedError("Performances are not enabled for the scenario execution. Use -DperformanceEnabled=true to avoid this failure.");
+	}
 }
 
 /* Discarded as it's no longer matching the multi-users model */
@@ -2357,18 +2300,16 @@ final public int shortTimeout() {
 //}
 
 /**
- * Starts the perfManager server timer
- *
- * @throws ScenarioFailedError If performances are <b>not enabled</b> during
- * scenario execution. Hence, callers have to check whether the performances are
- * enabled before calling this method using {@link PerfManager#PERFORMANCE_ENABLED}.
+ * Strip some section from the browser url.
+ * <p>
+ * Do nothing by default, subclasses might override to remove some
+ * part of the URL which should not be used while comparing page URLs
+ * </p>
+ * @param browserUrl The url string.
+ * @return String Stripped down version of url.
  */
-protected void startPerfManagerServerTimer() throws ScenarioFailedError {
-	if (PERFORMANCE_ENABLED) {
-		this.browser.perfManager.startServerTimer();
-	} else {
-		throw new ScenarioFailedError("Performances are not enabled for the scenario execution. Use -DperformanceEnabled=true to avoid this failure.");
-	}
+protected String stripBrowserUrl(final String browserUrl) {
+	return browserUrl;
 }
 
 /**
@@ -2436,74 +2377,6 @@ protected void typePassword(final WebBrowserElement element, final SpotUser usr)
 }
 
 /**
- * Type a text into an input web element found relatively to a parent web element
- * using respective given locators.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if the input field is not found before {@link #timeout()} seconds</li>
- * <li>if will fail if the input field does not turn enabled before {@link #shortTimeout()}
- * seconds</li>
- * <li>the input element will be cleared prior entering the given text</li>
- * </ul>
- * </p><p>
- * Note also that a {@link Keys#TAB} is hit after having entered the text in the
- * input field in order to trigger the 'keyEvent' and makes the javascript associated
- * with the filed working properly.
- * </p>
- * @param parentLocator The locator to find the parent element in the current
- * page, if <code>null</code>, the element will be searched in the entire page
- * content
- * @param locator The locator to find the element in the current page or
- * from the given parent element if not <code>null</code>
- * @param text The text to type in the input element
- * @return The text web element (as a {@link WebBrowserElement}) found
- * in the page
- *
- * @see #waitForElement(By, By)
- * @see WebBrowser#typeText(WebBrowserElement, String, Keys, boolean, int)
- */
-protected WebBrowserElement typeText(final By parentLocator, final By locator, final String text) {
-	WebBrowserElement element = waitForElement(parentLocator, locator);
-	this.browser.typeText(element, text, Keys.TAB, true/*clear*/, shortTimeout());
-	return element;
-}
-
-/**
- * Type a text into an input web element found relatively to a parent web element
- * using respective given locators.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if the input field is not found before {@link #timeout()} seconds</li>
- * <li>if will fail if the input field does not turn enabled before {@link #shortTimeout()}
- * seconds</li>
- * </ul>
- * </p><p>
- * Note also that a {@link Keys#TAB} is hit after having entered the text in the
- * input field in order to trigger the 'keyEvent' and makes the javascript associated
- * with the filed working properly.
- * </p>
- * @param parentLocator The locator to find the parent element in the current
- * page, if <code>null</code>, the element will be searched in the entire page
- * content
- * @param locator The locator to find the element in the current page or
- * from the given parent element if not <code>null</code>
- * @param text The text to type in the input element
- * @param clear Tells whether the text needs to be cleared to type in the input element
- * @return The text web element (as a {@link WebBrowserElement}) found
- * in the page
- *
- * @see #waitForElement(By, By)
- * @see WebBrowser#typeText(WebBrowserElement, String, Keys, boolean, int)
- */
-protected WebBrowserElement typeText(final By parentLocator, final By locator, final String text, final boolean clear) {
-	WebBrowserElement element = waitForElement(parentLocator, locator);
-	this.browser.typeText(element, text, Keys.TAB, clear, shortTimeout());
-	return element;
-}
-
-/**
  * Type a text into an input web element found in the current page using the
  * given locator.
  * <p>
@@ -2525,44 +2398,36 @@ protected WebBrowserElement typeText(final By parentLocator, final By locator, f
  * @return The text web element (as a {@link WebBrowserElement}) found
  * in the page
  *
- * @see #waitForElement(By)
+ * @see #waitForMandatoryDisplayedElement(By)
  * @see WebBrowser#typeText(WebBrowserElement, String, Keys, boolean, int)
  */
 protected WebBrowserElement typeText(final By locator, final String text) {
-	WebBrowserElement element = waitForElement(locator);
+	WebBrowserElement element = waitForMandatoryDisplayedElement(locator);
 	this.browser.typeText(element, text, Keys.TAB, true/*clear*/, shortTimeout());
 	return element;
 }
 
 /**
- * Type a text into an input web element found in the current page using the
- * given locator.
+ * Type a text into the given input web element found.
  * <p>
  * Note that:
  * <ul>
- * <li>it will fail if the input field is not found before {@link #timeout()} seconds</li>
  * <li>if will fail if the input field does not turn enabled before {@link #shortTimeout()}
  * seconds</li>
+ * <li>the input element will be cleared prior entering the given text</li>
  * </ul>
  * </p><p>
  * Note also that a {@link Keys#TAB} is hit after having entered the text in the
  * input field in order to trigger the 'keyEvent' and makes the javascript associated
  * with the filed working properly.
  * </p>
- * @param locator The locator to find the input web element in the current
- * page
+ * @param inputElement The web element to enter the text in
  * @param text The text to type in the input element
- * @param clear Tells whether the text needs to be cleared to type in the input element
- * @return The text web element (as a {@link WebBrowserElement}) found
- * in the page
  *
- * @see #waitForElement(By)
  * @see WebBrowser#typeText(WebBrowserElement, String, Keys, boolean, int)
  */
-protected WebBrowserElement typeText(final By locator, final String text, final boolean clear) {
-	WebBrowserElement element = waitForElement(locator);
-	this.browser.typeText(element, text, Keys.TAB, clear, shortTimeout());
-	return element;
+protected void typeText(final WebBrowserElement inputElement, final String text) {
+	this.browser.typeText(inputElement, text, Keys.TAB, true/*clear*/, shortTimeout());
 }
 
 /**
@@ -2589,36 +2454,13 @@ protected WebBrowserElement typeText(final By locator, final String text, final 
  * @return The text web element (as a {@link WebBrowserElement}) found
  * in the page
  *
- * @see #waitForElement(WebBrowserElement, By)
+ * @see WebBrowserElement#waitShortlyForMandatoryDisplayedChildElement(By)
  * @see WebBrowser#typeText(WebBrowserElement, String, Keys, boolean, int)
  */
-protected WebBrowserElement typeText(final WebBrowserElement parentElement, final By locator, final String text) {
-	WebBrowserElement element = waitForElement(parentElement, locator);
+protected WebBrowserElement typeTextWithParent(final WebBrowserElement parentElement, final By locator, final String text) {
+	WebBrowserElement element = parentElement.waitShortlyForMandatoryDisplayedChildElement(locator);
 	this.browser.typeText(element, text, Keys.TAB, true/*clear*/, shortTimeout());
 	return element;
-}
-
-/**
- * Type a text into the given input web element found.
- * <p>
- * Note that:
- * <ul>
- * <li>if will fail if the input field does not turn enabled before {@link #shortTimeout()}
- * seconds</li>
- * <li>the input element will be cleared prior entering the given text</li>
- * </ul>
- * </p><p>
- * Note also that a {@link Keys#TAB} is hit after having entered the text in the
- * input field in order to trigger the 'keyEvent' and makes the javascript associated
- * with the filed working properly.
- * </p>
- * @param inputElement The web element to enter the text in
- * @param text The text to type in the input element
- *
- * @see WebBrowser#typeText(WebBrowserElement, String, Keys, boolean, int)
- */
-protected void typeText(final WebBrowserElement inputElement, final String text) {
-	this.browser.typeText(inputElement, text, Keys.TAB, true/*clear*/, shortTimeout());
 }
 
 /**
@@ -2660,365 +2502,212 @@ protected void verifyPageUser() throws ScenarioFailedError {
 }
 
 /**
- * Wait until have found the web element using the given locator.
+ * Wait until have found one mandatory displayed element of the given locators list.
  * <p>
  * Note that:
- * <ul>
- * <li>it will fail if:
- * <ol>
- * <li>the element is not found before {@link #timeout()} seconds</li>
- * <li>there's more than one element found</li>
- * </ol></li>
+ * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
  * <li>hidden element will be ignored</li>
- * </ul>
+ * <ul>
  * </p>
- * @param locator The locator to find the element in the current page.
- * @return The web element as {@link WebBrowserElement}
- * @throws WaitElementTimeoutError if no element is found before the timeout
+ * @param locators The locators to find the element in the entire current page.
+ * @return An array with one element if one is found before timeout occurs or
+ * <code>null</code> if none was found and it has been asked not to fail.
+ * @throws WaitElementTimeoutError if no element was found before the timeout
  *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
+ * @see WebBrowser#waitForFirstDisplayedElementInList(WebBrowserElement, By[], boolean, int)
+ * to have more details on how the returned array is filled with found elements
  */
-protected WebBrowserElement waitForElement(final By locator) {
-	return this.browser.waitForElement(null, locator, true/* fail */, timeout(), true/* displayed */, true/* single */);
+public WebBrowserElement[] waitForFirstMandatoryDisplayedElementInList(final By... locators) throws WaitElementTimeoutError {
+	return this.browser.waitForFirstDisplayedElementInList(null, locators, /*fail:*/ true, timeout());
 }
 
 /**
- * Wait until have found the web element using the given locator.
+ * Wait for the page loading to be finished.
+ * <p>
+ * The default behavior is to wait for the status message to be triggered (ie.
+ * waiting the message to appear, then waiting the message to vanish).
+ * </p><p>
+ * In case the message appearance was missed at the beginning, then it
+ * automatically give up after {@link #shortTimeout()} seconds. No error is
+ * raised in such a case, it just hopes that while waiting for the message which
+ * never comes, the page had enough time to be completely loaded...
+ * </p>
+ */
+protected void waitForLoadingPageEnd() {
+	if (DEBUG) debugPrintln("		+ Waiting for loading page end");
+	long waitTimeout = openTimeout() * 1000 + System.currentTimeMillis();	 // Timeout currentTimeMilliseconds
+	while (!isLoaded()) {
+		if (System.currentTimeMillis() > waitTimeout) {
+			this.browser.takeScreenshotWarning("LoadTimeout_"+getClassSimpleName(getClass()));
+			println("WARNING: Page "+this+" never finish to load!");
+			println("	- browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl().replaceAll("%20", SPACE_STRING)));
+			println("	- location: "+hidePasswordInLocation(this.location));
+			println("	- page URL: "+hidePasswordInLocation(getTopology().getPageUrl(this.location).replaceAll("%20", SPACE_STRING)));
+			println("	- stack trace: ");
+			printStackTrace(2);
+			println();
+			break;
+		}
+		sleep(1);
+	}
+}
+
+/**
+ * Wait until have found a mandatory displayed element using the given locator.
+ * <p>
+ * Note that the element research will be done through the entire page and will
+ * fail if:
+ * <ul>
+ * <li>the element is not found before {@link #timeout()} seconds</li>
+ * <li>there's more than one element found</li>
+ * </ul>
+ * </p><p>
+ * Note also that hidden elements will be ignored.
+ * </p>
+ * @param locator The locator to find the element in the entire current page.
+ * @return The web element as {@link WebBrowserElement}
+ * @throws WaitElementTimeoutError if no element is found before the timeout
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
+ *
+ * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
+ */
+public WebBrowserElement waitForMandatoryDisplayedElement(final By locator) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return this.browser.waitForElement(null, locator, /*fail:*/ true, timeout(), /*displayed:*/ true, /*single:*/ true);
+}
+
+/**
+ * Wait until have found mandatory displayed elements using the given relative locator.
+ * <p>
+ * Note that it will fail if no element is found before {@link #timeout()} seconds
+ * and that hidden elements will be ignored.
+ * </p>
+ * @param locator The locator to find the element in the entire current page.
+ * @return The web elements list as {@link List} of {@link WebBrowserElement}
+ * @throws WaitElementTimeoutError if no element is found before the timeout
+ *
+ * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
+ */
+protected List<WebBrowserElement> waitForMandatoryDisplayedElements(final By locator) throws WaitElementTimeoutError {
+	return this.browser.waitForElements(null, locator, true/*fail*/, timeout(), true/*visible*/);
+}
+
+/**
+ * Wait until have found mandatory displayed elements using the given relative locator and timeout.
+ * <p>
+ * Note that hidden elements will be ignored.
+ * </p>
+ * @param locator The locator to find the element in the entire current page.
+ * @param time_out The time to wait before giving up the research
+ * @return A non-empty web elements list as {@link List} of {@link WebBrowserElement}.
+ * @throws WaitElementTimeoutError if no element is found before the timeout
+ *
+ * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
+ */
+protected List<WebBrowserElement> waitForMandatoryDisplayedElementsWithTimeout(final By locator, final int time_out) throws WaitElementTimeoutError {
+	return this.browser.waitForElements(null, locator, /*fail:*/ true, time_out, /*displayed:*/ true);
+}
+
+/**
+ * Wait until have found a mandatory displayed element using the given locator and timeout.
+ * <p>
+ * Note that it will fail if:
+ * <ul>
+ * <li>the element is not found before {@link #timeout()} seconds and asked to fail</li>
+ * <li>there's more than one element found</li>
+ * </ul>
+ * </p><p>
+ * Note also that hidden elements will be ignored.
+ * </p>
+ * @param locator The locator to find the element in the entire current page.
+ * @param time_out The time in seconds to wait before giving up the element research
+ * @return The web element as {@link WebBrowserElement} or <code>null</code>
+ * if no element was found before the timeout and asked not to fail
+ * @throws WaitElementTimeoutError if no element is found before the timeout
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
+ *
+ * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
+ */
+public WebBrowserElement waitForMandatoryDisplayedElementWithTimeout(final By locator, final int time_out) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return this.browser.waitForElement(null, locator, /*fail:*/true, time_out, true /* displayed */, true /* single */);
+}
+
+/**
+ * Wait until have found a mandatory element using the given locator.
  * <p>
  * Note that it will fail if:
  * <ol>
  * <li>the element is not found before {@link #timeout()} seconds</li>
  * <li>there's more than one element found</li>
  * </ol>
+ * </p><p>
+ * Note also that returned element might be hidden.
  * </p>
- * @param locator The locator to find the element in the current page.
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
+ * @param locator The locator to find the element in the entire current page.
  * @return The web element as {@link WebBrowserElement}
- * @throws ScenarioFailedError if no element was found before the timeout.
+ * @throws WaitElementTimeoutError if no element is found before the timeout
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
  *
  * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean displayed) {
-	return this.browser.waitForElement(null, locator, true/*fail*/, timeout(), displayed, true/*single element expected*/);
+protected WebBrowserElement waitForMandatoryElement(final By locator) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return this.browser.waitForElement(null, locator, true/*fail*/, timeout(), /*displayed:*/ false, /*single:*/ true);
 }
 
 /**
- * Wait until have found the web element using the given locator.
+ * Wait until have found potential displayed elements using the given locator and timeout.
  * <p>
- * Note that it will fail if the element is not found before {@link #timeout()}
- * seconds
+ * Note that hidden elements will be ignored.
  * </p>
- * @param locator The locator to find the element in the current page.
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
- * @param single Tells whether a single element is expected
- * @return The web element as {@link WebBrowserElement}
- * @throws ScenarioFailedError if no element was found before the timeout.
- *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
- */
-protected WebBrowserElement waitForElement(final By locator, final boolean displayed, final boolean single) {
-	return this.browser.waitForElement(null, locator, true/*fail*/, timeout(), displayed, single);
-}
-
-/**
- * Wait until have found the web element using the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if:
- * <ol>
- * <li>the element is not found before {@link #timeout()} seconds and asked to fail</li>
- * <li>there's more than one element found</li>
- * </ol></li>
- * <li>hidden element will be ignored</li>
- * </ul>
- * </p>
- * @param locator The locator to find the element in the current page.
- * @param fail Tells whether to fail if the element is not found before timeout
+ * @param locator The locator to find the elements in the entire current page.
  * @param time_out The time to wait before giving up the research
- * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
+ * @return The web elements list which might be empty if no element was found before the timeout is reached
  *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
+ * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean fail, final int time_out) {
-	return this.browser.waitForElement(null, locator, fail, time_out, true /* displayed */, true /* single */);
+protected List<WebBrowserElement> waitForPotentialDisplayedElementsWithTimeout(final By locator, final int time_out) {
+	return this.browser.waitForElements(null, locator, /*fail:*/ false, time_out, /*displayed:*/ true);
 }
 
 /**
- * Wait until have found the web element using the given locator.
- * <p>
- * Note that it will fail if there's more than one element found.
- * </p>
- * @param locator The locator to find the element in the current page.
- * @param fail Tells whether to fail if none of the elements is find before timeout
- * @param time_out The time to wait before giving up the research
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
- * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
- *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
- */
-public WebBrowserElement waitForElement(final By locator, final boolean fail, final int time_out, final boolean displayed) {
-	return this.browser.waitForElement(null, locator, fail, time_out, displayed, true/*single element expected*/);
-}
-
-/**
- * Wait until have found the web element using the given locator.
- *
- * @param locator The locator to find the element in the current page.
- * @param fail Tells whether to fail if none of the elements is find before timeout
- * @param time_out The time to wait before giving up the research
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
- * @param single Tells whether a single element is expected
- * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
- *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
- */
-protected WebBrowserElement waitForElement(final By locator, final boolean fail, final int time_out, final boolean displayed, final boolean single) {
-	return this.browser.waitForElement(null, locator, fail, time_out, displayed, single);
-}
-
-/**
- * Wait until have found the web element relatively to a parent element using
- * the respective given locators.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if:
- * <ol>
- * <li>the element is not found before {@link #timeout()} seconds</li>
- * <li>there's more than one element found</li>
- * </ol></li>
- * <li>hidden element will be ignored</li>
- * </p>
- * @param parentLocator The locator to find the parent element in the current
- * page, if <code>null</code>, the element will be searched in the entire page
- * content
- * @param locator The locator to find the element in the current page or
- * from the given parent element if not <code>null</code>
- * @return The web element as {@link WebBrowserElement}
- * @throws ScenarioFailedError if no element was found before the {@link #timeout()}.
- *
- * @see #waitForElement(By, By, boolean, int)
- */
-protected WebBrowserElement waitForElement(final By parentLocator, final By locator) {
-	return waitForElement(parentLocator, locator, true/*fail*/, timeout());
-}
-
-/**
- * Wait until have found the web element relatively to a parent element using
- * the respective given locators.
+ * Wait until have found a potential displayed element using the given locator and timeout.
  * <p>
  * Note that:
  * <ul>
  * <li>it will fail if there's more than one element found</li>
  * <li>hidden element will be ignored</li>
+ * </ul>
  * </p>
- * @param parentLocator The locator to find the parent element in the current
- * page, if <code>null</code>, the element will be searched in the entire page
- * content
- * @param locator The locator to find the element in the current page or
- * from the given parent element if not <code>null</code>
- * @param fail Tells whether to fail if none of the elements is find before timeout
- * @param time_out The time to wait before giving up the research
+ * @param locator The locator to find the element in entire the current page.
+ * @param time_out The time in seconds to wait before giving up the element research
  * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
+ * if no element was found before the timeout
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
  *
  * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
  */
-public WebBrowserElement waitForElement(final By parentLocator, final By locator, final boolean fail, final int time_out) {
-	WebBrowserElement parentElement = parentLocator == null ? null : waitForElement(parentLocator);
-	return this.browser.waitForElement(parentElement, locator, fail, time_out, true/*visible*/, true/*single element expected*/);
+public WebBrowserElement waitForPotentialDisplayedElementWithTimeout(final By locator, final int time_out) throws MultipleElementsFoundError {
+	return this.browser.waitForElement(null, locator, /*fail:*/false, time_out, true /* displayed */, true /* single */);
 }
 
 /**
- * Wait until have found the web element using the given locator relatively
- * to the given parent element.
+ * Wait until have found a potential element using the given locator and timeout.
  * <p>
  * Note that:
  * <ul>
- * <li>it will fail if:
- * <ol>
- * <li>the element is not found before {@link #timeout()} seconds</li>
- * <li>there's more than one element found</li>
- * </ol></li>
- * <li>hidden element will be ignored</li>
- * </ul>
- * </p>
- * @param parentElement The parent element where to start to search from,
- * if <code>null</code>, then search in the entire page content
- * @param locator The locator to find the element in the current page.
- * @return The web element as {@link WebBrowserElement}
- * @throws ScenarioFailedError if no element was found before the timeout.
- *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
- */
-protected WebBrowserElement waitForElement(final WebBrowserElement parentElement, final By locator) {
-	return this.browser.waitForElement(parentElement, locator, true/* fail */, timeout(), true/* visible */, true/* single */);
-}
-
-/**
- * Wait until have found the web element using the given locator relatively
- * to the given parent element.
- * <p>
- * <ul>
- * Note that:
- * </ul>
  * <li>it will fail if there's more than one element found</li>
- * <li>hidden element will be ignored</li>
+ * <li>returned element might be hidden</li>
+ * </ul>
  * </p>
- * @param parentElement The parent element where to start to search from,
- * if <code>null</code>, then search in the entire page content
- * @param locator The locator to find the element in the current page.
- * @param fail Tells whether to fail if none of the elements is find before timeout
+ * @param locator The locator to find the element in the entire current page.
  * @param time_out The time to wait before giving up the research
  * @return The web element as {@link WebBrowserElement} or <code>null</code>
  * if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
  *
  * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
  */
-protected WebBrowserElement waitForElement(final WebBrowserElement parentElement, final By locator, final boolean fail, final int time_out) {
-	return this.browser.waitForElement(parentElement, locator, fail, time_out, true/*visible*/, true/*single element expected*/);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if:
- * <ol>
- * <li>no element is found before {@link #timeout()} seconds</li>
- * </ol></li>
- * <li>hidden element will be ignored</li>
- * </ul>
- * </p>
- * @param locator The locator to find the element in the current page.
- * @return The web elements list as {@link List} of {@link WebBrowserElement}
- * @throws ScenarioFailedError if no element was found before the timeout.
- *
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator) {
-	return this.browser.waitForElements(null, locator, true/*fail*/, timeout(), true/*visible*/);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>hidden element will be ignored</li>
- * </p>
- * @param locator The locator to find the element in the current page.
- * @param fail True if this should fail if the element is not found.
- * @return The web elements list as {@link List} of {@link WebBrowserElement}.
- * Might be empty if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
- *
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final boolean fail) {
-	return this.browser.waitForElements(null, locator, fail, timeout(), true/*visible*/);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using
- * the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>hidden element will be ignored</li>
- * </p>
- * @param locator The locator to find the element in the current page.
- * @param fail Tells whether to fail if none of the locators is find before timeout
- * @param time_out The time to wait before giving up the research
- * @return The web elements list as {@link List} of {@link WebBrowserElement}.
- * Might be empty if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout and
- * asked to fail
- *
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final boolean fail, final int time_out) {
-	return this.browser.waitForElements(null, locator, fail, time_out, true/*visible*/);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using
- * the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>hidden element will be ignored</li>
- * </p>
- * @param locator The locator to find the element in the current page.
- * @param time_out The time to wait before giving up the research
- * @return A non-empty web elements list as {@link List} of {@link WebBrowserElement}.
- * @throws ScenarioFailedError if no element was found before the timeout.
- *
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final int time_out) {
-	return this.browser.waitForElements(null, locator, true/*fail*/, time_out, true/*visible*/);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using
- * the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>hidden element will be ignored</li>
- * </p>
- * @param locator The locator to find the element in the current page.
- * @param time_out The time to wait before giving up the research
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
- * @return A non-empty web elements list as {@link List} of {@link WebBrowserElement}.
- * @throws ScenarioFailedError if no element was found before the timeout.
- *
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final int time_out, final boolean displayed) {
-	return this.browser.waitForElements(null, locator, true/*fail*/, time_out, displayed);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using
- * the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>hidden element will be ignored</li>
- * </p>
- * @param parentElement The parent element where to start to search from,
- * if <code>null</code>, then search in the entire page content
- * @param locator The locator to find the element in the current page.
- * @return A non-empty web elements list as {@link List} of {@link WebBrowserElement}.
- * @throws ScenarioFailedError if no element was found before the timeout.
- *
- * @see WebBrowser#waitForElements(WebBrowserElement, By, boolean, int, boolean)
- */
-protected List<WebBrowserElement> waitForElements(final WebBrowserElement parentElement, final By locator) {
-	return this.browser.waitForElements(parentElement, locator, true/*fail*/, timeout(), true/*visible*/);
+public WebBrowserElement waitForPotentialElementWithTimeout(final By locator, final int time_out) throws MultipleElementsFoundError {
+	return this.browser.waitForElement(null, locator, /*fail:*/ false, time_out, /*displayed:*/false, /*single:*/ true);
 }
 
 /**
@@ -3063,167 +2752,7 @@ protected void waitInitialPageLoading(final boolean throwError) throws ServerMes
 }
 
 /**
- * Wait for the page loading to be finished.
- * <p>
- * The default behavior is to wait for the status message to be triggered (ie.
- * waiting the message to appear, then waiting the message to vanish).
- * </p><p>
- * In case the message appearance was missed at the beginning, then it
- * automatically give up after {@link #shortTimeout()} seconds. No error is
- * raised in such a case, it just hopes that while waiting for the message which
- * never comes, the page had enough time to be completely loaded...
- * </p>
- */
-protected void waitForLoadingPageEnd() {
-	if (DEBUG) debugPrintln("		+ Waiting for loading page end");
-	long waitTimeout = openTimeout() * 1000 + System.currentTimeMillis();	 // Timeout currentTimeMilliseconds
-	while (!isLoaded()) {
-		if (System.currentTimeMillis() > waitTimeout) {
-			this.browser.takeScreenshotWarning("LoadTimeout_"+getClassSimpleName(getClass()));
-			println("WARNING: Page "+this+" never finish to load!");
-			println("	- browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl().replaceAll("%20", SPACE_STRING)));
-			println("	- location: "+hidePasswordInLocation(this.location));
-			println("	- page URL: "+hidePasswordInLocation(getTopology().getPageUrl(this.location).replaceAll("%20", SPACE_STRING)));
-			println("	- stack trace: ");
-			printStackTrace(2);
-			println();
-			break;
-		}
-		sleep(1);
-	}
-}
-
-/**
- * Wait until have found at least one of the elements using the given locators.
- * <p>
- * Note that:
- * <ul>
- * <li>hidden element will be ignored</li>
- * </ul>
- * </p>
- * @param locators The locators to find the element in the current page.
- * @param fail Tells whether to fail if none of the elements is find before timeout
- * @param time_out The time to wait before giving up the research
- * @return The array of web elements as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws WaitElementTimeoutError if no element was found before the timeout and
- * asked to fail
- *
- * @see WebBrowser#waitForMultipleElements(WebBrowserElement, By[], boolean, int)
- * to have more details on how the returned array is filled with found elements
- */
-protected WebBrowserElement[] waitForMultipleElements(final boolean fail, final int time_out, final By... locators) {
-	return this.browser.waitForMultipleElements(null, locators, fail, time_out);
-}
-
-/**
- * Wait until have found at least one of the elements using the given locators.
- * <p>
- * Note that:
- * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
- * <li>hidden element will be ignored</li>
- * <ul>
- * </p>
- * @param locators The locators to find the element in the current page.
- * @return The array of web elements as {@link WebBrowserElement}
- * @throws WaitElementTimeoutError if no element was found before the timeout
- *
- * @see WebBrowser#waitForMultipleElements(WebBrowserElement, By[], boolean, int)
- * to have more details on how the returned array is filled with found elements
- */
-public WebBrowserElement[] waitForMultipleElements(final By... locators) {
-	return this.browser.waitForMultipleElements(null, locators, true/*fail*/, timeout());
-}
-
-/**
- * Wait until have found at least one of the elements relatively to the given
- * parent element using the given locators.
- * <p>
- * Note that:
- * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
- * <li>hidden element will be ignored</li>
- * <ul>
- * </p>
- * @param parentElement The parent element where to start to search from,
- * if <code>null</code>, then search in the entire page content
- * @param locators The locators to find the element in the current page.
- * @return The array of web elements as {@link WebBrowserElement}
- * @throws WaitElementTimeoutError if no element was found before the timeout
- *
- * @see WebBrowser#waitForMultipleElements(WebBrowserElement, By[], boolean, int)
- * to have more details on how the returned array is filled with found elements
- */
-protected WebBrowserElement[] waitForMultipleElements(final WebBrowserElement parentElement, final By... locators) {
-	return this.browser.waitForMultipleElements(parentElement, locators, true/*fail*/, timeout());
-}
-
-/**
- * Wait until have got one of the expected texts on of the given element.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if the element is not found before {@link #timeout()} seconds</li>
- * </ul>
- * </p>
- * @param element The text element to be read
- * @param fail Tells whether to fail if none of the elements is find before timeout
- * @param time_out The time to wait before giving up the research
- * @param texts The expected texts
- * @return One of the expected text as {@link String} or <code>null</code>
- * if element text never matches one before the timeout and asked not to fail
- * @throws ScenarioFailedError if element text never matches an expected ones
- * before the timeout and asked to fail
- *
- * @see WebBrowser#waitForText(WebBrowserElement, boolean, int, String...)
- */
-public String waitForText(final WebBrowserElement element, final boolean fail, final int time_out, final String... texts) {
-	return this.browser.waitForText(element, fail, time_out, texts);
-}
-
-/**
- * Wait until have got one of the expected texts on of the given element.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if none of the text is found before {@link #timeout()} seconds</li>
- * </ul>
- * </p>
- * @param pattern The comparison pattern to find the expected texts.
- * @param texts The expected texts
- * @return One of the expected text as {@link String} or <code>null</code>
- * if element text never matches one before the timeout and asked not to fail
- * @throws ScenarioFailedError if element text never matches an expected ones
- * before the timeout and asked to fail
- *
- * @see WebBrowser#waitForText(WebBrowserElement, boolean, int, String...)
- */
-protected WebBrowserElement waitForTextPresent(final ComparisonPattern pattern, final String... texts) {
-	return this.browser.waitForTextPresent(null, true/*fail*/, timeout(), true/*displayed*/, false/*multiple*/, pattern, texts);
-}
-
-/**
- * Wait until have got one of the expected texts on of the given element.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if none of the text is found before {@link #timeout()} seconds</li>
- * </ul>
- * </p>
- * @param texts The expected texts
- * @return One of the expected text as {@link String} or <code>null</code>
- * if element text never matches one before the timeout and asked not to fail
- * @throws ScenarioFailedError if element text never matches an expected ones
- * before the timeout and asked to fail
- *
- * @see WebBrowser#waitForText(WebBrowserElement, boolean, int, String...)
- */
-public WebBrowserElement waitForTextPresent(final String... texts) {
-	return this.browser.waitForTextPresent(null, true/*fail*/, timeout(), true/*displayed*/, false/*first occurrence*/, ComparisonPattern.StartsWith, texts);
-}
-
-/**
- * Execute a workaround to avoid raising the given {@link ScenarioFailedError}
- * exception.
+ * Execute a workaround to avoid raising the given {@link ScenarioFailedError} exception.
  * <p>
  * The default workaround is to refresh the page. Of course subclass might
  * either add some other actions or even replace it by more typical actions.

@@ -694,7 +694,7 @@ public void runTest(final Statement statement, final Description description) th
 		println("	3) Re-run the test (retry " + this.retriables + "/" + this.retriablesThreshold +  ") ...");
 		runTest(statement, description);
 	}
-	catch (MultipleVisibleElementsError mvee) {
+	catch (MultipleElementsFoundError mvee) {
 		boolean shouldFail = this.multiples >= this.multiplesThreshold;
 		manageFailure(start, mvee, isNotRerunnable || getBrowser() == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 		if (shouldFail) {

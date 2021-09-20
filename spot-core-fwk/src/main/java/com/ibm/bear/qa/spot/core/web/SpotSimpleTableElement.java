@@ -99,7 +99,7 @@ protected By getRowCellsElementsLocator() {
 
 @Override
 public WebBrowserElement getRowElementContainingText(final String text) {
-	return this.element.waitForElement(By.xpath(String.format(MATCHING_ROW_XPATH, text)), shortTimeout());
+	return this.element.waitForPotentialDisplayedChildElement(By.xpath(String.format(MATCHING_ROW_XPATH, text)), shortTimeout());
 }
 
 @Override

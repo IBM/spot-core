@@ -65,7 +65,7 @@ public void openAndCloseSmallDialog() {
 private ToolsQaModalDialog openDialog(final String kind, final String expectedContent) throws ScenarioFailedError {
 
 	// Get dialog opening button
-	WebBrowserElement buttonElement = waitForElement(By.id("show"+kind+"Modal"));
+	WebBrowserElement buttonElement = waitForMandatoryDisplayedPageElement(By.id("show"+kind+"Modal"));
 
 	// Open dialog
 	ToolsQaModalDialog dialog = new ToolsQaModalDialog(getPage(), kind);

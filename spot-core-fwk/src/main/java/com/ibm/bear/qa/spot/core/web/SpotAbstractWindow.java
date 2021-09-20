@@ -108,7 +108,7 @@ public void cancelAll() {
 	// Close them all
 	for (WebBrowserElement dialogElement: openedDialogElements) {
 		By closeButtonLocator = getCloseButtonLocator(false);
-		WebBrowserElement buttonElement = dialogElement.waitForElement(closeButtonLocator, 1/*sec*/);
+		WebBrowserElement buttonElement = dialogElement.waitForPotentialDisplayedChildElement(closeButtonLocator, 1/*sec*/);
 		if (buttonElement == null) {
 			throw new ScenarioFailedError("Cannot close dialog '"+this.locator+"' as button '"+closeButtonLocator+"' was not found.");
 		}

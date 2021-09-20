@@ -56,7 +56,7 @@ public WebTextHover(final WebPage page, final By locator) {
  */
 public static void waitAndCancel(final WebPage page) {
 	if (DEBUG) debugPrintln("		+ (page="+page+")");
-	WebBrowserElement dialogElement = page.waitForElement(LAST_TEXT_HOVER_LOCATOR, false/*fail*/, 1/*sec*/);
+	WebBrowserElement dialogElement = page.waitForPotentialDisplayedElementWithTimeout(LAST_TEXT_HOVER_LOCATOR, 1/*sec*/);
 	if (dialogElement != null) {
 		pause(250);
 		dialogElement.sendKeys(Keys.ESCAPE);
@@ -108,10 +108,10 @@ public WebBrowserElement getLinkElement() {
  */
 @Override
 public String getText() {
-	if (DEBUG) debugPrintln("		+ Get text for hover "+this.element);
+	debugPrintEnteringMethod();
 
 	// Get content element
-	WebBrowserElement contentElement = waitForMandatoryElement(By.xpath(".//div[@dojoattachpoint='content']"), openTimeout());
+	WebBrowserElement contentElement = this.element.waitForPotentialDisplayedChildElement(By.xpath(".//div[@dojoattachpoint='content']"), openTimeout());
 
 	// Return text if content is found
 	if (contentElement != null) {

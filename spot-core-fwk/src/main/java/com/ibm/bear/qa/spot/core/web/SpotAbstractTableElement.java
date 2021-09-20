@@ -158,7 +158,7 @@ protected List<WebBrowserElement> getCellElements(final int column) throws Scena
 	List<WebBrowserElement> cells = new ArrayList<>(rows.size());
 	for (WebBrowserElement rowElement: rows) {
 		try {
-			List<WebBrowserElement> rowCells = rowElement.waitForMandatoryElements(getRowCellsElementsLocator());
+			List<WebBrowserElement> rowCells = rowElement.waitShortlyForMandatoryDisplayedChildrenElements(getRowCellsElementsLocator());
 			cells.add(rowCells.get(column));
 		} catch (@SuppressWarnings("unused") StaleElementReferenceException sere) {
 			// Skip row which has disappeared
@@ -265,7 +265,7 @@ public List<List<String>> getContent() {
 	List<WebBrowserElement> rowElements = getRowElements();
 	List<List<String>> rows = new ArrayList<>(rowElements.size());
 	for (WebBrowserElement rowElement: rowElements) {
-		List<WebBrowserElement> cellElements = rowElement.waitForMandatoryElements(getRowCellsElementsLocator());
+		List<WebBrowserElement> cellElements = rowElement.waitShortlyForMandatoryDisplayedChildrenElements(getRowCellsElementsLocator());
 		List<String> cells = new ArrayList<>(cellElements.size());
 		for (WebBrowserElement cellElement: cellElements) {
 			cells.add(cellElement.getText());
@@ -307,7 +307,7 @@ protected WebBrowserElement getHeaderElement(final String column) {
  * @return The web elements as a {@link List} of {@link WebBrowserElement}.
  */
 protected List<WebBrowserElement> getHeaderElements() {
-	return this.element.waitForMandatoryElements(getHeaderElementsLocator());
+	return this.element.waitShortlyForMandatoryDisplayedChildrenElements(getHeaderElementsLocator());
 }
 
 /**
@@ -361,7 +361,7 @@ abstract public WebBrowserElement getRowElementContainingText(final String text)
  */
 protected List<WebBrowserElement> getRowElements() {
 	waitForTableToBeLoaded();
-	return this.element.waitForElements(getRowElementsLocator(), shortTimeout());
+	return this.element.waitForPotentialDisplayedChildrenElements(getRowElementsLocator(), shortTimeout());
 }
 
 /**

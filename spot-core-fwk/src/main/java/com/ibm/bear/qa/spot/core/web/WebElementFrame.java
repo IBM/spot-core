@@ -33,7 +33,7 @@ public class WebElementFrame extends WebBrowserFrame {
 	private final WebBrowserElement element;
 
 public WebElementFrame(final WebBrowser browser, final By locator) {
-	this(browser, browser.waitForElement(locator, Timeouts.DEFAULT_TIMEOUT));
+	this(browser, browser.waitForMandatoryDisplayedElement(locator, Timeouts.DEFAULT_TIMEOUT));
 }
 
 public WebElementFrame(final WebBrowser browser, final WebBrowserElement element) {

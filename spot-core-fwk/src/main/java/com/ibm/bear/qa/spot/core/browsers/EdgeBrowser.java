@@ -68,9 +68,9 @@ public boolean acceptPrivateConnection() {
 	WebBrowserElement titleElement = waitForElement(null, By.tagName("h1"), /*fail: */false, 1, /*displayed: */true, /*single: */true);
 	if (titleElement != null) {
 		if (titleElement.getText().equals("Your connection isn't private")) {
-			WebBrowserElement buttonElement = waitForElement(By.id("details-button"), 10);
+			WebBrowserElement buttonElement = waitForMandatoryDisplayedElement(By.id("details-button"), 10);
 			buttonElement.click();
-			WebBrowserElement linkElement = waitForElement(By.id("proceed-link"), 10);
+			WebBrowserElement linkElement = waitForMandatoryDisplayedElement(By.id("proceed-link"), 10);
 			linkElement.click();
 			sleep(2);
 			if (buttonElement.isDisplayed()) {

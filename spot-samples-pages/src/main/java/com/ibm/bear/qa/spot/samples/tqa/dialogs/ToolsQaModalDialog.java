@@ -69,7 +69,7 @@ protected By getCloseButtonLocator(final boolean validate) {
  */
 public String getContent() {
 	debugPrintEnteringMethod();
-	WebBrowserElement textElement = this.element.waitForMandatoryElement(By.className("modal-body"));
+	WebBrowserElement textElement = this.element.waitShortlyForMandatoryDisplayedChildElement(By.className("modal-body"));
 	return textElement.getText();
 }
 
@@ -80,7 +80,7 @@ public String getContent() {
  */
 public String getTitle() {
 	debugPrintEnteringMethod();
-	WebBrowserElement textElement = this.element.waitForMandatoryElement(By.className("modal-title"));
+	WebBrowserElement textElement = this.element.waitShortlyForMandatoryDisplayedChildElement(By.className("modal-title"));
 	return textElement.getText();
 }
 }

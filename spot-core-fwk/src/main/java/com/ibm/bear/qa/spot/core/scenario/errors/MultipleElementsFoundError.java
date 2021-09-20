@@ -18,28 +18,10 @@ import java.util.List;
 
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
 
-public class MultipleVisibleElementsError extends ScenarioFailedError {
-
 /**
- * Create a multiple visible elements error with a generic message.
- * @deprecated as of 6.0.0; use {@link #MultipleVisibleElementsError(List)}
- * to provide more debugging information.
+ * Class to distinguish error when several elements are found although only one was expected.
  */
-@Deprecated
-public MultipleVisibleElementsError() {
-	this("Found several visible elements.");
-}
-
-/**
- * Create a multiple visible elements error with a specific message.
- * @deprecated as of 6.0.0; use {@link #MultipleVisibleElementsError(List)}
- * or {@link #MultipleVisibleElementsError(String, List)} to provide more
- * debugging information.
- */
-@Deprecated
-public MultipleVisibleElementsError(final String message) {
-	super(message);
-}
+public class MultipleElementsFoundError extends ScenarioFailedError {
 
 /**
  * Create a multiple visible elements error, including information about the locator being used
@@ -47,7 +29,7 @@ public MultipleVisibleElementsError(final String message) {
  *
  * @param elements List of elements found
  */
-public MultipleVisibleElementsError(final List<WebBrowserElement> elements) {
+public MultipleElementsFoundError(final List<WebBrowserElement> elements) {
 	this("Unexpected multiple elements found.", elements);
 }
 
@@ -58,22 +40,9 @@ public MultipleVisibleElementsError(final List<WebBrowserElement> elements) {
  * @param message Specific message
  * @param elements List of elements found
  */
-public MultipleVisibleElementsError(final String message, final List<WebBrowserElement> elements) {
+public MultipleElementsFoundError(final String message, final List<WebBrowserElement> elements) {
 	super(message + LINE_SEPARATOR
 		+ "			-> element: " + elements.get(0).getLocator() + LINE_SEPARATOR
 		+ "			-> # found: " + elements.size());
-}
-
-/**
- * Create a multiple visible elements error with a specific message.
- * @deprecated as of 6.0.0; use {@link #MultipleVisibleElementsError(List)}
- * or {@link #MultipleVisibleElementsError(String, List)} to provide more
- * debugging information.
- * TODO If necessary, create a constructor that takes a throwable and additional
- * debugging information
- */
-@Deprecated
-public MultipleVisibleElementsError(final Throwable ex) {
-	super(ex);
 }
 }

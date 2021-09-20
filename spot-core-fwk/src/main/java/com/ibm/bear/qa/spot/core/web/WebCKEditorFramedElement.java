@@ -66,7 +66,7 @@ public WebCKEditorFramedElement(final WebPage page) {
 }
 
 public WebCKEditorFramedElement(final WebPage page, final By editorIframeLocator) {
-	super(page, page.getBrowser().waitForElement(editorIframeLocator, Timeouts.DEFAULT_TIMEOUT), new WebElementFrame(page.getBrowser(), editorIframeLocator));
+	super(page, page.getBrowser().waitForMandatoryDisplayedElement(editorIframeLocator, Timeouts.DEFAULT_TIMEOUT), new WebElementFrame(page.getBrowser(), editorIframeLocator));
 	setEditorInstance();
 }
 
@@ -197,14 +197,14 @@ public void fillInsertedTable(final String[][] content, final int index) {
 	}
 
 	// Check rows size
-	int rowsSize = tableElement.waitForElements(By.xpath(".//tr"), shortTimeout()).size();
+	int rowsSize = tableElement.waitForPotentialDisplayedChildrenElements(By.xpath(".//tr"), shortTimeout()).size();
 	final int rows = content.length;
 	if (rows != rowsSize) {
 		throw new ScenarioFailedError("Unexpected number of rows: "+rowsSize+" found in table element and "+rows+" data rows provided.");
 	}
 
 	// Store columns size
-	int columnsSize = tableElement.waitForMandatoryElements(By.xpath(".//tr[1]//td")).size();
+	int columnsSize = tableElement.waitShortlyForMandatoryDisplayedChildrenElements(By.xpath(".//tr[1]//td")).size();
 
 	// Select frame as the table elements are in the CKEditor frame
 	selectFrame();
@@ -366,7 +366,7 @@ private String[][] getInsertedTableContent(final WebBrowserElement tableElement)
 	selectFrame();
 
 	// Get table row elements
-	List<WebBrowserElement> rowElements = tableElement.waitForElements(By.xpath(".//tr"), shortTimeout());
+	List<WebBrowserElement> rowElements = tableElement.waitForPotentialDisplayedChildrenElements(By.xpath(".//tr"), shortTimeout());
 
 	// Build table content
 	String[][] tableContent = new String[rowElements.size()][];
@@ -393,7 +393,7 @@ private WebBrowserElement getInsertedTableElement(final int index) {
 private List<WebBrowserElement> getInsertedTableElements() {
 	try {
 		selectFrame();
-		return waitForElements(By.xpath(".//table"));
+		return waitForMandatoryDisplayedPageElements(By.xpath(".//table"));
 	}
 	finally {
 		resetFrame();

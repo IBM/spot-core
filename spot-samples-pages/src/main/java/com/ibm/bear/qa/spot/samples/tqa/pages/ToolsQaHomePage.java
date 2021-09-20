@@ -94,13 +94,13 @@ public ToolsQaTestPage openTestPage(final Group group) {
 	debugPrintEnteringMethod("group", group);
 
 	// Get card link element
-	WebBrowserElement linkElement = waitForElement(By.xpath("//h5[text()='"+group.getLabel()+"']")).getParent();
+	WebBrowserElement linkElement = waitForMandatoryDisplayedElement(By.xpath("//h5[text()='"+group.getLabel()+"']")).getParent();
 
 	// Open new page using link
 	return openPageUsingLink(linkElement, ToolsQaTestPage.class, group.toString());
 }
 
 private WebBrowserElement waitForBodyElement(final boolean fail) {
-	return waitForElement(By.className("home-body"), fail, fail ? 1 : timeout());
+	return this.browser.waitForElement(null, By.className("home-body"), fail, fail ? 1 : timeout(), /*displayed:*/ true, /*single:*/ true);
 }
 }

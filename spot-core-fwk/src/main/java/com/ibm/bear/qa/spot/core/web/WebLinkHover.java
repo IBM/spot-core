@@ -234,22 +234,22 @@ protected StringComparisonCriterion getTitleComparisonCriterion() {
 public WebBrowserElement getTitleElement() {
 
 	// Get the title element
-	WebBrowserElement hoverTitleElement = this.element.waitForElement(By.xpath(getTitleLinkXpath()), shortTimeout());
+	WebBrowserElement hoverTitleElement = this.element.waitForPotentialDisplayedChildElement(By.xpath(getTitleLinkXpath()), shortTimeout());
 	if (hoverTitleElement == null) {
 		// Check if there's a login
-		WebBrowserElement loginElement = this.element.waitForElement(By.xpath(".//a[text()='Log in']"), 1/*sec*/);
+		WebBrowserElement loginElement = this.element.waitForPotentialDisplayedChildElement(By.xpath(".//a[text()='Log in']"), 1/*sec*/);
 		if (loginElement != null) {
 			// Login
 			// TODO Need improvement for distributed topology
 			loginElement.click();
 			// Wait again for the title
-			hoverTitleElement = this.element.waitForElement(By.xpath(getTitleLinkXpath()), openTimeout());
+			hoverTitleElement = this.element.waitForPotentialDisplayedChildElement(By.xpath(getTitleLinkXpath()), openTimeout());
 		}
 		if (hoverTitleElement == null) {
 			// Workaround Select frame again
 			selectFrame();
 			// Wait again for the title
-			hoverTitleElement = this.element.waitForElement(By.xpath(getTitleLinkXpath()), openTimeout());
+			hoverTitleElement = this.element.waitForPotentialDisplayedChildElement(By.xpath(getTitleLinkXpath()), openTimeout());
 			if (hoverTitleElement == null) {
 				throw new WaitElementTimeoutError("The rich hover title was not found.");
 			}
@@ -278,7 +278,7 @@ public WebBrowserElement getTitleElement() {
 		}
 
 		// Wait again for the title
-		hoverTitleElement = this.element.waitForElement(By.xpath(getTitleLinkXpath()), openTimeout());
+		hoverTitleElement = this.element.waitForPotentialDisplayedChildElement(By.xpath(getTitleLinkXpath()), openTimeout());
 		this.title = hoverTitleElement.getText();
 	}
 

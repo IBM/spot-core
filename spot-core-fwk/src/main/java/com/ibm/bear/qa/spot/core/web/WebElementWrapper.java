@@ -13,14 +13,14 @@
 package com.ibm.bear.qa.spot.core.web;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.sleep;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.whoAmI;
 
 import java.util.List;
 
 import org.openqa.selenium.*;
 
 import com.ibm.bear.qa.spot.core.config.Config;
-import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
-import com.ibm.bear.qa.spot.core.scenario.errors.WaitElementTimeoutError;
+import com.ibm.bear.qa.spot.core.scenario.errors.*;
 
 /**
  * This class wraps a web element and add some actions and functionalities
@@ -37,8 +37,6 @@ import com.ibm.bear.qa.spot.core.scenario.errors.WaitElementTimeoutError;
  * <li>{@link #findElement(String, boolean)}: Find an element using the given
  * xpath relatively to the wrapped element.</li>
  * <li>{@link #waitWhileDisplayed(int)}: Wait until the current window is closed.</li>
- * <li>{@link #waitForElement(By)}: Wait until having found an element
- * searched using the given locator.</li>
  * </ul>
  * </p>
  */
@@ -46,9 +44,6 @@ abstract public class WebElementWrapper extends WebPageElement {
 
 	/**
 	 * Locator for title element.
-	 * <p>
-	 * Design Backward compatibility with 4.0.0.1 version
-	 * </p>
 	 */
 	protected static final By[] TITLE_POSSIBLE_BYS = new By[] {
 		By.xpath(".//*[@dojoattachpoint='_headerPrimary']"),
@@ -70,13 +65,13 @@ abstract public class WebElementWrapper extends WebPageElement {
 	 */
 	protected WebElementWrapper parent;
 
-public WebElementWrapper(final WebElementWrapper parent, final By locator, final WebBrowserFrame frame) {
-	this(parent.getPage(), frame==null ? parent.element.waitForMandatoryElement(locator) : parent.getPage().waitForElement(locator), frame);
-	this.parent = parent;
-}
-
 public WebElementWrapper(final WebElementWrapper parent, final By locator) {
 	this(parent, locator, null);
+}
+
+public WebElementWrapper(final WebElementWrapper parent, final By locator, final WebBrowserFrame frame) {
+	this(parent.getPage(), frame==null ? parent.element.waitShortlyForMandatoryDisplayedChildElement(locator) : parent.getPage().waitForMandatoryDisplayedElement(locator), frame);
+	this.parent = parent;
 }
 
 public WebElementWrapper(final WebElementWrapper parent, final WebBrowserElement element) {
@@ -96,7 +91,12 @@ public WebElementWrapper(final WebPage page) {
 public WebElementWrapper(final WebPage page, final By locator) {
 	super(page);
 	//waitForElement() in this class can't filter out hidden elements, hence use super class implementation instead
-	this.element = super.waitForElement(locator, true, openTimeout());
+	this.element = super.waitForMandatoryDisplayedPageElementWithTimeout(locator, openTimeout());
+}
+
+public WebElementWrapper(final WebPage page, final By locator, final WebBrowserFrame frame) {
+	super(page, frame);
+	this.element = super.waitForMandatoryDisplayedPageElementWithTimeout(locator, openTimeout());
 }
 
 public WebElementWrapper(final WebPage page, final WebBrowserElement element) {
@@ -104,18 +104,13 @@ public WebElementWrapper(final WebPage page, final WebBrowserElement element) {
 	this.element = element;
 }
 
-public WebElementWrapper(final WebPage page, final WebBrowserFrame frame) {
-	super(page, frame);
-}
-
 public WebElementWrapper(final WebPage page, final WebBrowserElement element, final WebBrowserFrame frame) {
 	super(page, frame);
 	this.element = element;
 }
 
-public WebElementWrapper(final WebPage page, final By locator, final WebBrowserFrame frame) {
+public WebElementWrapper(final WebPage page, final WebBrowserFrame frame) {
 	super(page, frame);
-	this.element = super.waitForElement(locator, true, openTimeout());
 }
 
 /**
@@ -144,33 +139,6 @@ protected WebBrowserElement clickButton(final By locator, final int timeout) {
 
 	// Click on button
 	return this.browser.clickButton(buttonElement, timeout, false/*do not validate*/);
-}
-
-/**
- * Perform a deep search to find the element from the given xpath.
- * <p>
- * Initially searching for the web element by using {@link #findElement(By, boolean)}.
- * If it's not found using this method, then try to look for the element in possible
- * frames of the wrapped element.
- * </p>
- * @param xpath The Xpath of the web element to find
- * @return The web element as a {@link WebBrowserElement} or <code>null</code>
- * if it has not been found.
- * @deprecated Do not use. It's only kept for tracability...
- */
-@Deprecated
-protected WebBrowserElement deepFindElement(final String xpath) {
-
-	// Look for the element using regular method
-	WebBrowserElement buttonElement = findElement(xpath, false/*no recovery*/);
-
-	// If not found , then try to find it in another frame
-	if (buttonElement == null) {
-		buttonElement = findElementInFrames(By.xpath(xpath));
-	}
-
-	// Return the found element
-	return buttonElement;
 }
 
 /**
@@ -278,17 +246,6 @@ protected WebBrowserElement findElement(final String xpath, final boolean recove
 }
 
 /**
- * Return whether the currentl wrapped element is displayed or not.
- *
- * @param recovery Tells whether to use recovery or not to get the info
- * @return <code>true</code> if the wrapped element is still valid and displayed,
- * <code>false</code> otherwise.
- */
-public boolean isDisplayed(final boolean recovery) {
-	return this.element.isDisplayed(recovery);
-}
-
-/**
  * Returns the parent element.
  *
  * @return The parent element of <code>null</code> if there's no parent.
@@ -319,87 +276,14 @@ public String getText() {
 }
 
 /**
- * Wait until having found an element searched using the given locator.
- * <p>
- * The element is searched in the entire document and with no frame.
- * </p>
- * @param locator The locator to use for the search
- * @return The found web element as a {@link WebBrowserElement}.
- * @throws ScenarioFailedError If the element is not found before default
- * timeout is reached.
- * TODO Try to get rid off this method by selecting the frame explicitly before
- * waiting for an element. Hence, {@link WebPageElement} waitForElement*
- * methods could be used instead.
- */
-protected WebBrowserElement waitForMandatoryElement(final By locator) {
-	return waitForMandatoryElement(null, locator, timeout(), false/*no frame*/);
-}
-
-/**
- * Wait until having found an element searched using the given locator.
- * <p>
- * The element is searched in the entire document and with no frame.
- * </p>
- * @param locator The locator to use for the search
- * @param timeout Time to wait until giving up if the element is not found
- * @return The found web element as a {@link WebBrowserElement}.
- * @throws ScenarioFailedError If the element is not found before the given
- * timeout is reached.
- * TODO Try to get rid off this method by selecting the frame explicitly before
- * waiting for an element. Hence, {@link WebPageElement} waitForElement*
- * methods could be used instead.
- */
-protected WebBrowserElement waitForMandatoryElement(final By locator, final int timeout) {
-	return waitForMandatoryElement(null, locator, timeout, false/*no frame*/);
-}
-
-/**
- * Wait until have found the web element using the given locator relatively
- * to the given parent element.
- * <p>
- * Note that:
- * <ul>
- * <li>it will fail if:
- * <ol>
- * <li>the element is not found before {@link #timeout()} seconds</li>
- * <li>there's more than one element found</li>
- * </ol></li>
- * <li>hidden element will be ignored</li>
- * </ul>
- * </p>
- * @param parentElement The parent element where to start to search from,
- * if <code>null</code>, then search in the entire page content
- * @param locator The locator to find the element in the current page.
- * @return The web element as {@link WebBrowserElement}
- * @throws ScenarioFailedError if no element was found before the timeout.
+ * Return whether the currentl wrapped element is displayed or not.
  *
- * @see WebBrowser#waitForElement(WebBrowserElement, By, boolean, int, boolean, boolean)
- * TODO Try to get rid off this method by selecting the frame explicitly before
- * waiting for an element. Hence, {@link WebPageElement} waitForElement*
- * methods could be used instead.
+ * @param recovery Tells whether to use recovery or not to get the info
+ * @return <code>true</code> if the wrapped element is still valid and displayed,
+ * <code>false</code> otherwise.
  */
-protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement parentElement, final By locator) {
-	return waitForMandatoryElement(parentElement, locator, timeout(), false/*no frame*/);
-}
-
-/**
- * Wait until having found an element searched using the given locator.
- * <p>
- * The element is searched with no frame.
- * </p>
- * @param parentElement The element from which the search has to be started.
- * If <code>null</code>, then search in the entire page.
- * @param locator The locator to use for the search
- * @param timeout Time to wait until giving up if the element is not found
- * @return The found web element as a {@link WebBrowserElement}.
- * @throws ScenarioFailedError If the element is not found before the given
- * timeout is reached.
- * TODO Try to get rid off this method by selecting the frame explicitly before
- * waiting for an element. Hence, {@link WebPageElement} waitForElement*
- * methods could be used instead.
- */
-protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement parentElement, final By locator, final int timeout) {
-	return waitForMandatoryElement(parentElement, locator, timeout, false);
+public boolean isDisplayed(final boolean recovery) {
+	return this.element.isDisplayed(recovery);
 }
 
 /**
@@ -409,8 +293,6 @@ protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement pare
  * frame is selected after the method execution. That may impact further element
  * researches...
  * </p>
- * @param parentElement The element from which the search has to be started.
- * If <code>null</code>, then search in the entire page.
  * @param locator The locator to use for the search
  * @param timeout Time to wait until giving up if the element is not found
  * @param frame Tells whether the element should be searched in a frame or
@@ -418,18 +300,19 @@ protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement pare
  * @return The found web element as a {@link WebBrowserElement}.
  * @throws ScenarioFailedError If the element is not found before the given
  * timeout is reached.
+ * @deprecated Since waitFor*Element methods renaming
  * TODO Try to get rid off this method by selecting the frame explicitly before
  * waiting for an element. Hence, {@link WebPageElement} waitForElement*
  * methods could be used instead.
  */
-protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement parentElement, final By locator, final int timeout, final boolean frame) {
+@Deprecated
+protected WebBrowserElement waitForMandatoryElement(final By locator, final int timeout, final boolean frame) {
 
 	// Get the search context
-	SearchContext searchContext = parentElement == null ? (this.element == null ? this.browser : this.element) : parentElement;
+	SearchContext searchContext = this.element == null ? this.browser : this.element;
 
 	// Try to find the element
-	final boolean findInFrame = parentElement == null && frame;
-	WebBrowserElement foundElement = findInFrame
+	WebBrowserElement foundElement = frame
 		? this.browser.findElementInFrames(locator)
 		: (WebBrowserElement) searchContext.findElement(locator);
 
@@ -440,13 +323,23 @@ protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement pare
 			throw new WaitElementTimeoutError("Cannot get the expected element "+locator);
 		}
 		sleep(1);
-		foundElement = findInFrame
+		foundElement = frame
 			? this.browser.findElementInFrames(locator)
 			: (WebBrowserElement) searchContext.findElement(locator);
 	}
 
 	// Return the found element
 	return foundElement;
+}
+
+/**
+ * @see WebBrowserElement#waitShortlyForMandatoryChildElement(By)
+ */
+protected WebBrowserElement waitShortlyForMandatoryChildElement(final By relativeLocator) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	if (this.element == null) {
+		throw new ScenarioMissingImplementationError(whoAmI());
+	}
+	return this.element.waitShortlyForMandatoryChildElement(relativeLocator);
 }
 
 /**

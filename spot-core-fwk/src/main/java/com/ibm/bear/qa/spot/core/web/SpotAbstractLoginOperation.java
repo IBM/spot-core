@@ -28,11 +28,13 @@ import com.ibm.bear.qa.spot.core.topology.Application;
  * </p><p>
  * This class defines or overrides following methods:
  * <ul>
+ * <li>{@link #beforeLogin()}: Perform some check or actions before performing the actual login action.</li>
  * <li>{@link #checkInvalidLoginMessage()}: Check the whether the login operation failed or not.</li>
  * <li>{@link #click(By)}: Click on the web element found in the current page using the given locator.</li>
  * <li>{@link #click(WebBrowserElement,By)}: Click on the web element found using the given locator relatively to</li>
  * <li>{@link #getApplication()}: Return the application associated with the page.</li>
  * <li>{@link #getLoginButtonLocator()}: Return the locator for the login button to click on to perform the login.</li>
+ * <li>{@link #getPage()}: Return the web page in which the current element belongs to.</li>
  * <li>{@link #getUserIdElement()}: Return the web element where user ID has to be entered.</li>
  * <li>{@link #getUserIdLocator()}: Return the locator for the web element to enter user ID.</li>
  * <li>{@link #getUserPasswordElement()}: Return the web element where user password has to be entered.</li>
@@ -45,9 +47,9 @@ import com.ibm.bear.qa.spot.core.topology.Application;
  * <li>{@link #storeUserAsLoggedInApplication()}: Store the user as logged int for the corresponding page application.</li>
  * <li>{@link #timeout()}: Return the general timeout used on the page.</li>
  * <li>{@link #typeText(By,String)}: Type a text into an input web element found in the current page using the</li>
- * <li>{@link #waitForElement(By)}: Wait until have found the web element using the given locator.</li>
- * <li>{@link #waitForElement(By,boolean,int)}: Wait until have found the web element using the given locator.</li>
- * <li>{@link #waitForElement(By,boolean,int,boolean)}: Wait until have found the web element using the given locator.</li>
+ * <li>{@link #waitForMandatoryPageElement(By)}: Wait until have found the web element using the given locator.</li>
+ * <li>{@link #waitForPotentialPageElementWithTimeout(By,int)}: Wait until have found the web element using the given locator.</li>
+ * <li>{@link #waitForPotentialPageElementsWithTimeout(By,int)}: Wait until have found some elements (ie. at least one) web elements using</li>
  * </ul>
  * </p>
  */
@@ -141,7 +143,7 @@ protected WebPage getPage() {
  * @return The web element
  */
 protected WebBrowserElement getUserIdElement() {
-	return this.page.waitForElement(getUserIdLocator());
+	return this.page.waitForMandatoryDisplayedElement(getUserIdLocator());
 }
 
 /**
@@ -157,7 +159,7 @@ abstract protected By getUserIdLocator();
  * @return The web element
  */
 protected WebBrowserElement getUserPasswordElement() {
-	return this.page.waitForElement(getUserPasswordLocator());
+	return this.page.waitForMandatoryDisplayedElement(getUserPasswordLocator());
 }
 
 /**
@@ -180,7 +182,7 @@ protected boolean isExpectingLogin() {
 	if (locator == null) {
 		return false;
 	}
-	return this.page.waitForElement(locator, /*fail:*/false, 1) != null;
+	return this.page.waitForPotentialDisplayedElementWithTimeout(locator, 1) != null;
 }
 
 /**
@@ -261,39 +263,30 @@ protected void typeText(final By locator, final String text) {
 }
 
 /**
- * Wait until have found the web element using the given locator.
+ * Wait until have found in current page the web element using the given locator.
  *
- * @see WebPage#waitForElement(By)
+ * @see WebPage#waitForMandatoryDisplayedElement(By)
  */
-protected WebBrowserElement waitForElement(final By locator) {
-	return this.page.waitForElement(locator);
+protected WebBrowserElement waitForMandatoryPageElement(final By locator) {
+	return this.page.waitForMandatoryDisplayedElement(locator);
 }
 
 /**
- * Wait until have found the web element using the given locator.
+ * Wait until have found in current page the web element using the given locator.
  *
- * @see WebPage#waitForElement(By, boolean, int)
+ * @see WebPage#waitForPotentialDisplayedElementWithTimeout(By, int)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean fail, final int timeout) {
-	return this.page.waitForElement(locator, fail, timeout);
+protected WebBrowserElement waitForPotentialPageElementWithTimeout(final By locator, final int timeout) {
+	return this.page.waitForPotentialDisplayedElementWithTimeout(locator, timeout);
 }
 
 /**
- * Wait until have found the web element using the given locator.
+ * Wait until have found in current page some elements (ie. at least one) web elements
+ * using the given locator and timeout.
  *
- * @see WebPage#waitForElement(By, boolean, int, boolean)
+ * @see WebPage#waitForPotentialDisplayedElementsWithTimeout(By, int)
  */
-protected WebBrowserElement waitForElement(final By locator, final boolean fail, final int timeout, final boolean displayed) {
-	return this.page.waitForElement(locator, fail, timeout, displayed);
-}
-
-/**
- * Wait until have found some elements (ie. at least one) web elements using
- * the given locator.
- *
- * @see WebPage#waitForElements(By, boolean, int)
- */
-protected List<WebBrowserElement> waitForElements(final By locator, final boolean fail, final int timeout) {
-	return this.page.waitForElements(locator, fail, timeout);
+protected List<WebBrowserElement> waitForPotentialPageElementsWithTimeout(final By locator, final int timeout) {
+	return this.page.waitForPotentialDisplayedElementsWithTimeout(locator, timeout);
 }
 }

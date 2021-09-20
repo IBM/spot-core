@@ -398,7 +398,7 @@ protected WebBrowserElement getContainerElement() {
 		if (this.containerLocator == null) {
 			this.containerElement = this.element;
 		} else {
-			this.containerElement = waitForMandatoryElement(this.containerLocator, shortTimeout());
+			this.containerElement = waitShortlyForMandatoryChildElement(this.containerLocator);
 		}
 	}
 	return this.containerElement;
@@ -624,7 +624,7 @@ protected void initRowNodeElement() {
 	if (this.rowNodeLocator == null) {
 		this.rowNodeElement = this.element;
 	} else {
-		this.rowNodeElement = this.element.waitForMandatoryElement(this.rowNodeLocator);
+		this.rowNodeElement = this.element.waitShortlyForMandatoryDisplayedChildElement(this.rowNodeLocator);
 	}
 }
 

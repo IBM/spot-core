@@ -50,21 +50,21 @@ public ToolsQaTestTextBoxContainer(final ToolsQaTestPage page) {
 @Override
 public String getCurrentAddress() {
 	debugPrintEnteringMethod();
-	WebBrowserElement textElement = waitForElement(CURRENT_ADDRESS_LOCATOR);
+	WebBrowserElement textElement = waitForMandatoryDisplayedPageElement(CURRENT_ADDRESS_LOCATOR);
 	return textElement.getAttributeValue("value");
 }
 
 @Override
 public String getEmail() {
 	debugPrintEnteringMethod();
-	WebBrowserElement textElement = waitForElement(EMAIL_LOCATOR);
+	WebBrowserElement textElement = waitForMandatoryDisplayedPageElement(EMAIL_LOCATOR);
 	return textElement.getAttributeValue("value");
 }
 
 @Override
 public String getFullName() {
 	debugPrintEnteringMethod();
-	WebBrowserElement textElement = waitForElement(FULL_NAME_LOCATOR);
+	WebBrowserElement textElement = waitForMandatoryDisplayedPageElement(FULL_NAME_LOCATOR);
 	return textElement.getAttributeValue("value");
 }
 

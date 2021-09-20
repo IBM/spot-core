@@ -13,7 +13,6 @@
 package com.ibm.bear.qa.spot.core.web;
 
 import static com.ibm.bear.qa.spot.core.browser.BrowserConstants.NO_ELEMENT_FOUND;
-import static com.ibm.bear.qa.spot.core.config.Timeouts.DEFAULT_TIMEOUT;
 import static com.ibm.bear.qa.spot.core.config.Timeouts.SHORT_TIMEOUT;
 import static com.ibm.bear.qa.spot.core.performance.PerfManager.PERFORMANCE_ENABLED;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
@@ -93,7 +92,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser.ClickableWorkaroundState;
  * <li>{@link #getFollowingSibling(String)}: Return the next sibling element from current one with the given tag.</li>
  * <li>{@link #getFrame()}: Return the element frame.</li>
  * <li>{@link #getFullLocator()}: Return the full locator for the current element.</li>
- * <li>{@link #getLocator()}:  Return the search locator to find the current element.</li>
+ * <li>{@link #getLocator()}:  Return the locator to find the current element.</li>
  * <li>{@link #getParent()}: Return the parent of the current element.</li>
  * <li>{@link #getText(boolean)}: Perform the {@link WebElement#getText()} operation w/o recovery.</li>
  * <li>{@link #getTextWhenVisible()}: Returns the text of the web element after having ensured that it's visible.</li>
@@ -201,7 +200,7 @@ protected WebBrowserElement(final WebBrowser browser, final By locator) {
 }
 
 /**
- * Create a web browser element using the given search locator in the given
+ * Create a web browser element using the given locator in the given
  * search context and in the current frame.
  * <p>
  * The browser is stored to allow recovery.
@@ -218,7 +217,7 @@ public WebBrowserElement(final WebBrowser browser, final SearchContext context, 
 }
 
 /**
- * Create a web browser element instance using the given search locator
+ * Create a web browser element instance using the given locator
  * in the given search context and frame.
  * <p>
  * The browser is stored to allow recovery.
@@ -237,7 +236,7 @@ public WebBrowserElement(final WebBrowser browser, final WebBrowserFrame webFram
 }
 
 /**
- * Create a web browser element using the given search locator in the given
+ * Create a web browser element using the given locator in the given
  * search context.
  * <p>
  * The browser is stored to allow recovery.
@@ -251,7 +250,7 @@ public WebBrowserElement(final WebBrowser browser, final WebBrowserFrame webFram
  * or a parent element.
  * @param locator The locator to be used to search for the element in the context
  * @param element The element wrapped by the created instance. If this
- * argument is used, then the search locator will be ignored.
+ * argument is used, then the locator will be ignored.
  * @param size The size of the parent element children list. This argument is
  * used when searching for several element (see {@link #findElements(By, boolean, boolean)})
  * @param index The index in the parent element children list. This argument is
@@ -564,13 +563,13 @@ public Object executeScript(final String script) {
  * </p><p>
  * The search is performed in the current frame.
  * </p>
- * @param elemLocator The locator to use for the search
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
  * @return The found web element as a {@link WebBrowserElement} or <code>null</code>
  * if the element is not found
  */
 @Override
-public WebBrowserElement findElement(final By elemLocator) {
-	return findElement(elemLocator, this.frame, true/*recovery*/);
+public WebBrowserElement findElement(final By relativeLocator) {
+	return findElement(relativeLocator, this.frame, true/*recovery*/);
 }
 
 /**
@@ -583,13 +582,13 @@ public WebBrowserElement findElement(final By elemLocator) {
  * </p><p>
  * The search is performed in the current frame.
  *  </p>
- * @param elemLocator The locator to use for the search
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
  * @param recovery Tells whether try to recover if a {@link WebDriverException} occurs
  * @return The found web element as a {@link WebBrowserElement} or <code>null</code>
  * if the element is not found
  */
-public WebBrowserElement findElement(final By elemLocator, final boolean recovery) {
-	return findElement(elemLocator, this.frame, recovery);
+public WebBrowserElement findElement(final By relativeLocator, final boolean recovery) {
+	return findElement(relativeLocator, this.frame, recovery);
 }
 
 /**
@@ -605,25 +604,20 @@ public WebBrowserElement findElement(final By elemLocator, final boolean recover
  * </p><p>
  * The search is performed in the current frame.
  *  </p>
- * @param elemLocator The locator to use for the search
+ * @param relativeLocator The locator to use for the search
  * @param webFrame The frame to use to find for the web element
  * @param recovery Tells whether try to recover if a {@link WebDriverException} occurs
  * @return The found web element as a {@link WebBrowserElement} or <code>null</code>
  * if the element is not found
  * @see WebElement#findElement(By)
  */
-public WebBrowserElement findElement(final By elemLocator, final WebBrowserFrame webFrame, final boolean recovery) {
+public WebBrowserElement findElement(final By relativeLocator, final WebBrowserFrame webFrame, final boolean recovery) {
 	if (DEBUG) {
-		debugPrintEnteringMethod("elemLocator", getLocatorString(elemLocator), "webFrame", webFrame, "recovery", recovery);
+		debugPrintEnteringMethod("relativeLocator", getLocatorString(relativeLocator), "webFrame", webFrame, "recovery", recovery);
 	}
-	/*
-	if (DEBUG) {
-		debugPrintln("			(finding element "+elemLocator+" for "+this+" in frame '"+webFrame+"')");
-	}
-	*/
 
 	// Fix locator if necessary
-	By fixedLocator = fixLocator(elemLocator);
+	By fixedLocator = fixLocator(relativeLocator);
 
 	// Select the frame again if necessary
 	if (this.frame != this.browser.frame) {
@@ -672,12 +666,12 @@ public WebBrowserElement findElement(final By elemLocator, final WebBrowserFrame
  * Catch {@link WebDriverException} and retry the operation until success or
  * {@link #MAX_RECOVERY_ATTEMPTS} attempts has been made.
  * </p>
- * @param elemLocator The locator to find the elements in the current page.
+ * @param relativeLocator The locator to find the elements in the current page.
  * @return The web elements list as a {@link List} of {@link WebBrowserElement}
  */
 @Override
-public List<WebElement> findElements(final By elemLocator) {
-	return findElements(elemLocator, true/*displayed*/, true/*recovery*/);
+public List<WebElement> findElements(final By relativeLocator) {
+	return findElements(relativeLocator, true/*displayed*/, true/*recovery*/);
 }
 
 /**
@@ -693,12 +687,12 @@ public List<WebElement> findElements(final By elemLocator) {
  * </p><p>
  * Note that only displayed elements are added to the returned list.
  *  </p>
- * @param elemLocator The locator to find the elements in the current page.
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
  * @param recovery Tells whether try to recover is a {@link WebDriverException} occurs
  * @return The web elements list as a {@link List} of {@link WebBrowserElement}
  */
-public List<WebElement> findElements(final By elemLocator, final boolean recovery) {
-	return findElements(elemLocator, true/*displayed*/, recovery);
+public List<WebElement> findElements(final By relativeLocator, final boolean recovery) {
+	return findElements(relativeLocator, true/*displayed*/, recovery);
 }
 
 /**
@@ -712,7 +706,7 @@ public List<WebElement> findElements(final By elemLocator, final boolean recover
  * If recovery is not allowed and an exception occurs, then it's still caught
  * but an empty list is returned instead of retrying.
  *  </p>
- * @param elemLocator The locator to find the elements in the current page.
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
  * @param displayed When <code>true</code> then only displayed element can be returned.
  * When <code>false</code> then the returned element can be either displayed or hidden.
  * @param recovery Tells whether try to recover is a {@link WebDriverException} occurs
@@ -720,18 +714,13 @@ public List<WebElement> findElements(final By elemLocator, final boolean recover
  * or an empty list if nothing matches
  * @see WebElement#findElements(By)
  */
-public List<WebElement> findElements(final By elemLocator, final boolean displayed, final boolean recovery) {
+public List<WebElement> findElements(final By relativeLocator, final boolean displayed, final boolean recovery) {
 	if (DEBUG) {
-		debugPrintEnteringMethod("elemLocator", getLocatorString(elemLocator), "displayed", displayed, "recovery", recovery);
+		debugPrintEnteringMethod("relativeLocator", getLocatorString(relativeLocator), "displayed", displayed, "recovery", recovery);
 	}
-	/*
-	if (DEBUG) {
-		debugPrintln("			(finding elements "+elemLocator+" for "+this+", displayed="+displayed+", recovery="+recovery+")");
-	}
-	*/
 
 	// Fix locator if necessary
-	By fixedLocator = fixLocator(elemLocator);
+	By fixedLocator = fixLocator(relativeLocator);
 
 	// Select the frame again if necessary
 	if (this.frame != this.browser.frame) {
@@ -1089,7 +1078,7 @@ public WebBrowserElement getFollowingSibling() throws WaitElementTimeoutError {
  * with the given tag.
  */
 public WebBrowserElement getFollowingSibling(final String tag) throws WaitElementTimeoutError {
-	return waitForMandatoryElement(By.xpath("./following-sibling::"+tag));
+	return waitShortlyForMandatoryDisplayedChildElement(By.xpath("./following-sibling::"+tag));
 }
 
 /**
@@ -1171,9 +1160,9 @@ public Point getLocation() {
 }
 
 /**
- * Return the search locator to find the current element.
+ * Return the locator to find the current element.
  *
- * @return The search locator as a {@link By}.
+ * @return The locator as a {@link By}.
  */
 public By getLocator() {
 	return this.locator;
@@ -2057,53 +2046,55 @@ public String toString() {
 	return builder.toString();
 }
 
-
 /**
- * Wait until have found the element using given search locator.
+ * Wait until have found the mandatory child element using the given relative locator and timeout.
  * <p>
- * Note that hidden elements are not returned by this method.
+ * Note that:
+ * <ol>
+ * <li>hidden element are not returned by this method.</li>
+ * </ol>
  * </p>
- * @param elemLocator The locator to find the element in the current page.
- * @param timeout The time to wait before giving up the research
- * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout
- * @throws ScenarioFailedError If there are several found elements although
- * only one was expected.
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @param timeout The time in seconds to wait before raising an error if the mandatory
+ * element is not found in the current element HTML hierarchy.
+ * @return The web element as {@link WebBrowserElement}. It cannot be <code>null</code>.
+ * @throws WaitElementTimeoutError If no element is found before the given timeout.
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
  */
-public WebBrowserElement waitForElement(final By elemLocator, final int timeout) {
-	return waitForElement(elemLocator, timeout, true/*displayed*/, true/*single*/);
+public WebBrowserElement waitForMandatoryDisplayedChildElement(final By relativeLocator, final int timeout) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return this.browser.waitForElement(this, relativeLocator, true/*fail*/, timeout, true/*displayed*/, true/*single*/);
 }
 
 /**
- * Wait until have found the element using given search locator.
- *
- * @param elemLocator The locator to find the element in the current page.
- * @param timeout The time to wait before giving up the research
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
- * @param single Tells whether a single element is expected
+ * Wait until have found a potential child element using the given relative locator and timeout.
+ * <p>
+ * Note that returned element might be hidden.
+ * </p>
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @param timeout The time in seconds before giving up if the element is not found
  * @return The web element as {@link WebBrowserElement} or <code>null</code>
  * if no element was found before the timeout
- * @throws ScenarioFailedError If there are several found elements although
+ * @throws MultipleElementsFoundError If there are several found elements although
  * only one was expected.
  */
-public WebBrowserElement waitForElement(final By elemLocator, final int timeout, final boolean displayed, final boolean single) {
+public WebBrowserElement waitForPotentialChildElement(final By relativeLocator, final int timeout) throws MultipleElementsFoundError {
+	return waitForPotentialChildElement(relativeLocator, timeout, /*displayed:*/false);
+}
+
+private WebBrowserElement waitForPotentialChildElement(final By relativeLocator, final int timeout, final boolean displayed) throws MultipleElementsFoundError {
 	if (DEBUG) {
-		debugPrintEnteringMethod("elemLocator", getLocatorString(elemLocator), "timeout", timeout, "displayed", displayed, "single", single);
+		debugPrintEnteringMethod("relativeLocator", getLocatorString(relativeLocator), "timeout", timeout, "displayed", displayed);
 	}
 
 	// Wait for all elements
-	List<WebBrowserElement> foundElements = waitForElements(elemLocator, timeout, displayed);
+	List<WebBrowserElement> foundElements = waitForPotentialChildrenElements(relativeLocator, timeout, displayed);
 	if (foundElements == null) {
 		return null;
 	}
 	int listSize = foundElements.size();
 	if (listSize == 0) return null;
 	if (!getParameterBooleanValue("performanceEnabled",false) && listSize > 1) {
-		if (single) {
-			throw new MultipleVisibleElementsError(foundElements);
-		}
-		debugPrintln("WARNING: found more than one elements ("+listSize+"), return the first one!");
+		throw new MultipleElementsFoundError(foundElements);
 	}
 
 	// Return the found element
@@ -2111,63 +2102,31 @@ public WebBrowserElement waitForElement(final By elemLocator, final int timeout,
 }
 
 /**
- * Wait until have found one of element using the given search mechanisms.
+ * Wait until have found potential children elements using the given relative locator and timeout.
  * <p>
- * Fail if:
- * <ul>
- * <li>none of the possible elements are found after having waited the given
- * timeout.</li>
- * <li>several elements are found for the same locator.</li>
+ * Note that returned elements might be hidden.
  * </p>
- * @param locators The locators of the expected elements.
- * @param timeout The time to wait before giving up the research
- * @return The web element as {@link WebBrowserElement} or <code>null</code>
- * if no element was found before the timeout and asked not to fail
- * @throws ScenarioFailedError if no element was found before the timeout or
- * several elements are found for the same locator.
- */
-public WebBrowserElement waitForElement(final By[] locators, final int timeout) {
-	return this.browser.waitForElement(this, locators, true/*fail*/, timeout);
-}
-
-/**
- * Wait until have found at least one element using the given search locator.
- * <p>
- * Only displayed element are return by this method.
- * </p>
- * @param elemLocator The locator to find the element
- * @param timeout The time in seconds before giving up if the element is not
- * found
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @param timeout The time in seconds before giving up if the element is not found
  * @return A {@link List} of web element as {@link WebBrowserElement}. Might
  * be empty if no element was found before the timeout
  */
-public List<WebBrowserElement> waitForElements(final By elemLocator, final int timeout) {
-	return waitForElements(elemLocator, timeout, true/*displayed*/);
+public List<WebBrowserElement> waitForPotentialChildrenElements(final By relativeLocator, final int timeout) {
+	return waitForPotentialChildrenElements(relativeLocator, timeout, /*displayed:*/ false);
 }
 
-/**
- * Wait until have found at least one element using the given search locator.
- *
- * @param elemLocator The locator to find the element
- * @param timeout The time in seconds before giving up if the element is not
- * found
- * @param displayed When <code>true</code> then only displayed element can be returned.
- * When <code>false</code> then the returned element can be either displayed or hidden.
- * @return A {@link List} of web element as {@link WebBrowserElement}. Might
- * be empty if no element was found before the timeout
- */
-public List<WebBrowserElement> waitForElements(final By elemLocator, final int timeout, final boolean displayed) {
+private List<WebBrowserElement> waitForPotentialChildrenElements(final By relativeLocator, final int timeout, final boolean displayed) {
 	if (DEBUG) {
-		debugPrintEnteringMethod("elemLocator", getLocatorString(elemLocator), "timeout", timeout, "displayed", displayed);
+		debugPrintEnteringMethod("relativeLocator", getLocatorString(relativeLocator), "timeout", timeout, "displayed", displayed);
 	}
 
 	// Select the frame again if necessary
 	if (this.frame != this.browser.frame) {
-		this.browser.selectFrame(this.frame, false/*store*/);
+		this.browser.selectFrame(this.frame, /*store: */false);
 	}
 
 	try {
-		return this.browser.waitForElements(this, elemLocator, false/*do not fail*/, timeout, displayed);
+		return this.browser.waitForElements(this, relativeLocator, /*fail:*/false, timeout, displayed);
 	}
 	finally {
 		if (this.frame != this.browser.frame) {
@@ -2177,48 +2136,107 @@ public List<WebBrowserElement> waitForElements(final By elemLocator, final int t
 }
 
 /**
- * Wait until the mandatory element using the given locator is found.
+ * Wait until have found a potential displayed element using the given relative locator and timeout.
+ * <p>
+ * Note that hidden elements are ignored by this method.
+ * </p>
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @param timeout The time in seconds before giving up if the element is not found
+ * @return The web element as {@link WebBrowserElement} or <code>null</code>
+ * if no element was found before the timeout
+ * @throws MultipleElementsFoundError If there are several found elements although
+ * only one was expected.
+ */
+public WebBrowserElement waitForPotentialDisplayedChildElement(final By relativeLocator, final int timeout) throws MultipleElementsFoundError {
+	return waitForPotentialChildElement(relativeLocator, timeout, /*displayed:*/true);
+}
+
+/**
+ * Wait until have found potential displayed elements using the given relative locator and timeout.
+ * <p>
+ * Note that hidden elements are ignored by this method.
+ * </p>
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @param timeout The time in seconds before giving up if the element is not
+ * found
+ * @return A {@link List} of web element as {@link WebBrowserElement}. Might
+ * be empty if no element was found before the timeout
+ */
+public List<WebBrowserElement> waitForPotentialDisplayedChildrenElements(final By relativeLocator, final int timeout) {
+	return waitForPotentialChildrenElements(relativeLocator, timeout, /*displayed:*/ true);
+}
+
+/**
+ * Wait shortly until have found one mandatory displayed child element of the given relative locators list.
+ * <p>
+ * Note that:
+ * <li>it will fail if the element is not found before {@link #SHORT_TIMEOUT} seconds</li>
+ * <li>hidden element will be ignored</li>
+ * <ul>
+ * </p>
+ * @param locators The locators to find the element relatively to the current element.
+ * @return The array of web elements as {@link WebBrowserElement}
+ * @throws WaitElementTimeoutError if no element was found before the timeout
+ *
+ * @see WebBrowser#waitForFirstDisplayedElementInList(WebBrowserElement, By[], boolean, int)
+ * to have more details on how the returned array is filled with found elements
+ */
+public WebBrowserElement[] waitShortlyForFirstMandatoryDisplayedChildElementInList(final By... locators) throws WaitElementTimeoutError {
+	return this.browser.waitForFirstDisplayedElementInList(this, locators, /*fail:*/ true, SHORT_TIMEOUT);
+}
+
+/**
+ * Wait shortly until have found the mandatory child element using the given relative locator.
+ * <p>
+ * Note that returned element might be hidden.
+ * </p>
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @return The web element as {@link WebBrowserElement}. It cannot be <code>null</code>.
+ * @throws WaitElementTimeoutError If no element is found before the given timeout.
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
+ */
+public WebBrowserElement waitShortlyForMandatoryChildElement(final By relativeLocator) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return this.browser.waitForElement(this, relativeLocator, /*fail:*/ true, SHORT_TIMEOUT, /*displayed:*/ false, /*single:*/ true);
+}
+
+/**
+ * Wait shortly until have found mandatory children elements using the given relative locator.
+ * <p>
+ * Note that:
+ * <ul>
+ * <li>returned elements might be hidden</li>
+ * <li>it will fail if no element is found before {@link Timeouts#SHORT_TIMEOUT} seconds</li>
+ * </ul>
+ * </p>
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
+ * @return A {@link List} of web element as {@link WebBrowserElement}. It cannot be empty.
+ * @throws WaitElementTimeoutError If no element was found before the timeout
+ */
+public List<WebBrowserElement> waitShortlyForMandatoryChildrenElements(final By relativeLocator) throws WaitElementTimeoutError {
+	return this.browser.waitForElements(this, relativeLocator, /*fail:*/true, SHORT_TIMEOUT, /*displayed:*/false);
+}
+
+/**
+ * Wait shortly until have found mandatory displayed child element using the given relative locator.
  * <p>
  * Note that:
  * <ol>
- * <li>hidden element are not returned by this method.</li>
+ * <li>hidden element will be ignored</li>
  * <li>{@link Timeouts#SHORT_TIMEOUT} is used as default timeout before given
  * up the search operation if no element is found.</li>
  * </ol>
  * </p>
- * @param elemLocator Locator to find the element in the current element HTML hierarchy.
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
  * @return The web element as {@link WebBrowserElement}. It cannot be <code>null</code>.
  * @throws WaitElementTimeoutError If no element is found before the default timeout.
- * @throws ScenarioFailedError If there are several found elements as only one is expected.
- * @since 6.0.2
+ * @throws MultipleElementsFoundError If there are several found elements as only one is expected.
  */
-public WebBrowserElement waitForMandatoryElement(final By elemLocator) {
-	return waitForMandatoryElement(elemLocator, SHORT_TIMEOUT);
+public WebBrowserElement waitShortlyForMandatoryDisplayedChildElement(final By relativeLocator) throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return waitForMandatoryDisplayedChildElement(relativeLocator, SHORT_TIMEOUT);
 }
 
 /**
- * Wait until the mandatory element using the given locator is found, or the given
- * timeout elapses.
- * <p>
- * Note that:
- * <ol>
- * <li>hidden element are not returned by this method.</li>
- * </ol>
- * </p>
- * @param elemLocator Locator to find the element in the current page.
- * @param timeout The time in seconds to wait before raising an error if the mandatory
- * element is not found in the current element HTML hierarchy.
- * @return The web element as {@link WebBrowserElement}. It cannot be <code>null</code>.
- * @throws WaitElementTimeoutError If no element is found before the given timeout.
- * @throws ScenarioFailedError If there are several found elements as only one is expected.
- * @since 6.0.2
- */
-public WebBrowserElement waitForMandatoryElement(final By elemLocator, final int timeout) {
-	return this.browser.waitForElement(this, elemLocator, true/*fail*/, timeout, true/*displayed*/, true/*single*/);
-}
-
-/**
- * Wait until have found at least one element using the given locator.
+ * Wait shortly until have found mandatory displayed children elements using the given relative locator.
  * <p>
  * Note that:
  * <ul>
@@ -2226,66 +2244,12 @@ public WebBrowserElement waitForMandatoryElement(final By elemLocator, final int
  * <li>it will fail if no element is found before {@link Timeouts#SHORT_TIMEOUT} seconds</li>
  * </ul>
  * </p>
- * @param elemLocator The locator to find the elements
- * @return A {@link List} of web element as {@link WebBrowserElement}. Cannot
- * be empty
- * @throws WaitElementTimeoutError If no element was found before the timeout
- */
-public List<WebBrowserElement> waitForMandatoryElements(final By elemLocator) {
-	return this.browser.waitForElements(this, elemLocator, true/*fail*/, SHORT_TIMEOUT, true/*displayed*/);
-}
-
-/**
- * Wait until have found at least one element using the given locator.
- * <p>
- * Note that:
- * <ul>
- * <li>some of the returned elements might be hidden</li>
- * <li>it will fail if no element is found before {@link Timeouts#SHORT_TIMEOUT} seconds</li>
- * </ul>
- * </p>
- * @param elemLocator The locator to find the elements
+ * @param relativeLocator Locator to find the element in the current element hierarchy.
  * @return A {@link List} of web element as {@link WebBrowserElement}. Cannot be empty
  * @throws WaitElementTimeoutError If no element was found before the timeout
  */
-public List<WebBrowserElement> waitForMandatoryButPossiblyHiddenElements(final By elemLocator) {
-	return this.browser.waitForElements(this, elemLocator, /*fail:*/true, SHORT_TIMEOUT, /*displayed:*/false);
-}
-
-/**
- * Wait until the mandatory element using the given locator is found, or the given
- * timeout elapses.
- * <p>
- * Note that returned element might be not displayed.
- * </p>
- * @param elemLocator Locator to find the element in the current page.
- * @return The web element as {@link WebBrowserElement}. It cannot be <code>null</code>.
- * @throws WaitElementTimeoutError If no element is found before the given timeout.
- * @throws ScenarioFailedError If there are several found elements as only one is expected.
- * @since 6.0.3
- */
-public WebBrowserElement waitForMandatoryVisibleOrHiddenElement(final By elemLocator) {
-	return this.browser.waitForElement(this, elemLocator, true/*fail*/, SHORT_TIMEOUT, false/*displayed*/, true/*single*/);
-}
-
-/**
- * Wait until have found at least one of the elements using the given locators
- * relatively to current element.
- * <p>
- * Note that:
- * <li>it will fail if the element is not found before {@link #DEFAULT_TIMEOUT} seconds</li>
- * <li>hidden element will be ignored</li>
- * <ul>
- * </p>
- * @param locators The locators to find the element in the current page.
- * @return The array of web elements as {@link WebBrowserElement}
- * @throws WaitElementTimeoutError if no element was found before the timeout
- *
- * @see WebBrowser#waitForMultipleElements(WebBrowserElement, By[], boolean, int)
- * to have more details on how the returned array is filled with found elements
- */
-public WebBrowserElement[] waitForMultipleElements(final By... locators) {
-	return this.browser.waitForMultipleElements(this, locators, true/*fail*/, DEFAULT_TIMEOUT);
+public List<WebBrowserElement> waitShortlyForMandatoryDisplayedChildrenElements(final By relativeLocator) throws WaitElementTimeoutError {
+	return this.browser.waitForElements(this, relativeLocator, true/*fail*/, SHORT_TIMEOUT, /*displayed:*/true);
 }
 
 /**

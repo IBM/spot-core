@@ -110,9 +110,11 @@ public WebBrowserElement open(final WebBrowserElement openElement) {
  * </p>
  * @throws ScenarioFailedError If the frame argument is true as the frame is
  * already known.
+ * @deprecated Since waitFor*Element methods renaming
  */
+@Deprecated
 @Override
-protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement parentElement, final By elemLocator, final int timeout, final boolean frame) {
+protected WebBrowserElement waitForMandatoryElement(final By elemLocator, final int timeout, final boolean frame) {
 	if (frame) {
 		throw new ScenarioFailedError("Should not find element in frames in framed dialog.");
 	}
@@ -121,7 +123,7 @@ protected WebBrowserElement waitForMandatoryElement(final WebBrowserElement pare
 	selectFrame();
 
 	// Wait for the element
-	return super.waitForMandatoryElement(parentElement, elemLocator, timeout, frame);
+	return super.waitForMandatoryElement(elemLocator, timeout, frame);
 }
 
 }

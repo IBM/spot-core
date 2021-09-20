@@ -83,7 +83,7 @@ public SpotExpandableElement(final WebPage page, final By locator) {
  */
 public SpotExpandableElement(final WebPage page, final By locator, final By expansionLocator) {
 	super(page, locator);
-	this.expansionElement = expansionLocator == null ? this.element : waitForMandatoryElement(expansionLocator, shortTimeout());
+	this.expansionElement = expansionLocator == null ? this.element : waitShortlyForMandatoryChildElement(expansionLocator);
 }
 
 /**
@@ -129,7 +129,7 @@ public SpotExpandableElement(final WebPage page, final WebBrowserElement webElem
  */
 public SpotExpandableElement(final WebPage page, final WebBrowserElement webElement, final WebBrowserFrame frame, final By expansionLocator) {
 	super(page, webElement, frame);
-	this.expansionElement = expansionLocator == null ? this.element : waitForMandatoryElement(expansionLocator, shortTimeout());
+	this.expansionElement = expansionLocator == null ? this.element : waitShortlyForMandatoryChildElement(expansionLocator);
 }
 
 /**

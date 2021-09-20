@@ -73,11 +73,11 @@ import com.ibm.bear.qa.spot.core.scenario.errors.*;
  * <li>{@link #getMenuElement(int)}: Return the menu element.</li>
  * <li>{@link #isMenuItemDisplayed(String)}: Returns whether the given menu item is displayed or not.</li>
  * <li>{@link #setPerfManagerRegressionType(RegressionType,boolean)}: Set regression type on performances manager.</li>
- * <li>{@link #waitForElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
- * <li>{@link #waitForElements(By,int,boolean)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedPageElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
+ * <li>{@link #waitForMandatoryElements(By,int,boolean)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
  * <li>{@link #waitForItemElement(String,boolean,int)}: Wait for the given item the given timeout.</li>
  * <li>{@link #waitForLoadingEnd()}: Wait until the menu is loaded.</li>
- * <li>{@link #waitForMandatoryElement(By,int)}: Wait until having found an element searched using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedChildElement(By,int)}: Wait until having found an element searched using the given locator.</li>
  * </ul>
  * </p>
  */
@@ -408,6 +408,7 @@ public WebBrowserElement getItemElement(final String itemLabel, final boolean di
  * element is still not found after it.
  */
 protected WebBrowserElement getItemElement(final String itemLabel, final int timeout, final boolean displayed, final boolean canWorkaround) throws WaitElementTimeoutError {
+	debugPrintEnteringMethod("itemLabel", itemLabel, "timeout", timeout, "displayed", displayed, "canWorkaround", canWorkaround);
 
 	// Wait for item element
 	WebBrowserElement itemElement = waitForItemElement(itemLabel, displayed, timeout);
@@ -470,9 +471,10 @@ protected WebBrowserElement getItemElement(final String itemLabel, final int tim
  * @return A list of {@link WebElement}s representing the menu items
  */
 public List<WebBrowserElement> getItemElements() {
-	// Allow hidden element to speed up search of menu options
-	// TODO: see item 232323 for a general solution all over the framework...
-	return waitForElements(getItemElementsLocator(), shortTimeout(), false/*displayed*/);
+	debugPrintEnteringMethod();
+//	return waitForMandatoryElements(getItemElementsLocator(), shortTimeout(), /*displayed:*/ true);
+	WebBrowserElement parentElement = this.useFrame ? null : this.element;
+	return this.browser.waitForElements(parentElement, 	getItemElementsLocator(), /*fail:*/false, shortTimeout(), /*displayed:*/ true);
 }
 
 /**
@@ -661,27 +663,14 @@ protected void setPerfManagerRegressionType(final RegressionType regressionType,
 }
 
 /**
- * {@inheritDoc}
- * <p>
- * Overridden to take into account the fact whether the current menu is displayed in a frame or not.
- * </p>
+ * Wait until have found some elements (ie. at least one) web elements using the given locator.
+ *
+ * @param timeout The time to wait before giving up the research
  */
-@Override
-protected List<WebBrowserElement> waitForElements(final By elemLocator) {
-	return waitForElements(elemLocator, shortTimeout(), /*displayed:*/true);
-}
-
-/**
- * {@inheritDoc}
- * <p>
- * Overridden to take into account the fact whether the current menu is displayed in a frame or not.
- * </p>
- */
-@Override
-protected List<WebBrowserElement> waitForElements(final By elemLocator, final int timeout, final boolean displayed) {
-	return this.useFrame
-		? this.browser.waitForElements(null, elemLocator, /*fail:*/true, timeout, displayed)
-		: this.element.waitForElements(elemLocator, timeout, displayed);
+protected List<WebBrowserElement> waitForMandatoryElements(final By elemLocator, final int timeout, final boolean displayed) {
+	debugPrintEnteringMethod("elemLocator", elemLocator, "timeout", timeout, "displayed", displayed);
+	WebBrowserElement parentElement = this.useFrame ? null : this.element;
+	return this.browser.waitForElements(parentElement, elemLocator, /*fail:*/true, timeout, displayed);
 }
 
 /**
@@ -740,6 +729,7 @@ protected WebBrowserElement waitForItemElement(final String itemLabel, final boo
  * </p>
  */
 protected void waitForLoadingEnd() {
+	debugPrintEnteringMethod();
 
 	// Get first item
 	startTimeout(openTimeout(), "Menu "+this.element+" never finish to load.");
@@ -779,21 +769,17 @@ protected void waitForLoadingEnd() {
 //		testTimeout();
 //		sleep(1);
 //	}
+	/*
+	do {
+		debugPrintln("		  -> waiting for menu items size to stabilize");
+		testTimeout();
+		sleep(1);
+		itemElements = this.element.waitForPotentialDisplayedChildrenElements(getItemElementsLocator(), shortTimeout());
+	}
+	while (size != itemElements.size());
+	*/
 
 	// Reset timeout
 	resetTimeout();
-}
-
-/**
- * {@inheritDoc}
- * <p>
- * Overridden to take into account the fact whether the current menu is displayed in a frame or not.
- * </p>
- */
-@Override
-protected WebBrowserElement waitForMandatoryElement(final By elemLocator, final int timeout) {
-	return this.useFrame
-		? this.browser.waitForElement(elemLocator, timeout)
-		: this.element.waitForElement(elemLocator, timeout);
 }
 }

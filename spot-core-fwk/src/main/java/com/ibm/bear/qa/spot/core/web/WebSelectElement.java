@@ -56,7 +56,7 @@ public WebSelectElement(final WebPage page, final WebBrowserElement element) {
 }
 
 public WebSelectElement(final WebPage page, final WebBrowserElement parent, final By selectBy) {
-	super(page, parent.waitForMandatoryElement(selectBy));
+	super(page, parent.waitShortlyForMandatoryDisplayedChildElement(selectBy));
 	this.select = new Select(this.element);
 }
 
