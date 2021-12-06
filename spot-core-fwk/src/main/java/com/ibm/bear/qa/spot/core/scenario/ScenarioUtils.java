@@ -161,14 +161,14 @@ public class ScenarioUtils {
 	/* Parameters and data */
 	/**
 	 * The root path of the directory where the properties files are put.
-	 * Can be either absolute or relative path.  If relative, the root is
+	 * Can be either absolute or relative path. If relative, the root is
 	 * the scenario project directory.
 	 */
 	private static final String PARAM_FILES_DIR_ID = "paramFilesDir";
 
 	/**
-	 * The paths of the properties files.  Each file path must be relative to the
-	 * paramFilesDir specified directory.  ";" (no space) separated.
+	 * The paths of the properties files. Each file path must be relative to the
+	 * paramFilesDir specified directory. ";" (no space) separated.
 	 * Can be either relative to 'paramFilesDir' directory or absolute path.
 	 */
 	private static final String PARAM_FILES_PATH_ID = "paramFilesPath";
@@ -391,15 +391,15 @@ public static void debugPrintException(final Throwable t) {
  */
 public static void debugPrintExpectedStrings(final String kind, final String status, final String... strings) {
 	if (!DEBUG) return;
-    int length = strings.length;
-    if (length == 1) {
-    	debugPrintln("		+ expecting following "+kind+" to be "+status+": \""+strings[0]+"\"");
-    } else {
-    	debugPrintln("		+ expecting one of following "+kind+"s to be "+status+":");
-    	for (int i=0; i<length; i++) {
-    		debugPrintln("			"+(i+1)+") \""+strings[i]+"\"");
-    	}
-    }
+	int length = strings.length;
+	if (length == 1) {
+		debugPrintln("		+ expecting following " + kind + " to be " + status + ": \"" + strings[0] + "\"");
+	} else {
+		debugPrintln("		+ expecting one of following " + kind + "s to be " + status + ":");
+		for (int i = 0; i < length; i++) {
+			debugPrintln("			" + (i + 1) + ") \"" + strings[i] + "\"");
+		}
+	}
 }
 
 /**
@@ -480,12 +480,12 @@ public static void debugPrintStackTrace(final StackTraceElement[] elements) {
  */
 public static void debugPrintStackTrace(final StackTraceElement[] elements, final int tabs) {
 	if (!DEBUG) return;
-    for (StackTraceElement element: elements) {
+	for (StackTraceElement element : elements) {
 		String elementClassName = element.getClassName();
 		if (elementClassName.startsWith("com.ibm") && !elementClassName.startsWith("com.ibm.bear.qa.spot.core.scenario.Scenario")) {
-    		debugPrintln(element.toString(), tabs);
-    	}
-    }
+			debugPrintln(element.toString(), tabs);
+		}
+	}
 }
 
 /**
@@ -495,7 +495,7 @@ public static void debugPrintStackTrace(final StackTraceElement[] elements, fina
  * @return The elapsed time as a human readable {@link String}.
  */
 public static String elapsedTimeString(final long start) {
-    return timeString(getElapsedTime(start));
+	return timeString(getElapsedTime(start));
 }
 
 /**
@@ -761,10 +761,10 @@ public static int getParameterIntValue(final String name, final int defaultValue
 public static String getParametersValue(final String... names) {
 	for (String name: names) {
 		String value = getProperty(name);
-    	if (value != null) {
+		if (value != null) {
 //			if (DEBUG) printReadParameter(name, value);
-    		return value;
-    	}
+			return value;
+		}
 	}
 	return null;
 }
@@ -778,7 +778,7 @@ public static String getParametersValue(final String... names) {
  * or <code>null</code> if the system property is not defined.
  */
 public static String getParameterValue(final String name) {
-    return getParameterValue(name, null);
+	return getParameterValue(name, null);
 }
 
 /**
@@ -794,11 +794,11 @@ public static String getParameterValue(final String name) {
  * property is <code>null</code>
  */
 public static String getParameterMandatoryValue(final String name) throws ScenarioFailedError {
-    String value = getParameterValue(name, null);
-    if (value == null) {
-    	throw new ScenarioFailedError("Required parameter " + name + " is null!");
-    }
-    return value;
+	String value = getParameterValue(name, null);
+	if (value == null) {
+		throw new ScenarioFailedError("Required parameter " + name + " is null!");
+	}
+	return value;
 }
 
 /**
@@ -1089,15 +1089,28 @@ public static void printStackTrace(final StackTraceElement[] elements, final int
  * @param start The index of the first element in the stack trace to start with in the print
  */
 public static void printStackTrace(final StackTraceElement[] elements, final int tabs, final int start) {
+	print(cleanStackTrace(elements, tabs, start));
+}
+
+/**
+ * Clean given stack trace with only framework meaningful elements.
+ *
+ * @param elements The full stack trace elements
+ * @param tabs The number of tabs to indent each element
+ * @param start The index of the first element in the stack trace to start with in the print
+ * @return The built string with the stack trace
+ */
+public static String cleanStackTrace(final StackTraceElement[] elements, final int tabs, final int start) {
 	int length = elements.length;
-    for (int i=start; i<length; i++) {
-    	StackTraceElement element = elements[i];
+	StringBuilder builder = new StringBuilder();
+	for (int i=start; i<length; i++) {
+		StackTraceElement element = elements[i];
 		String elementClassName = element.getClassName();
 		if (elementClassName.startsWith("com.ibm") && !elementClassName.startsWith("com.ibm.bear.qa.spot.core.scenario.Scenario")) {
-    		printIndent(tabs);
-    		println(element.toString());
-    	}
-    }
+			builder.append(tabs).append(element.toString()).append(LINE_SEPARATOR);
+		}
+	}
+	return builder.toString();
 }
 
 /**
@@ -1106,24 +1119,24 @@ public static void printStackTrace(final StackTraceElement[] elements, final int
  * @param stepName The scenario step
  */
 public static void printStepStart(final String stepName) {
-    StringBuilder builder = new StringBuilder(LINE_SEPARATOR)
-    	.append("Starting execution of BVT test case '")
-    	.append(stepName)
-    	.append("' at ")
-    	.append(TIME_FORMAT.format(new Date(System.currentTimeMillis())))
-    	.append(LINE_SEPARATOR)
-    	.append("======================================");
-    final int length = stepName.length();
-    for (int i=0; i<length; i++) {
-    	builder.append('=');
-    }
-    final String text = builder.toString();
+	StringBuilder builder = new StringBuilder(LINE_SEPARATOR)
+	    .append("Starting execution of BVT test case '")
+	    .append(stepName)
+	    .append("' at ")
+	    .append(TIME_FORMAT.format(new Date(System.currentTimeMillis())))
+	    .append(LINE_SEPARATOR)
+	    .append("======================================");
+	final int length = stepName.length();
+	for (int i = 0; i < length; i++) {
+		builder.append('=');
+	}
+	final String text = builder.toString();
 	if (PRINT) {
-	    System.out.println(text);
-    }
-    if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) {
-    	debugPrintln(text);
-    }
+		System.out.println(text);
+	}
+	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) {
+		debugPrintln(text);
+	}
 }
 
 /**
@@ -1216,7 +1229,7 @@ public static List<String> toStrings(final List<? extends WebElement> elements, 
 		if (!filterEmpty || (string != null && string.length() > 0)) {
 			strings.add(string);
 		}
-    }
+	}
 	return strings;
 }
 

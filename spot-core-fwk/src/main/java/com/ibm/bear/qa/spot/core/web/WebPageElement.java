@@ -156,10 +156,24 @@ abstract public class WebPageElement {
 	 */
 	private Timeout currentTimeout;
 
+/**
+ * Create an element in the given page.
+ * <p>
+ * Using this constructor assume that the element is <b>not </b> in any frame.
+ * </p>
+ * @param page The page in which the element is located
+ */
 public WebPageElement(final WebPage page) {
 	this(page, null);
 }
 
+/**
+ * Create an element in the frame of given page.
+ *
+ * @param page The page in which the frame is located
+ * @param frame The frame in which the element is located. If <code>null</code>
+ * then the element is directly located in the given page.
+ */
 public WebPageElement(final WebPage page, final WebBrowserFrame frame) {
 	this.page = page;
 	this.browser = page.getBrowser();

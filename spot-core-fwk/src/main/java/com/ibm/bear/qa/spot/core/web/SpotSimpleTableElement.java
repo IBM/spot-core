@@ -14,26 +14,32 @@ package com.ibm.bear.qa.spot.core.web;
 
 import org.openqa.selenium.By;
 
-import com.ibm.bear.qa.spot.core.api.elements.SpotWindow;
+import com.ibm.bear.qa.spot.core.api.elements.SpotTable;
 
 /**
  * Class to manage web element with <code>table</code> tag.
  * <p>
- *
- * </p><p>
- * Public API for this class is defined in {@link SpotWindow} interface.
- * </p><p>
- * Internal API methods accessible in the framework are:
+ * This class implements following public API methods of {@link SpotTable} interface:
  * <ul>
+ * <li>{@link #isEmpty()}: Return whether the table is empty or not.</li>
  * </ul>
  * </p><p>
- * Internal API methods accessible from subclasses are:
+ * This class defines or overrides following internal API methods:
  * <ul>
+ * <li>{@link #getRowElementContainingText(String)}: Return the row web element containing a cell with the given text.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #getHeaderElementsLocator()}: Return the locator to find header web elements in the displayed grid container element.</li>
+ * <li>{@link #getRowCellsElementsLocator()}: Return the locator to find cells elements of a row displayed in the grid table element.</li>
+ * <li>{@link #getRowElementsLocator()}: Return the locator to find row web elements in the displayed table element.</li>
  * </ul>
  * </p>
  */
 public class SpotSimpleTableElement extends SpotAbstractTableElement {
 
+	/* Constants */
 	protected static final By HEADERS_LOCATOR = By.xpath("./thead/tr/th");
 	protected static final String ROWS_XPATH = "./tbody/tr";
 	protected static final By ROWS_LOCATOR = By.xpath(ROWS_XPATH);
@@ -46,7 +52,7 @@ public class SpotSimpleTableElement extends SpotAbstractTableElement {
  * @param parent The wrapped web element parent
  */
 public SpotSimpleTableElement(final WebElementWrapper parent) {
-	super(parent, By.cssSelector("table"));
+	super(parent, By.tagName("table"));
 }
 
 /**
@@ -92,6 +98,15 @@ protected By getHeaderElementsLocator() {
 	return HEADERS_LOCATOR;
 }
 
+/**
+ * {@inheritDoc}
+ * <p>
+ * For simple table, default row cell elements are web elements with <code>td</code>
+ * tag. However, subclasses might want to override this method if the way to get
+ * these elements is different.
+ * </p>
+ * @return The rows locator
+ */
 @Override
 protected By getRowCellsElementsLocator() {
 	return CELLS_LOCATOR;
@@ -102,8 +117,23 @@ public WebBrowserElement getRowElementContainingText(final String text) {
 	return this.element.waitForPotentialDisplayedChildElement(By.xpath(String.format(MATCHING_ROW_XPATH, text)), shortTimeout());
 }
 
+/**
+ * {@inheritDoc}
+ * <p>
+ * For simple table, default row cell elements are web elements with <code>tr</code>
+ * tag. However, subclasses might want to override this method if the way to get
+ * these elements is different.
+ * </p>
+ * @return The rows web elements locator
+ */
 @Override
 protected By getRowElementsLocator() {
 	return ROWS_LOCATOR;
+}
+
+@Override
+public boolean isEmpty() {
+	WebBrowserElement bodyElement = this.element.findElement(By.tagName("tbody"));
+	return bodyElement == null || !bodyElement.isDisplayed();
 }
 }

@@ -390,6 +390,7 @@ public WebBrowserElement opened() throws WaitElementTimeoutError {
 	if (this.element == null) {
 		throw new WaitElementTimeoutError("Cannot find any dialog with corresponding locator: "+this.locator);
 	}
+	waitForLoadingEnd();
 	return this.element;
 }
 
@@ -397,15 +398,20 @@ public WebBrowserElement opened() throws WaitElementTimeoutError {
  * Get the element on an already opened dialog.
  *
  * @param seconds The number of seconds to wait for the window to be opened.
- * @return The dialog web element
+ * @param fail Tells whether to fail or not if the dialog is not opened after the delay has expired
+ * @return The dialog web element or <code>null</code> if the dilaog is not opened
+ * and not asked to fail
  * @throws WaitElementTimeoutError If the dialog is not opened before the given timeout
  * @noreference Framework internal API, this method must not be used by any scenario test.
  */
-public WebBrowserElement openedBeforeTimeout(final int seconds) throws WaitElementTimeoutError {
+public WebBrowserElement openedBeforeTimeout(final int seconds, final boolean fail) throws WaitElementTimeoutError {
 	if (isOpenedBeforeTimeout(seconds)) {
 		return opened();
 	}
-	throw new WaitElementTimeoutError("Cannot find any dialog with corresponding xpath: "+this.locator);
+	if (fail) {
+		throw new WaitElementTimeoutError("Cannot find any dialog with corresponding xpath: "+this.locator);
+	}
+	return null;
 }
 
 /**

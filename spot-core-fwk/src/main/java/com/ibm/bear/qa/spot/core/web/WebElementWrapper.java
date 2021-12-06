@@ -65,50 +65,133 @@ abstract public class WebElementWrapper extends WebPageElement {
 	 */
 	protected WebElementWrapper parent;
 
+/**
+ * Wrap an element found in given parent using given locator.
+ * <p>
+ * Using this constructor assume that the element is <b>not </b> in any frame.
+ * </p>
+ * @param parent The element wrapper in which the element is located
+ */
 public WebElementWrapper(final WebElementWrapper parent, final By locator) {
 	this(parent, locator, null);
 }
 
+/**
+ * Wrap an element found in given frame of given parent page using given locator.
+ *
+ * @param parent The element wrapper in which page the element is located
+ */
 public WebElementWrapper(final WebElementWrapper parent, final By locator, final WebBrowserFrame frame) {
 	this(parent.getPage(), frame==null ? parent.element.waitShortlyForMandatoryDisplayedChildElement(locator) : parent.getPage().waitForMandatoryDisplayedElement(locator), frame);
 	this.parent = parent;
 }
 
+/**
+ * Wrap the given element of given parent.
+ * <p>
+ * Using this constructor assume that the element is <b>not </b> in any frame.
+ * </p>
+ * @param parent The element wrapper in which the element is located
+ * @param element The element to wrap
+ */
 public WebElementWrapper(final WebElementWrapper parent, final WebBrowserElement element) {
 	this(parent.getPage(), element);
 	this.parent = parent;
 }
 
+/**
+ * Wrap an element of given frame located in given parent page.
+ *
+ * @param parent The element wrapper in which the element is located
+ * @param element The element to wrap
+ * @param frame The frame in which the element is located. If <code>null</code>
+ * then the element is directly located in the given parent.
+ */
 public WebElementWrapper(final WebElementWrapper parent, final WebBrowserElement element, final WebBrowserFrame frame) {
 	this(parent.getPage(), element, frame);
 	this.parent = parent;
 }
 
+/**
+ * Create a wrapper instance with no element.
+ * <p>
+ * Warning: This constructor must be used with caution as it does not initialize
+ * the wrapped element. Subclasses using then must check whether <code>element</code>
+ * is <code>null</code> or not before referring to it...
+ * </p>
+ * @param page The page in which the wrapped element is supposed to be located
+ */
 public WebElementWrapper(final WebPage page) {
 	super(page);
 }
 
+/**
+ * Wrap an element found in given page using given locator.
+ * <p>
+ * Using this constructor assume that the element is <b>not </b> in any frame.
+ * </p>
+ * @param page The page in which the element is located
+ */
 public WebElementWrapper(final WebPage page, final By locator) {
 	super(page);
 	//waitForElement() in this class can't filter out hidden elements, hence use super class implementation instead
 	this.element = super.waitForMandatoryDisplayedPageElementWithTimeout(locator, openTimeout());
 }
 
+/**
+ * Wrap an element found in given frame of given page using given locator.
+ *
+ * @param frame The frame in which the element is located. If <code>null</code>
+ * then the element is directly located in the given page.
+ * @param page The page in which the frame is located
+ */
 public WebElementWrapper(final WebPage page, final By locator, final WebBrowserFrame frame) {
 	super(page, frame);
 	this.element = super.waitForMandatoryDisplayedPageElementWithTimeout(locator, openTimeout());
 }
 
+/**
+ * Wrap the given element of given page.
+ * <p>
+ * Using this constructor assume that the element is <b>not </b> in any frame.
+ * </p>
+ * @param page The page in which the element is located
+ * @param element The element to wrap
+ */
 public WebElementWrapper(final WebPage page, final WebBrowserElement element) {
 	super(page);
 	this.element = element;
 }
 
+/**
+ * Wrap an element of given frame located in given page.
+ *
+ * @param page The page in which the frame is located
+ * @param element The element to wrap
+ * @param frame The frame in which the element is located. If <code>null</code>
+ * then the element is directly located in the given page.
+ */
 public WebElementWrapper(final WebPage page, final WebBrowserElement element, final WebBrowserFrame frame) {
 	super(page, frame);
 	this.element = element;
 }
 
+/**
+ * Create a wrapper instance with no element.
+ * <p>
+ * Warning: This constructor must be used with caution as it does not initialize
+ * the wrapped element. Subclasses using then must check whether <code>element</code>
+ * is <code>null</code> or not before referring to it...
+ * </p>
+ * @param page The page in which the wrapped element is supposed to be located
+ */
+/**
+ * Create a wrapper instance with no frame element.
+ *
+ * @param page The page in which the frame is located
+ * @param frame The frame in which the element is supposed to be located.
+ * If <code>null</code> then the element should be directly located in given page.
+ */
 public WebElementWrapper(final WebPage page, final WebBrowserFrame frame) {
 	super(page, frame);
 }

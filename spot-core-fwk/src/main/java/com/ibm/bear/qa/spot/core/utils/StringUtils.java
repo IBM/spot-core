@@ -12,6 +12,13 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.utils;
 
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintEnteringMethod;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.printException;
+
+import java.util.StringTokenizer;
+
+import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
+
 /**
  * Class to provide utilities around {@link String} .
  * <p>
@@ -22,11 +29,16 @@ package com.ibm.bear.qa.spot.core.utils;
  * <li>{@link #equalsNonWhitespaces(String,String)}: Compare the two given strings ignoring all white spaces.</li>
  * <li>{@link #getSafeStringForPath(String)}: Return a string from the given one which will be safe to be used in file path.</li>
  * <li>{@link #hidePasswordInLocation(String)}: Return the location with hidden password.</li>
+ * <li>{@link #incrementVersion(String,int)}: Increment the given version at the given index.</li>
  * <li>{@link #removeWhiteCharacters(String)}: Remove all white spaces from the given string.</li>
  * </ul>
  * </p>
  */
 public class StringUtils {
+
+private StringUtils() {
+	// Non instanciable class
+}
 
 /**
  * Clean the given string from any white spaces characters.
@@ -100,6 +112,16 @@ public static String getSafeStringForPath(final String str) {
 }
 
 /**
+ * Return the given password hidden.
+ *
+ * @param password The password to be hidden
+ * @return The hidden password.
+ */
+public static String hidePassword(final String password) {
+	return password.charAt(0) + "******";
+}
+
+/**
  * Return the location with hidden password.
  *
  * @param location The location
@@ -118,6 +140,51 @@ public static String hidePasswordInLocation(final String location) {
 }
 
 /**
+ * Increment the given version at the given index.
+ * <p>
+ * The version expected format is <code>number(*.number)</code>
+ * (e.g. <code>4.0.1</code> with index 0, 1 or 2)
+ * </p>
+ * @param version The version to be incremented (using format <code>number(*.number)</code>)
+ * @param index The position of the number to increment. If negative, then last number is incremented.
+ * @return The incremented version
+ */
+public static String incrementVersion(final String version, final int index) {
+	debugPrintEnteringMethod("version", version, "index", index);
+
+	// If no specified version used
+	if (version == null) {
+		String newVersion = index<0 ? "1.0" : "1";
+		for (int i=0; i<index; i++) {
+			newVersion += ".0";
+		}
+		return newVersion;
+	}
+	StringBuffer nextVersion = new StringBuffer();
+	StringTokenizer tk = new StringTokenizer(version, ".");
+	int count = 0;
+	while (tk.hasMoreTokens()) {
+		String digit = tk.nextToken();
+		if (count > 0) {
+			nextVersion.append(".");
+		}
+		if (count == index || !tk.hasMoreTokens()) {
+			try {
+				nextVersion.append(Integer.parseInt(digit) + 1);
+			}
+			catch(NumberFormatException e) {
+				printException(e);
+				throw new ScenarioFailedError("Incorrect format for the last found version '" + version + "' (expecting <number>(*.<number>)).");
+			}
+		} else {
+			nextVersion.append(digit);
+		}
+		count++;
+	}
+	return nextVersion.toString();
+}
+
+/**
  * Remove all white spaces from the given string.
  *
  * @param str The string to be transformed
@@ -133,9 +200,5 @@ public static String removeWhiteCharacters(final String str) {
 	}
 	buffer.trimToSize();
 	return buffer.toString();
-}
-
-private StringUtils() {
-	// Non instanciable class
 }
 }

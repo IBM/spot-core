@@ -35,13 +35,15 @@ import com.ibm.bear.qa.spot.core.timeout.SpotAbstractTimeout;
  * </p><p>
  * This class also defines following internal API methods:
  * <ul>
- * <li>{@link #getText()}: Return the text of the expandable element.</li>
+ * <li>{@link #action(Actions)}: Perform the given action on the selectable element.</li>
+ * <li>{@link #getText()}: Return the text of the wrapped element.</li>
  * </ul>
  * </p><p>
  * This class also defines or overrides following methods:
  * <ul>
  * <li>{@link #getSelectionElement()}: Return the element to perform the selection operation.</li>
  * <li>{@link #initSelectionElement()}: Initialize the element to perform the selection operation.</li>
+ * <li>{@link #waitUntilSelection(boolean,boolean)}: Wait until the selection matches the given status.</li>
  * </ul>
  * </p>
  */
@@ -70,13 +72,79 @@ public class SpotSelectableElement extends WebElementWrapper implements SpotSele
 	protected WebBrowserElement selectionElement;
 
 /**
- * Create an selectable element in the given page using the wrapped web element
+ * Create a selectable element in the given parent using the wrapped web element
  * found by the given locator.
  * <p>
- * When using this constructor, it's assumed that the wrapped web element is also
- * used for the expanse and collapse operations (ie. by simply clicking on it).
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
  * </p>
- * @param page The page in which the expandable element is located
+ * @param parent The element wrapper in which the selectable element is located
+ * @param locator The locator to find the wrapped web element
+ */
+public SpotSelectableElement(final WebElementWrapper parent, final By locator) {
+	this(parent, locator, null);
+}
+
+/**
+ * Create a selectable element in the given parent using the wrapped and selection
+ * web elements found by the given locators.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
+ * to the wrapped web element.
+ * </p>
+ * @param parent The element wrapper in which the selectable element is located
+ * @param locator The locator to find the wrapped web element
+ * @param selectionLocator The locator to find the selection web element
+ */
+public SpotSelectableElement(final WebElementWrapper parent, final By locator, final By selectionLocator) {
+	super(parent, locator);
+	this.selectionLocator = selectionLocator;
+}
+
+/**
+ * Create a selectable element in the given parent using the given wrapped web
+ * element.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p>
+ * @param parent The element wrapper in which the selectable element is located
+ * @param wwElement The wrapped web element
+ */
+public SpotSelectableElement(final WebElementWrapper parent, final WebBrowserElement wwElement) {
+	this(parent, wwElement, null);
+}
+
+/**
+ * Create a selectable element in the given parent using the given wrapped web
+ * element and the selection web element found using the given locator.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
+ * to the wrapped web element.
+ * </p>
+ * @param parent The element wrapper in which the selectable element is located
+ * @param wwElement The wrapped web element
+ * @param selectionLocator The locator to find the selection web element
+ */
+public SpotSelectableElement(final WebElementWrapper parent, final WebBrowserElement wwElement, final By selectionLocator) {
+	super(parent, wwElement);
+	this.selectionLocator = selectionLocator;
+}
+
+/**
+ * Create a selectable element in the given page using the wrapped web element
+ * found by the given locator.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p>
+ * @param page The page in which the selectable element is located
  * @param locator The locator to find the wrapped web element
  */
 public SpotSelectableElement(final WebPage page, final By locator) {
@@ -84,49 +152,55 @@ public SpotSelectableElement(final WebPage page, final By locator) {
 }
 
 /**
- * Create an selectable element in the given page using the wrapped and expansion
+ * Create a selectable element in the given page using the wrapped and selection
  * web elements found by the given locators.
  * <p>
- * <b>Important</b>: The locator for the expansion web element is assumed to be relative
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
  * to the wrapped web element.
  * </p>
- * @param page The page in which the expandable element is located
+ * @param page The page in which the selectable element is located
  * @param locator The locator to find the wrapped web element
- * @param expansionLocator The locator to find the expansion web element
+ * @param selectionLocator The locator to find the selection web element
  */
-public SpotSelectableElement(final WebPage page, final By locator, final By expansionLocator) {
+public SpotSelectableElement(final WebPage page, final By locator, final By selectionLocator) {
 	super(page, locator);
-	this.selectionLocator = expansionLocator;
+	this.selectionLocator = selectionLocator;
 }
 
 /**
  * Create a selectable element in the given page using the given wrapped web
  * element.
  * <p>
- * When using this constructor, it's assumed that the wrapped web element is also
- * used for the expanse and collapse operation (ie. by simply clicking on it).
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
  * </p>
- * @param page The page in which the expandable element is located
- * @param webElement The wrapped web element
+ * @param page The page in which the selectable element is located
+ * @param wwElement The wrapped web element
  */
-public SpotSelectableElement(final WebPage page, final WebBrowserElement webElement) {
-	this(page, webElement, null);
+public SpotSelectableElement(final WebPage page, final WebBrowserElement wwElement) {
+	this(page, wwElement, null);
 }
 
 /**
  * Create a selectable element in the given page using the given wrapped web
- * element and the expansion web element found using the given locator.
+ * element and the selection web element found using the given locator.
  * <p>
- * <b>Important</b>: The locator for the expansion web element is assumed to be relative
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
  * to the wrapped web element.
  * </p>
- * @param page The page in which the expandable element is located
- * @param webElement The wrapped web element
- * @param expansionLocator The locator to find the expansion web element
+ * @param page The page in which the selectable element is located
+ * @param wwElement The wrapped web element
+ * @param selectionLocator The locator to find the selection web element
  */
-public SpotSelectableElement(final WebPage page, final WebBrowserElement webElement, final By expansionLocator) {
-	super(page, webElement);
-	this.selectionLocator = expansionLocator;
+public SpotSelectableElement(final WebPage page, final WebBrowserElement wwElement, final By selectionLocator) {
+	super(page, wwElement);
+	this.selectionLocator = selectionLocator;
 }
 
 /**
@@ -216,24 +290,6 @@ public void select() throws ScenarioFailedError {
 	waitUntilSelection(true, true);
 }
 
-protected boolean waitUntilSelection(final boolean selected, final boolean fail) {
-	return waitUntilSelection(selected, fail, 3);
-}
-
-private boolean waitUntilSelection(final boolean selected, final boolean fail, final int seconds) {
-	SpotAbstractTimeout timeout = new SpotAbstractTimeout(fail) {
-		@Override
-		protected String getConditionLabel() {
-			return "Selection element is "+(selected?"selected":"unselected");
-		}
-		@Override
-		protected boolean getCondition() {
-			return isSelected() == selected;
-		}
-	};
-	return timeout.waitUntil(seconds);
-}
-
 @Override
 public boolean toggle() throws ScenarioFailedError {
 	boolean selected = isSelected();
@@ -250,5 +306,32 @@ public void unselect() throws ScenarioFailedError {
 		debugPrintln("		  -> the element is already not selected do nothing...");
 	}
 	waitUntilSelection(false, true);
+}
+
+/**
+ * Wait until the selection matches the given status.
+ *
+ * @param selected The expected selection status
+ * @param fail Tells whether to fail or not if the status is not the expected one
+ * after the timeout has expired
+ * @return <code>true</code> if the selection status matches the expected one
+ * or <code>false</code> if it does not with no failure
+ */
+protected boolean waitUntilSelection(final boolean selected, final boolean fail) {
+	return waitUntilSelection(selected, fail, 3);
+}
+
+private boolean waitUntilSelection(final boolean selected, final boolean fail, final int seconds) {
+	SpotAbstractTimeout timeout = new SpotAbstractTimeout(fail) {
+		@Override
+		protected boolean getCondition() {
+			return isSelected() == selected;
+		}
+		@Override
+		protected String getConditionLabel() {
+			return "Selection element is "+(selected?"selected":"unselected");
+		}
+	};
+	return timeout.waitUntil(seconds);
 }
 }

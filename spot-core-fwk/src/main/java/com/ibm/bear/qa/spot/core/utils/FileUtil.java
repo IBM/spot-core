@@ -295,31 +295,35 @@ public static File getFile(final String fileDir, final String filePath) {
 	debugPrintEnteringMethod("fileDir", fileDir, "filePath", filePath);
 
 	// Get the file from arguments
-    File file, initialFile;
-    if (filePath == null) {
-    	if (fileDir == null) {
-    		throw new IllegalArgumentException("Cannot find a file with both dir and path null!");
-    	}
-    	file = new File(fileDir);
-    } else {
-    	file = new File(fileDir, filePath);
-    }
-    initialFile = file;
+	File file, actualFile;
+	if (filePath == null) {
+		if (fileDir == null) {
+			throw new IllegalArgumentException("Cannot find a file with both dir and path null!");
+		}
+		file = new File(fileDir);
+	} else {
+		file = new File(fileDir, filePath);
+	}
+	actualFile = file;
 
-    // Try to infer a better location if the file is not found in a first attempt
+	// Try to infer a better location if the file is not found in a first attempt
 	if (!file.exists()) {
-		debugPrintln("		  -> File "+file+" does not exist:");
+		debugPrintln("		  -> File " + file + " does not exist:");
 		if (fileDir == null) {
 			if (!file.isAbsolute()) {
 				// Maybe a relative path?
 				String userDir = System.getProperty("user.dir");
-				debugPrintln("			=> no fileDir specified, try to search from user.dir directory instead ("+userDir+")...");
+				debugPrintln("			=> no fileDir specified, try to search from user.dir directory instead (" + userDir + ")...");
 				file = new File(userDir, filePath);
 			}
 		} else {
-			// Try to ignore fileDir
-			debugPrintln("			=> try to ignore fileDir parameter...");
+			// Ignore fileDir
+			debugPrintln("			=> ignore fileDir parameter...");
 			file = new File(filePath);
+			if (file.isAbsolute()) {
+				// Actual file is the absolute one
+				actualFile = file;
+			}
 		}
 	}
 
@@ -329,7 +333,7 @@ public static File getFile(final String fileDir, final String filePath) {
 	}
 
 	// ... or raise an error if the file is not found
-	final String message = "The file '"+initialFile.getAbsolutePath()+"' has not been found!";
+	final String message = "The file '" + actualFile.getAbsolutePath() + "' has not been found!";
 	System.err.println(message);
 	if (DEBUG) debugPrintln(message);
 	throw new RuntimeException(message);

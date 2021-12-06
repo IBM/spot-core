@@ -95,7 +95,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser.ClickableWorkaroundState;
  * <li>{@link #getLocator()}:  Return the locator to find the current element.</li>
  * <li>{@link #getParent()}: Return the parent of the current element.</li>
  * <li>{@link #getText(boolean)}: Perform the {@link WebElement#getText()} operation w/o recovery.</li>
- * <li>{@link #getTextWhenVisible()}: Returns the text of the web element after having ensured that it's visible.</li>
+ * <li>{@link #getTextEvenIfHidden()}: Returns the text of the web element even if it's hidden.</li>
  * <li>{@link #getWebElement()}: Return the wrapped {@link WebElement}.</li>
  * <li>{@link #isDisplayed(boolean)}:  Perform the {@link WebElement#isDisplayed()} operation w/o recovery.</li>
  * <li></li>
@@ -470,7 +470,9 @@ public void click(final boolean recovery, final boolean workaround) {
 			try {
 				this.webElement.click();
 				if (state != ClickableWorkaroundState.Init) {
-					println("	- Workaround worked :-)");
+					println("WARNING: Workaround "+state+" was applied when clicking on web element "+getFullLocator());
+					printStackTrace(1);
+					this.browser.printErrorMessage();
 				}
 				if (DEBUG) debugPrintln("			 ( -> done.)");
 				return;
@@ -1364,19 +1366,16 @@ public String getText(final boolean recovery) {
 }
 
 /**
- * Returns the text of the web element after having ensured that it's visible.
- * <p>
- * This method try to make the web element visible if the text is empty.
- * </p>
+ * Returns the text of the web element even if it's hidden.
+ *
+ * @return The web element text
  */
-public String getTextWhenVisible() {
+public String getTextEvenIfHidden() {
 	debugPrintEnteringMethod();
-	String text = getText(true/*recovery*/);
-	if (text.isEmpty()) {
-		makeVisible(true/*force*/);
-		text = getText(true/*recovery*/);
+	if (isDisplayed()) {
+		return getText();
 	}
-	return text;
+	return getAttribute("textContent");
 }
 
 /**
@@ -1432,6 +1431,14 @@ public boolean isDisplayed(final boolean recovery) {
 				boolean state = this.webElement.isDisplayed();
 				if (DEBUG) debugPrintln("			 ( -> "+state+")");
 				return state;
+			}
+			catch (NullPointerException npe) {
+				if (DEBUG) {
+					debugPrintln("			(WORKAROUND: exception "+npe.getMessage()+" has been caught...");
+					debugPrintln("			 -> See Selenium bug https://github.com/SeleniumHQ/selenium/issues/9266 which won't be fixed in version 3...");
+					debugPrintln("			 -> return false instead)");
+				}
+				return false;
 			}
 			catch (WebDriverException wde) {
 				if (recovery) {
@@ -1680,7 +1687,7 @@ private boolean recover(final int n) {
 	// If there's a parent, then recover it first
 	if (this.context instanceof WebBrowserElement) {
 		final WebBrowserElement parentElement = (WebBrowserElement) this.context;
-		if (!parentElement.recover(n)) {
+		if (!parentElement.isDisplayed(false) && !parentElement.recover(n)) {
 			return false;
 		}
 	}
@@ -1695,7 +1702,7 @@ private boolean recover(final int n) {
 	try {
 		debugPrint("		  -> find element {"+this.locator+"}");
 		WebElement recoveredElement = null;
-		if (this.parentListSize == 0) {
+		if (this.parentListSize <= 1) {
 
 			// Single element expected
 			if (this.context instanceof WebBrowserElement) {
@@ -1704,15 +1711,22 @@ private boolean recover(final int n) {
 					recoveredElement = ((WebBrowserElement) this.context).webElement.findElement(this.locator);
 				}
 				catch (NoSuchElementException nsee) {
-					if (n == MAX_RECOVERY_ATTEMPTS) {
-						debugPrintln("Workaround: recovery cannot find the element again, try with any possible frame");
-						recoveredElement = this.browser.findElementInFrames(this.locator).webElement;
-						if (recoveredElement == null) {
-							debugPrintln("	-> recovery cannot find the element even in other frame, give up...");
+					if (n >= MAX_RECOVERY_ATTEMPTS) {
+						if (this.browser.hasFrame()) {
+							debugPrintln("Workaround: recovery cannot find the element again, try with any possible frame");
+							WebBrowserElement elementInFrame = this.browser.findElementInFrames(this.locator);
+							if (elementInFrame == null) {
+								debugPrintln("	-> recovery cannot find the element even in other frame, give up...");
+								throw nsee;
+							}
+							recoveredElement = elementInFrame.webElement;
+							this.frame = this.browser.getCurrentFrame();
+						} else {
+							debugPrintln("	-> recovery cannot retrieve the element, give up...");
 							throw nsee;
 						}
-						this.frame = this.browser.getCurrentFrame();
 					}
+					debugPrintln("	-> #"+n+" recovery attempt cannot retrieve the element, try another time...");
 				}
 			} else {
 				debugPrintln(" as single element in web driver...");
@@ -1720,14 +1734,21 @@ private boolean recover(final int n) {
 					recoveredElement = this.context.findElement(this.locator);
 				}
 				catch (NoSuchElementException nsee) {
-					if (n == MAX_RECOVERY_ATTEMPTS) {
-						recoveredElement = this.browser.findElementInFrames(this.locator);
-						if (recoveredElement == null) {
-							debugPrintln("	-> recovery cannot find the element even in other frame, give up...");
+					if (n >= MAX_RECOVERY_ATTEMPTS) {
+						if (this.browser.hasFrame()) {
+							WebBrowserElement elementInFrame = this.browser.findElementInFrames(this.locator);
+							if (elementInFrame == null) {
+								debugPrintln("	-> recovery cannot find the element even in other frame, give up...");
+								throw nsee;
+							}
+							recoveredElement = elementInFrame.webElement;
+							this.frame = this.browser.getCurrentFrame();
+						} else {
+							debugPrintln("	-> recovery cannot retrieve the element, give up...");
 							throw nsee;
 						}
-						this.frame = this.browser.getCurrentFrame();
 					}
+					debugPrintln("	-> #"+n+" recovery attempt cannot retrieve the element, try another time...");
 				}
 			}
 		} else {
@@ -1769,7 +1790,7 @@ private boolean recover(final int n) {
 					}
 				} else {
 					if (listSize == this.parentListSize && idx == this.parentListIndex) {
-						debugPrintln("		  -> an element is hidden at the same place int the list ("+idx+") => it to recover.");
+						debugPrintln("		  -> an element is hidden at the same place int the list ("+idx+") => store it in case it will be the only one...");
 						tempElement = foundElement;
 					} else {
 						debugPrintln("		  -> an element is hidden at the a different place in the list ("+idx+") => it won't be stored...");

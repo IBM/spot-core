@@ -73,11 +73,9 @@ import com.ibm.bear.qa.spot.core.scenario.errors.*;
  * <li>{@link #getMenuElement(int)}: Return the menu element.</li>
  * <li>{@link #isMenuItemDisplayed(String)}: Returns whether the given menu item is displayed or not.</li>
  * <li>{@link #setPerfManagerRegressionType(RegressionType,boolean)}: Set regression type on performances manager.</li>
- * <li>{@link #waitForMandatoryDisplayedPageElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
- * <li>{@link #waitForMandatoryElements(By,int,boolean)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
  * <li>{@link #waitForItemElement(String,boolean,int)}: Wait for the given item the given timeout.</li>
  * <li>{@link #waitForLoadingEnd()}: Wait until the menu is loaded.</li>
- * <li>{@link #waitForMandatoryDisplayedChildElement(By,int)}: Wait until having found an element searched using the given locator.</li>
+ * <li>{@link #waitForMandatoryElements(By,int,boolean)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
  * </ul>
  * </p>
  */
@@ -86,28 +84,77 @@ public class WebMenu extends SpotAbstractWindow {
 	final private boolean useRightClick;
 	final private boolean useFrame;
 
+/**
+ * Create a menu element in the given parent using the wrapped web element
+ * found by the given locator.
+ * <p>
+ * When using this constructor, it's assumed that menu does not use right click
+ * and no frame either.
+ * </p>
+ * @param parent The element wrapper in which the menu element is located
+ * @param locator The locator to find the wrapped web element
+ */
 public WebMenu(final WebElementWrapper parent, final By locator) {
 	super(parent, locator);
 	this.useRightClick = false;
 	this.useFrame = false;
 }
 
+/**
+ * Create a menu element in the given page using the wrapped web element
+ * found by the given locator.
+ * <p>
+ * When using this constructor, it's assumed that menu does not use right click
+ * and no frame either.
+ * </p>
+ * @param page The page in which the menu element is located
+ * @param locator The locator to find the wrapped web element
+ */
 public WebMenu(final WebPage page, final By locator) {
 	this(page, locator, false);
 }
 
+/**
+ * Create a menu element in the given page using the wrapped web element
+ * found by the given locator and using right click if specified.
+ * <p>
+ * When using this constructor, it's assumed that menu does not use any frame.
+ * </p>
+ * @param page The page in which the menu element is located
+ * @param locator The locator to find the wrapped web element
+ * @param useRightClick Tells whether the menu should use right click to select items or not
+ */
 public WebMenu(final WebPage page, final By locator, final boolean useRightClick) {
 	this(page, locator, useRightClick, false);
 }
 
+/**
+ * Create a menu element in the given page using the wrapped web element
+ * found by the given locator and using right click and frame if specified.
+ *
+ * @param page The page in which the menu element is located
+ * @param locator The locator to find the wrapped web element
+ * @param useRightClick Tells whether the menu should use right click to select items or not
+ * @param useFrame Tells whether the menu should use a frame or not
+ */
 public WebMenu(final WebPage page, final By locator, final boolean useRightClick, final boolean useFrame) {
 	super(page, locator);
 	this.useRightClick = useRightClick;
 	this.useFrame = useFrame;
 }
 
-public WebMenu(final WebPage page, final WebBrowserElement element) {
-	super(page, element);
+/**
+ * Create a menu element in the given page using the given wrapped web
+ * element.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p>
+ * @param page The page in which the menu element is located
+ * @param wbElement The wrapped web element
+ */
+public WebMenu(final WebPage page, final WebBrowserElement wbElement) {
+	super(page, wbElement);
 	this.useRightClick = false;
 	this.useFrame = false;
 }

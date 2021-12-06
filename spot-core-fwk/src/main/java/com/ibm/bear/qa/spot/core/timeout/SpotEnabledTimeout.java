@@ -32,6 +32,25 @@ import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
  */
 public class SpotEnabledTimeout extends SpotAbstractTimeout {
 
+/**
+ * Create a timeout to wait for given element to be enabled/disabled.
+ * <p>
+ * Timeout behavior is to fail when it expires without having the expected state.
+ * </p>
+ * @param webElement The element to test
+ */
+public SpotEnabledTimeout(final WebBrowserElement webElement) {
+	super(webElement, true);
+}
+/**
+ * Create a timeout to wait for given element to be enabled/disabled.
+ * <p>
+ * Timeout behavior when it expires without having the expected state depends
+ * on given <b>fail</b> argument.
+ * </p>
+ * @param webElement The element to test
+ * @param fail Tells whether to raise an error if condition fails
+ */
 public SpotEnabledTimeout(final WebBrowserElement webElement, final boolean fail) {
 	super(webElement, fail);
 }

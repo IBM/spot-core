@@ -47,9 +47,9 @@ import com.ibm.bear.qa.spot.core.topology.Application;
  * <li>{@link #storeUserAsLoggedInApplication()}: Store the user as logged int for the corresponding page application.</li>
  * <li>{@link #timeout()}: Return the general timeout used on the page.</li>
  * <li>{@link #typeText(By,String)}: Type a text into an input web element found in the current page using the</li>
- * <li>{@link #waitForMandatoryPageElement(By)}: Wait until have found the web element using the given locator.</li>
- * <li>{@link #waitForPotentialPageElementWithTimeout(By,int)}: Wait until have found the web element using the given locator.</li>
- * <li>{@link #waitForPotentialPageElementsWithTimeout(By,int)}: Wait until have found some elements (ie. at least one) web elements using</li>
+ * <li>{@link #waitForMandatoryPageElement(By)}: Wait until have found in current page the web element using the given locator.</li>
+ * <li>{@link #waitForPotentialPageElementWithTimeout(By,int)}: Wait until have found in current page the web element using the given locator.</li>
+ * <li>{@link #waitForPotentialPageElementsWithTimeout(By,int)}: Wait until have found in current page some elements (ie. at least one) web elements</li>
  * </ul>
  * </p>
  */

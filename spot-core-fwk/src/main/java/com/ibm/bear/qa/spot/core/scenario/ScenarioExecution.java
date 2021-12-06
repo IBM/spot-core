@@ -31,8 +31,7 @@ import org.apache.activemq.broker.BrokerService;
 import org.junit.runner.Description;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.openqa.selenium.UnhandledAlertException;
-import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.*;
 import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
@@ -366,7 +365,11 @@ private String getShouldStopReason(final boolean mandatoryTest) {
 	}
 	if (mandatoryTest) {
 		if (reason.length() > 0) reason += " and";
-		reason += "it's a mandatory test";
+		reason += " it's a mandatory test";
+	}
+	if (getBrowser() == null) {
+		if (reason.length() > 0) reason += " and";
+		reason += " browser could not be opened";
 	}
 	return reason;
 }
@@ -449,7 +452,7 @@ public boolean isSlowServer() {
  * @param isNotRerunnable Tells whether the current test is rerunnable or not.
  * @param snapshotLevel The level of snapshot to be taken. If negative then no snapshot will be taken
  */
-protected void manageFailure(final long start, final Throwable t, final boolean isNotRerunnable, final int snapshotLevel) {
+protected void manageFailure(final long start, final Throwable t, final boolean isNotRerunnable, final int snapshotLevel) throws Throwable {
 
 	// Print failure stack trace
 	printException(t);
@@ -468,7 +471,7 @@ protected void manageFailure(final long start, final Throwable t, final boolean 
 	println("	  -> KO (in " + elapsedTimeString(start) + ")");
 	println("		due to: " + message);
 
-	// If a CLM Server error occurs display the error message
+	// If a server error occurs display the error message
 	if (t instanceof ServerMessageError) {
 		ServerMessageError sme = (ServerMessageError) t;
 		println("SERVER ERROR MESSAGE:");
@@ -481,6 +484,9 @@ protected void manageFailure(final long start, final Throwable t, final boolean 
 
 	// Return now when test is not re-runnable
 	if (isNotRerunnable) {
+		if (getBrowser() == null) {
+			throw t;
+		}
 		takeScreenshotFailure();
 		return;
 	}
@@ -605,12 +611,17 @@ public void runTest(final Statement statement, final Description description) th
 		handleAlert(description, uae);
 		runTest(statement, description);
 	}
+	catch (SessionNotCreatedException scne) {
+		manageFailure(start, scne, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
+		this.shouldStop = true;
+		throw scne;
+	}
 	catch (UnreachableBrowserException ube) {
 
 		// Manage failure
 		WebPage currentPage = getCurrentPage();
 		manageFailure(start, ube, isNotRerunnable || currentPage == null, /*snapshotLevel:*/-1);
-		if (this.browserErrors >= this.browserErrorsThreshold || currentPage == null) {
+		if (this.browserErrors >= this.browserErrorsThreshold || currentPage == null || isNotRerunnable) {
 			println("		  -> The browser seems to have a problem which cannot be workarounded by just a restart, give up!");
 			this.shouldStop = true;
 			throw ube;
@@ -629,7 +640,7 @@ public void runTest(final Statement statement, final Description description) th
 		} else if (message.startsWith("Failed to connect to binary FirefoxBinary") || message.startsWith("chrome not reachable")) {
 			WebPage currentPage = getCurrentPage();
 			manageFailure(start, wde, isNotRerunnable || currentPage == null, /*snapshotLevel:*/-1);
-			if (this.browserErrors >= this.browserErrorsThreshold || currentPage == null) {
+			if (this.browserErrors >= this.browserErrorsThreshold || currentPage == null || isNotRerunnable) {
 				println("		  -> The browser seems to have a problem which cannot be workarounded by just a restart, give up!");
 				this.shouldStop = true;
 				throw wde;
@@ -640,10 +651,10 @@ public void runTest(final Statement statement, final Description description) th
 			this.browserErrors++;
 		} else {
 			WebPage currentPage = getCurrentPage();
-			boolean shouldFail = this.failures >= this.failuresThreshold;
+			boolean shouldFail = this.failures >= this.failuresThreshold || isNotRerunnable || getBrowser() == null;
 			manageFailure(start, wde, isNotRerunnable || getBrowser() == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 			if (shouldFail) {
-				this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description);
+				this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || getBrowser() == null;
 				if (!this.shouldStop && description.getAnnotation(StepBlocker.class) != null) {
 					this.stopStepExecution = this.stepName;
 				}
@@ -663,8 +674,8 @@ public void runTest(final Statement statement, final Description description) th
 	}
 	catch (RetryableError pte) {
 		WebPage currentPage = getCurrentPage();
-		boolean shouldFail = this.retriables >= this.retriablesThreshold;
 		boolean cannotRerun = isNotRerunnable || getBrowser() == null;
+		boolean shouldFail = this.retriables >= this.retriablesThreshold;
 		int snapshotLevel = (shouldFail || !cannotRerun) ? 2 : 1;
 		manageFailure(start, pte, cannotRerun, snapshotLevel);
 		if (shouldFail) {
@@ -677,7 +688,7 @@ public void runTest(final Statement statement, final Description description) th
 		}
 		if (cannotRerun) {
 			println("Unfortunately current test cannot be rerun, hence give up.");
-			this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description);
+			this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || getBrowser() == null;
 			if (!this.shouldStop && description.getAnnotation(StepBlocker.class) != null) {
 				this.stopStepExecution = this.stepName;
 			}
@@ -695,11 +706,11 @@ public void runTest(final Statement statement, final Description description) th
 		runTest(statement, description);
 	}
 	catch (MultipleElementsFoundError mvee) {
-		boolean shouldFail = this.multiples >= this.multiplesThreshold;
+		boolean shouldFail = this.multiples >= this.multiplesThreshold || isNotRerunnable;
 		manageFailure(start, mvee, isNotRerunnable || getBrowser() == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 		if (shouldFail) {
 			println("Too many multiple elements errors occurred during scenario execution, give up.");
-			this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description);
+			this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || getBrowser() == null;
 			if (!this.shouldStop && description.getAnnotation(StepBlocker.class) != null) {
 				this.stopStepExecution = this.stepName;
 			}
@@ -715,15 +726,15 @@ public void runTest(final Statement statement, final Description description) th
 		runTest(statement, description);
 	}
 	catch (ServerMessageError sme) {
-		manageFailure(start, sme, false/*test won't be rerun*/, /*snapshotLevel:*/2);
-		this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description);
+		manageFailure(start, sme, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
+		this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || getBrowser() == null;
 		if (!this.shouldStop && description.getAnnotation(StepBlocker.class) != null) {
 			this.stopStepExecution = this.stepName;
 		}
 		throw sme;
 	}
 	catch (BrowserConnectionError | ExistingDataError | ScenarioImplementationError | ScenarioMissingImplementationError ex) {
-		manageFailure(start, ex, false/*test won't be rerun*/, /*snapshotLevel:*/2);
+		manageFailure(start, ex, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
 		this.shouldStop = true;
 		throw ex;
 	}
@@ -734,7 +745,7 @@ public void runTest(final Statement statement, final Description description) th
 			throw be;
 		}
 		WebPage currentPage = getCurrentPage();
-		boolean shouldFail = this.browserErrors >= this.browserErrorsThreshold || currentPage == null;
+		boolean shouldFail = this.browserErrors >= this.browserErrorsThreshold || currentPage == null || isNotRerunnable;
 		manageFailure(start, be, isNotRerunnable || currentPage == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 		if (shouldFail) {
 			println("Too many browser errors occurred during scenario execution, give up.");
@@ -752,9 +763,9 @@ public void runTest(final Statement statement, final Description description) th
 	}
 	catch (Error err) {
 		// Basic failure management for any kind of other error (including ScenarioFailedError)
-		manageFailure(start, err, false/*test won't be rerun*/, /*snapshotLevel:*/2);
+		manageFailure(start, err, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
 		boolean mandatoryTest = this.mandatoryTests.contains(description);
-		this.shouldStop = this.stopOnFailure || mandatoryTest;
+		this.shouldStop = this.stopOnFailure || mandatoryTest || getBrowser() == null;
 		if (this.shouldStop) {
 			String reason = getShouldStopReason(mandatoryTest);
 			println("ERROR: Unexpected error encountered while running current test, scenario execution will be aborted as "+reason+"!");
@@ -766,9 +777,9 @@ public void runTest(final Statement statement, final Description description) th
 	}
 	catch (Exception ex) {
 		// Basic exception management
-		manageFailure(start, ex, false/*test won't be rerun*/, /*snapshotLevel:*/2);
+		manageFailure(start, ex, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
 		boolean mandatoryTest = this.mandatoryTests.contains(description);
-		this.shouldStop = this.stopOnException || mandatoryTest;
+		this.shouldStop = this.stopOnException || mandatoryTest || getBrowser() == null;
 		if (this.shouldStop) {
 			String reason = getShouldStopReason(mandatoryTest);
 			println("ERROR: Unexpected exception encountered while running current test, scenario execution will be aborted because "+reason+"!");

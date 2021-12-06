@@ -20,38 +20,58 @@ import java.util.List;
 import org.openqa.selenium.By;
 
 import com.ibm.bear.qa.spot.core.api.elements.SpotGrid;
+import com.ibm.bear.qa.spot.core.api.elements.SpotTable;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
 import com.ibm.bear.qa.spot.core.timeout.SpotAbstractTimeout;
 import com.ibm.bear.qa.spot.core.timeout.SpotTextTimeout;
 import com.ibm.bear.qa.spot.core.timeout.SpotTextTimeout.Comparison;
 
 /**
- * Class to handle common code for web element with <code>table</code> tag name
- * using grid specifications.
+ * Class to handle common code for web element with <code>table</code> tag name using grid
+ * specifications.
  * <p>
- * This class implements API methods of {@link SpotGrid}.
+ * This class implements following public API methods of {@link SpotGrid} interface:
  * <ul>
- * <li>{@link #applySortMode(String, SortMode)}: Apply the given sort mode to the given column.</li>
- * <li>{@link #getColumnSortMode(String)}: Return the sort mode of the column macthing the given name.</li>
+ * <li>{@link #applySortMode(String,SortMode)}: Apply the given sort mode to the given column.</li>
+ * <li>{@link #getColumnSortMode(String)}: Return the sort mode of the column matching the given name.</li>
  * <li>{@link #getSortedColumn()}: Return the name of the column which has a sorting activated.</li>
  * </ul>
  * </p><p>
- * It also defines or overrides following methods:
+ * This class implements following public API methods of {@link SpotTable} interface:
+ * <ul>
+ * <li>{@link #getRowElementContainingText(String)}: Return the row web element containing a cell with the given text.</li>
+ * <li>{@link #isEmpty()}: Return whether the table is empty or not.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following internal API methods:
+ * <ul>
+ * <li>{@link #getRowElements()}: Return the list of row web elements.</li>
+ * <li>{@link #waitForTableToBeLoaded()}: Wait for the table to be loaded.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
  * <ul>
  * <li>{@link #getHeaderElementsLocator()}: Return the locator to find header web elements in the displayed grid container element.</li>
  * <li>{@link #getRowCellsElementsLocator()}: Return the locator to find cells elements of a row displayed in the grid table element.</li>
+ * <li>{@link #getRowElements(boolean)}: Return the list of row web elements including hidden elements or not.</li>
  * <li>{@link #getRowElementsLocator()}: Return the locator to find row web elements in the displayed table element.</li>
  * <li>{@link #getSortMode(WebBrowserElement)}: Return the sorting state of the given column header element.</li>
+ * <li>{@link #getStatusMessageElement()}: The status message element.</li>
  * </ul>
  * </p>
  */
 public abstract class SpotAbstractGridElement extends SpotAbstractTableElement implements SpotGrid {
 
 	/* Constants*/
+	private static final By DEFAULT_GRID_TABLE_LOCATOR = By.className("bx--grid");
 	private static final String THERE_ARE_NO_ITEMS_TO_DISPLAY = "There are no items to display";
 	private static final String NO_ITEMS_TO_DISPLAY = "No items to display";
 
 	protected boolean onlyChecked = false;
+
+public SpotAbstractGridElement(final WebElementWrapper parent) {
+	super(parent, DEFAULT_GRID_TABLE_LOCATOR);
+}
 
 public SpotAbstractGridElement(final WebElementWrapper parent, final By locator) {
 	super(parent, locator);
@@ -116,6 +136,10 @@ public void applySortMode(final String column, final SortMode mode) throws Scena
 	}
 }
 
+private WebBrowserElement getBodyEmptyElement() throws WaitElementTimeoutError, MultipleElementsFoundError {
+	return this.element.waitShortlyForMandatoryChildElement(By.className("gridxBodyEmpty"));
+}
+
 @Override
 public SortMode getColumnSortMode(final String column) throws ScenarioFailedError {
 	if (getHeaderElement(column) == null) {
@@ -139,17 +163,16 @@ protected By getHeaderElementsLocator() {
 }
 
 /**
- * Return the locator to find cells elements of a row displayed in the grid table element.
+ * {@inheritDoc}
  * <p>
- * By default these are web elements with <code>class</code> attribute containing
- * <code>gridxCell</code>. Subclass might want to override this method if the way
- * to get these elements is different.
+ * For table grid, default row cell elements are web elements with <code>class</code>
+ * attribute containing <code>gridxCell</code>. However, subclasses might want
+ * to override this method if the way to get these elements is different.
  * </p>
- * @return The rows locator
  */
 @Override
 protected By getRowCellsElementsLocator() {
-	return By.cssSelector(".gridxCell");
+	return By.className("gridxCell");
 }
 
 /**
@@ -178,13 +201,16 @@ public WebBrowserElement getRowElementContainingText(final String text) {
  * </p>
  */
 @Override
-protected List<WebBrowserElement> getRowElements() {
+public List<WebBrowserElement> getRowElements() {
 	return getRowElements(true);
 }
 
 /**
- * TODO
- * @param displayed whether to only considered displayed elements or hidden ones as well
+ * Return the list of row web elements including hidden elements or not.
+ * <p>
+ * First check whether the table might be empty or not.
+ * </p>
+ * @param displayed Tells whether to only considered displayed elements or hidden ones as well
  */
 protected List<WebBrowserElement> getRowElements(final boolean displayed) {
 
@@ -206,11 +232,11 @@ protected List<WebBrowserElement> getRowElements(final boolean displayed) {
 }
 
 /**
- * Return the locator to find row web elements in the displayed table element.
+ * {@inheritDoc}
  * <p>
- * By default these are web elements with <code>class</code> attribute containing
- * <code>gridxRow</code>. Subclass might want to override this method if the way
- * to get these elements is different.
+ * For table grid, default row elements are web elements with <code>class</code>
+ * attribute containing <code>gridxRow</code>. However, subclasses might want
+ * to override this method if the way to get these elements is different.
  * </p>
  * @return The rows web elements locator
  */
@@ -268,6 +294,11 @@ protected WebBrowserElement getStatusMessageElement() {
 	return this.browser.waitForElement(null, By.id("statusMessage"), /*fail:*/true, shortTimeout(), /*displayed:*/false, /*single:*/true);
 }
 
+@Override
+public boolean isEmpty() {
+	return getBodyEmptyElement().isDisplayed();
+}
+
 /**
  * {@inheritDoc}
  * <p>
@@ -285,18 +316,18 @@ public WebBrowserElement waitForTableToBeLoaded() {
 	statusTimeout.waitWhile(openTimeout());
 
 	// Get empty and loading elements
-	final WebBrowserElement bodyEmptyElement = this.element.waitShortlyForMandatoryChildElement(By.cssSelector(".gridxBodyEmpty"));
+	final WebBrowserElement bodyEmptyElement = getBodyEmptyElement();
 	final WebBrowserElement loadElement = this.element.waitShortlyForMandatoryChildElement(By.className("gridxLoad"));
 
 	// Wait for loading operation end
 	SpotAbstractTimeout timeout = new SpotAbstractTimeout() {
 		@Override
-		protected String getConditionLabel() {
-			return "Table loading operation to be finished";
-		}
-		@Override
 		protected boolean getCondition() {
 			return bodyEmptyElement.isDisplayed() && !bodyEmptyElement.getText().startsWith("Loading") && !loadElement.isDisplayed();
+		}
+		@Override
+		protected String getConditionLabel() {
+			return "Table loading operation to be finished";
 		}
 	};
 	timeout.waitUntil(openTimeout());

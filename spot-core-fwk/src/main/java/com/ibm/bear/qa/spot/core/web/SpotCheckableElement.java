@@ -33,20 +33,156 @@ public class SpotCheckableElement extends SpotAttributeSelectableElement {
 	/* Constants */
 	private static final String ARIA_CHECKED = "aria-checked";
 
-public SpotCheckableElement(final WebPage page, final By locator, final By expansionLocator) {
-	super(page, locator, expansionLocator, ARIA_CHECKED);
+/**
+ * Create a checkable element in the given parent using the wrapped web element
+ * found by the given locator.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the created instance.
+ * </p>
+ * @param parent The element wrapper in which the checkable element is located
+ * @param locator The locator to find the wrapped web element
+ */
+public SpotCheckableElement(final WebElementWrapper parent, final By locator) {
+	super(parent, locator, ARIA_CHECKED);
 }
 
+/**
+ * Create a checkable element in the given parent using the wrapped and selection
+ * web elements found by the given locators.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
+ * to the wrapped web element.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the selection web element.
+ * </p>
+ * @param parent The element wrapper in which the checkable element is located
+ * @param locator The locator to find the wrapped web element
+ * @param selectionLocator The locator to find the selection web element
+ */
+public SpotCheckableElement(final WebElementWrapper parent, final By locator, final By selectionLocator) {
+	super(parent, locator, selectionLocator, ARIA_CHECKED);
+}
+
+/**
+ * Create a checkable element in the given parent using the given wrapped web
+ * element.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the created instance.
+ * </p>
+ * @param parent The element wrapper in which the checkable element is located
+ * @param wwElement The wrapped web element
+ */
+public SpotCheckableElement(final WebElementWrapper parent, final WebBrowserElement wwElement) {
+	super(parent, wwElement, ARIA_CHECKED);
+}
+
+/**
+ * Create a checkable element in the given parent using the given wrapped web
+ * element and the selection web element found using the given locator.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
+ * to the wrapped web element.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the selection web element.
+ * </p>
+ * @param parent The element wrapper in which the checkable element is located
+ * @param wwElement The wrapped web element
+ * @param selectionLocator The locator to find the selection web element
+ */
+public SpotCheckableElement(final WebElementWrapper parent, final WebBrowserElement wwElement, final By selectionLocator) {
+	super(parent, wwElement, selectionLocator, ARIA_CHECKED);
+}
+
+/**
+ * Create a checkable element in the given page using the wrapped web element
+ * found by the given locator.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the created instance.
+ * </p>
+ * @param page The page in which the checkable element is located
+ * @param locator The locator to find the wrapped web element
+ */
 public SpotCheckableElement(final WebPage page, final By locator) {
 	super(page, locator, ARIA_CHECKED);
 }
 
-public SpotCheckableElement(final WebPage page, final WebBrowserElement webElement, final By expansionLocator) {
-	super(page, webElement, expansionLocator, ARIA_CHECKED);
+/**
+ * Create a checkable element in the given page using the wrapped and selection
+ * web elements found by the given locators.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
+ * to the wrapped web element.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the selection web element.
+ * </p>
+ * @param page The page in which the checkable element is located
+ * @param locator The locator to find the wrapped web element
+ * @param selectionLocator The locator to find the selection web element
+ */
+public SpotCheckableElement(final WebPage page, final By locator, final By selectionLocator) {
+	super(page, locator, selectionLocator, ARIA_CHECKED);
 }
 
-public SpotCheckableElement(final WebPage page, final WebBrowserElement webElement) {
-	super(page, webElement, ARIA_CHECKED);
+/**
+ * Create a checkable element in the given page using the given wrapped web
+ * element.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the created wrapper itself.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the created instance.
+ * </p>
+ * @param page The page in which the checkable element is located
+ * @param wwElement The wrapped web element
+ */
+public SpotCheckableElement(final WebPage page, final WebBrowserElement wwElement) {
+	super(page, wwElement, ARIA_CHECKED);
+}
+
+/**
+ * Create a checkable element in the given page using the given wrapped web
+ * element and the selection web element found using the given locator.
+ * <p>
+ * When using this constructor, it's assumed that selection operations are managed
+ * by the selection element.
+ * </p><p>
+ * <b>Important</b>: The locator for the selection web element is assumed to be relative
+ * to the wrapped web element.
+ * </p><p>
+ * The selection status is provided by the <code>aria-checked</code> attribute
+ * of the selection web element.
+ * </p>
+ * @param page The page in which the checkable element is located
+ * @param wwElement The wrapped web element
+ * @param selectionLocator The locator to find the selection web element
+ */
+public SpotCheckableElement(final WebPage page, final WebBrowserElement wwElement, final By selectionLocator) {
+	super(page, wwElement, selectionLocator, ARIA_CHECKED);
 }
 
 @Override

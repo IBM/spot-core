@@ -105,6 +105,7 @@ protected void initProfile() {
 	arguments.add("--lang=en"); // force English locale when starting Chrome
 	if (this.manager.isHeadless()) {
 		arguments.add("--headless");
+		arguments.add("--disable-dev-shm-usage"); // overcome limited resource problems
 	}
 
 	// A default download directory can not be set via the setExperimentalOptions method

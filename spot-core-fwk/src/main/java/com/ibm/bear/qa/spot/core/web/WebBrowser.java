@@ -139,7 +139,7 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 	/**
 	 * Possible state for clickable workaround
 	 */
-	enum ClickableWorkaroundState { None, Init, Up, Esc, Down, DoubleUp }
+	enum ClickableWorkaroundState { None, Init, Up, Esc, UpAgain, Javascript }
 
 	/**
 	 * Inner class to help to find elements in current browser page frames even if
@@ -276,6 +276,9 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 
 	// Window info
 	Dimension windowSize;
+
+	// Error message
+	StringBuilder errorMessage = null;
 
 protected WebBrowser(final BrowsersManager manager) {
 
@@ -894,39 +897,45 @@ public void dragAndDrop(final WebBrowserElement sourceElement, final WebBrowserE
 			selectFrame(sourceElement.getFrame());
 			sleep(1);
 		}
+		// Work with DnD sample
+		this.actions.dragAndDrop(sourceElement.getWebElement(), targetElement.getWebElement()).perform();
+
 //		println("Source coordinates: in view="+sourceElement.getCoordinates().inViewPort()+", on page="+sourceElement.getCoordinates().onPage());
 //		println("Target coordinates: in view="+targetElement.getCoordinates().inViewPort()+", on page="+targetElement.getCoordinates().onPage());
-//		Action move = new Actions(this.driver).clickAndHold(sourceElement).moveToElement(targetElement).build();
-//		move.perform();
-//		sleep(1);
-//		Action release = new Actions(this.driver).release(targetElement).build();
-//		release.perform();
-//		sleep(1);
-//		new Actions(this.driver).dragAndDrop(sourceElement, targetElement).perform();
-		// Work with DnD sample
-//		this.actions.dragAndDrop(sourceElement, targetElement).perform();
-		// Workaround for Firefox: does not work
-//		Actions builder = new Actions(this.driver);
-//        builder.clickAndHold(sourceElement);
-//        builder.moveToElement(targetElement, 5, 5);
-//        builder.perform();
-//        pause(250);
-//        builder.release(targetElement);
-//        builder.perform();
-		// Another Workaround for Firefox: does not work
-//		Actions builder1 = new Actions(this.driver);
-//        builder1.moveToElement(sourceElement);
-//        builder1.clickAndHold();
-//        builder1.perform();
-//		Actions builder2 = new Actions(this.driver);
-//        builder2.moveToElement(targetElement);
-//        builder2.perform();
-//        pause(250);
-//		Actions builder3 = new Actions(this.driver);
-//        builder3.release();
-//        builder3.perform();
-        // Use javascript workaround
+		/* Workaround for Firefox: does not work
+		Actions builder = new Actions(this.driver);
+        builder.clickAndHold(sourceElement);
+        builder.moveToElement(targetElement, 5, 5);
+        builder.perform();
+        pause(250);
+        builder.release(targetElement);
+        builder.perform();
+        */
+		/* Another Workaround for Firefox: does not work
+		Actions builder1 = new Actions(this.driver);
+        builder1.moveToElement(sourceElement);
+        builder1.clickAndHold();
+        builder1.perform();
+		Actions builder2 = new Actions(this.driver);
+        builder2.moveToElement(targetElement);
+        builder2.perform();
+        pause(250);
+		Actions builder3 = new Actions(this.driver);
+        builder3.release();
+        builder3.perform();
+        */
+		/* Another workaround
+		Action move = new Actions(this.driver).clickAndHold(sourceElement).moveToElement(targetElement).build();
+		move.perform();
+		sleep(1);
+		Action release = new Actions(this.driver).release(targetElement).build();
+		release.perform();
+		sleep(1);
+		new Actions(this.driver).dragAndDrop(sourceElement, targetElement).perform();
+		*/
+		/* Javascript workaround
 		dragAndDrop(sourceElement, targetElement, Position.Top_Left, Position.Top_Left);
+		*/
 	}
 	finally {
 		if (this.frame != browserFrame) {
@@ -935,7 +944,7 @@ public void dragAndDrop(final WebBrowserElement sourceElement, final WebBrowserE
 	}
 }
 
-@SuppressWarnings("boxing")
+@SuppressWarnings({"boxing", "unused" })
 private void dragAndDrop(final WebBrowserElement dragFrom, final WebBrowserElement dragTo, final Position dragFromPosition, final Position dragToPosition) {
 	Point fromLocation = dragFrom.getLocation();
 	Point toLocation = dragTo.getLocation();
@@ -1213,6 +1222,13 @@ public List<WebElement> findElements(final By locator, final boolean displayed, 
 					}
 					catch (@SuppressWarnings("unused") WebDriverException wde) {
 						// Skip any web driver exception by considering the faulty element as not displayed
+					}
+					catch (NullPointerException npe) {
+						if (DEBUG) {
+							debugPrintln("			WORKAROUND: exception "+npe.getMessage()+" has been caught...");
+							debugPrintln("			 -> See Selenium bug https://github.com/SeleniumHQ/selenium/issues/9266 which won't be fixed in version 3...");
+							debugPrintln("			 -> Ignore it!");
+						}
 					}
 					if (addingElement) {
 						// Create a specific web element to be able to manage recovery
@@ -2299,7 +2315,9 @@ public WebBrowserElement[] select(final WebBrowserElement listElement, final By 
 											selectAction = selectAction.keyUp(Keys.CONTROL);
 											selectAction.build().perform();
 											if (state != ClickableWorkaroundState.Init) {
-												println("	- Workaround worked :-)");
+												println("WARNING: Workaround "+state+" was applied when performing selection on list web element "+listElement.getFullLocator());
+												printStackTrace(1);
+												printErrorMessage();
 											}
 										}
 										catch (@SuppressWarnings("unused") StaleElementReferenceException sere) {
@@ -3505,19 +3523,19 @@ public WebBrowserElement waitForTextPresent(final WebBrowserElement parentElemen
 }
 
 ClickableWorkaroundState workaroundForNotClickableException(final ClickableWorkaroundState state, final WebBrowserElement element, final WebDriverException wde) {
-	println("WARNING: Element element is not clickable!");
-	println("	- Message: "+wde.getMessage());
-	println("	- Locator="+element.locator);
-	println("	- Full locator="+element.getFullLocator());
-	printStackTrace(wde.getStackTrace(), 1);
 	takeScreenshotInfo("ElementIsNotClickable");
 	switch (state) {
 		case Init:
-			println("	- Try to workaround this scrolling up by 100 (in case a toolbar is masking it)...");
+			this.errorMessage = new StringBuilder("WARNING: Element element is not clickable!").append(LINE_SEPARATOR)
+				.append("	- Exception: ").append(wde.toString()).append(LINE_SEPARATOR)
+				.append("	- Locator: ").append(element.locator)
+				.append("	- Full locator: ").append(element.getFullLocator()).append(LINE_SEPARATOR)
+				.append(cleanStackTrace(wde.getStackTrace(), 1, 0))
+				.append("	- Try to workaround this scrolling up by 100 (in case a toolbar is masking it)...").append(LINE_SEPARATOR);
 			scrollWindowBy(/*x:*/0, /*y:*/-100);
 			return ClickableWorkaroundState.Up;
 		case Up:
-			println("	- Try to workaround this sending ESC to element (in case a tooltip is masking it)...");
+			this.errorMessage.append("	- Try to workaround this sending ESC to element (in case a tooltip is masking it)...").append(LINE_SEPARATOR);
 			WebBrowserElement currentElement = element;
 			boolean applied = false;
 			while (!applied && currentElement != null) {
@@ -3531,15 +3549,24 @@ ClickableWorkaroundState workaroundForNotClickableException(final ClickableWorka
 			}
 			return ClickableWorkaroundState.Esc;
 		case Esc:
-			println("	- Try to workaround this scrolling up by 200 (in case several toolbars are masking it)...");
-			scrollWindowBy(/*x:*/0, /*y:*/-200);
-			return ClickableWorkaroundState.DoubleUp;
-		case DoubleUp:
-			println("	- Try to workaround this scrolling down by 200 (just in case)...");
-			scrollWindowBy(/*x:*/0, /*y:*/200);
-			return ClickableWorkaroundState.Down;
+			this.errorMessage.append("	- Try to workaround this scrolling up by 100 again (in case several toolbars are masking it)...").append(LINE_SEPARATOR);
+			scrollWindowBy(/*x:*/0, /*y:*/-100);
+			return ClickableWorkaroundState.UpAgain;
+		case UpAgain:
+			this.errorMessage.append("	- Try to workaround by executing the click with javascript...").append(LINE_SEPARATOR);
+			element.executeScript("click()");
+			return ClickableWorkaroundState.Javascript;
+		case Javascript:
+			// No other workaround available, hence give up...
 		default:
 			throw wde;
+	}
+}
+
+void printErrorMessage() {
+	if (this.errorMessage != null && this.errorMessage.length() > 0) {
+		debugPrint(this.errorMessage.toString());
+		this.errorMessage = null;
 	}
 }
 }

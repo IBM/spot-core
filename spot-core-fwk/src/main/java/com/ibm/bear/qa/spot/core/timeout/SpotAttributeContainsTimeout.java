@@ -12,6 +12,8 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.timeout;
 
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.EMPTY_STRING;
+
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 import com.ibm.bear.qa.spot.core.scenario.errors.WaitElementTimeoutError;
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
@@ -35,13 +37,50 @@ import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
  */
 public class SpotAttributeContainsTimeout extends SpotAbstractTimeout {
 
-	String attributeName, text;
+	/* Fields */
+	/**
+	 * The name of the attribute to be tested.
+	 */
+	String attributeName;
+
+	/**
+	 * The possible texts of the attribute.
+	 */
+	String[] possibleTexts;
+
+	/**
+	 * The value of the attribute when the timeout expires or the value matches
+	 * the expected.
+	 */
 	String attributeValue;
 
-public SpotAttributeContainsTimeout(final WebBrowserElement webElement, final String attribute, final String contains) {
-	super(webElement, /*fail:*/true);
+/**
+ * Create a timeout to wait for given attribute of given element to be match the given text.
+ * <p>
+ * Timeout behavior is to fail when it expires without having the expected state.
+ * </p>
+ * @param webElement The element to test
+ * @param attribute The attribute to be tested in the element
+ * @param possibleTexts The expected possible texts of the attribute. It can be <code>null</code>
+ */
+public SpotAttributeContainsTimeout(final WebBrowserElement webElement, final String attribute, final String... possibleTexts) {
+	this(webElement, attribute, /*fail:*/true, possibleTexts);
+}
+/**
+ * Create a timeout to wait for given attribute of given element to be match the given text.
+ * <p>
+ * Timeout behavior when it expires without having the expected state depends
+ * on given <b>fail</b> argument.
+ * </p>
+ * @param webElement The element to test
+ * @param attribute The attribute to be tested in the element
+ * @param fail Tells whether an error is raised when timeout expires or not
+ * @param possibleTexts The expected possible texts of the attribute. It can be <code>null</code>
+ */
+public SpotAttributeContainsTimeout(final WebBrowserElement webElement, final String attribute, final boolean fail, final String... possibleTexts) {
+	super(webElement, fail);
 	this.attributeName = attribute;
-	this.text = contains;
+	this.possibleTexts = possibleTexts;
 }
 
 public String getAttributeValue() {
@@ -51,21 +90,38 @@ public String getAttributeValue() {
 @Override
 protected boolean getCondition() {
 	this.attributeValue = this.element.getAttribute(this.attributeName);
-	if (this.text == null) {
+	if (this.possibleTexts == null || this.possibleTexts.length == 0) {
 		return this.attributeValue == null;
 	}
-	return this.attributeValue != null && this.attributeValue.contains(this.text);
+	for (String text: this.possibleTexts) {
+		if (this.attributeValue == null) {
+			if (text == null) {
+				return true;
+			}
+		} else if (text != null && this.attributeValue.contains(text)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 @Override
 protected String getConditionLabel() {
-	String label = "Attribute '"+this.attributeName+"' ";
-	if (this.text == null) {
-		label += " is null";
+	StringBuffer buffer = new StringBuffer("Attribute '")
+			.append(this.attributeName)
+			.append("' ");
+	if (this.possibleTexts == null || this.possibleTexts.length == 0) {
+		buffer.append(" is null");
 	} else {
-		label += " contains '"+this.text+"'";
+		buffer.append(" contains '");
+		String separator = EMPTY_STRING;
+		for (String text: this.possibleTexts) {
+			buffer.append(separator).append(text);
+			separator = "' or '";
+		}
+		buffer.append("'");
 	}
-	return label;
+	return buffer.toString();
 }
 
 @Override

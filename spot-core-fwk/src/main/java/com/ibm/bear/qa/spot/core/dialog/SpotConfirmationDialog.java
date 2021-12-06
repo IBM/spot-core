@@ -19,7 +19,21 @@ import org.openqa.selenium.By;
 import com.ibm.bear.qa.spot.core.web.WebPage;
 
 /**
- * Simple confirmation dialog that contains two buttons.
+ * Simple confirmation dialog that contains two buttons to validate and cancel the dialog.
+ * <p>
+ * Cancel and validation buttons are found using text displayed in the button.
+ * Default constructors are offered for <b>Ok</b> and <b>Cancel</b> standard buttons.
+ * </p><p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #getCloseButtonText()}: Get the text of the close button; good for debug messages.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #getCloseButtonLocator(boolean)}: Return the locator for the button to close the window.</li>
+ * </ul>
+ * </p>
  */
 public class SpotConfirmationDialog extends SpotAbstractDialog {
 
@@ -27,10 +41,10 @@ public class SpotConfirmationDialog extends SpotAbstractDialog {
 	protected String cancelButtonText;
 
 /**
- * Create a standard dialog instance.
+ * Create a dialog element in the given page using <b>Ok</b> and <b>Cancel</b> buttons.
  * <p>
- * A standard confirmation dialog is a dialog where validation button is defined
- * by NLS message
+ * Note that button texts are both NLS strings. That means such constructor can
+ * be used even if the dialog is displayed in a different but supported language.
  * </p>
  * @param page The page in which the dialog will be opened
  * @param selector The selector to find the dialog web element in the page
@@ -40,21 +54,18 @@ public SpotConfirmationDialog(final WebPage page, final By selector) {
 }
 
 /**
- * Create a standard dialog instance.
- * <p>
- * A standard confirmation dialog is a dialog where validation button is defined
- * by NLS message
- * </p>
+ * Create a dialog element in the given page using given text for validation button and <b>Cancel</b> button.
+ *
  * @param page The page in which the dialog will be opened
- * @param closeButtonText The text for dialog validation button
  * @param selector The selector to find the dialog web element in the page
+ * @param closeButtonText The text for dialog validation button
  */
 public SpotConfirmationDialog(final WebPage page, final By selector, final String closeButtonText) {
 	this(page, selector, closeButtonText, NLS_MESSAGES.getDialogCancelButtonLabel());
 }
 
 /**
- * Create a generic dialog instance.
+ * Create a dialog element in the given page using given texts for validation and cancellation buttons.
  *
  * @param page The page in which the dialog will be opened
  * @param selector The selector to find the dialog web element in the page

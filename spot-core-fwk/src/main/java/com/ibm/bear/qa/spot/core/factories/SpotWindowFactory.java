@@ -15,7 +15,6 @@ package com.ibm.bear.qa.spot.core.factories;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 
 import org.openqa.selenium.By;
 
@@ -111,11 +110,8 @@ public static <W extends SpotAbstractWindow> W createInstance(final WebPage page
 public static <W extends SpotAbstractWindow> W createInstance(final WebPage page, final By locator, final Class<W> windowClass, final String... data) throws Exception {
 	debugPrintEnteringMethod("page", page.getLocation(), "locator", locator, "windowClass", getClassSimpleName(windowClass), "data", getTextFromList(data));
 
-	// Start from the first abstract class
+	// Get page class
 	Class<? extends WebPage> pageClass = page.getClass();
-	while ((pageClass.getModifiers() & Modifier.ABSTRACT) == 0) {
-		pageClass = (Class<? extends WebPage>) pageClass.getSuperclass();
-	}
 
 	// Loop until found the constructor on the right subclass of WebPage
 	Exception exception = null;
