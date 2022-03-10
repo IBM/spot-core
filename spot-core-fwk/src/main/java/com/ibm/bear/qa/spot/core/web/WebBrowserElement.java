@@ -739,17 +739,27 @@ public List<WebElement> findElements(final By relativeLocator, final boolean dis
 				List<WebElement> pageElements = new ArrayList<WebElement>(listSize);
 				for (int idx=0; idx<listSize; idx++) {
 					WebElement foundElement = foundElements.get(idx);
-	//				if (foundElement.isDisplayed() || !displayed) {
-					if (!displayed || foundElement.isDisplayed()) {
+					boolean addingElement = false;
+					try {
+						// Check whether the element is displayed
+						addingElement = !displayed || foundElement.isDisplayed();
+					}
+					catch (@SuppressWarnings("unused") WebDriverException wde) {
+						// Skip any web driver exception by considering the faulty element as not displayed
+					}
+					catch (NullPointerException npe) {
+						if (DEBUG) {
+							debugPrintln("			WORKAROUND: exception "+npe.getMessage()+" has been caught...");
+							debugPrintln("			 -> See Selenium bug https://github.com/SeleniumHQ/selenium/issues/9266 which won't be fixed in version 3...");
+							debugPrintln("			 -> Ignore it!");
+						}
+					}
+					if (addingElement) {
 						WebBrowserElement webPageElement = new WebBrowserElement(this.browser, this.frame, this, fixedLocator, foundElement, listSize, idx);
 						pageElements.add(webPageElement);
 						if (DEBUG) {
 							debugPrint("			  (-> found '"+webPageElement);
-	//						if (foundElement.isDisplayed()) {
-								debugPrintln(")");
-	//						} else {
-	//							debugPrintln(" - not displayed)");
-	//						}
+							debugPrintln(")");
 						}
 					} else {
 						if (DEBUG) debugPrintln("			  (-> element not displayed)");
@@ -1604,7 +1614,7 @@ public WebBrowserElement makeVisible() {
  */
 public WebBrowserElement makeVisible(final boolean force) {
 	debugPrintEnteringMethod("force", force);
-	if (force || !this.webElement.isDisplayed()) {
+	if (force || !isDisplayed(false)) {
 		moveToElement(true/*entirelyVisible*/);
 	}
 	return this;
@@ -1775,7 +1785,22 @@ private boolean recover(final int n) {
 			WebElement tempElement = null;
 			boolean canRecover = true;
 			for (WebElement foundElement: foundElements) {
-				if (foundElement.isDisplayed()) {
+				boolean elementIsDisplayed = false;
+				try {
+					// Check whether the element is displayed
+					elementIsDisplayed = foundElement.isDisplayed();
+				}
+				catch (@SuppressWarnings("unused") WebDriverException wde) {
+					// Skip any web driver exception by considering the faulty element as not displayed
+				}
+				catch (NullPointerException npe) {
+					if (DEBUG) {
+						debugPrintln("			WORKAROUND: exception "+npe.getMessage()+" has been caught...");
+						debugPrintln("			 -> See Selenium bug https://github.com/SeleniumHQ/selenium/issues/9266 which won't be fixed in version 3...");
+						debugPrintln("			 -> Ignore it!");
+					}
+				}
+				if (elementIsDisplayed) {
 					if (listSize == this.parentListSize && idx == this.parentListIndex) {
 						debugPrintln("		  -> an element is visible at the same place int the list ("+idx+") => use it to recover.");
 						recoveredElement = foundElement;
@@ -2000,7 +2025,7 @@ public void setVisible(final int width) {
 	String newStyleAttribute = getNewVisibilityStyle(styleAttribute, width);
 	debugPrintln("	-> new style="+newStyleAttribute);
 	getJavascriptExecutor().executeScript("arguments[0].style=\""+newStyleAttribute+"\";", this.webElement);
-	if (!isDisplayed()) {
+	if (!isDisplayed(false)) {
 		throw new ScenarioFailedError("Workaround to make current element "+this+" visible did NOT work.");
 	}
 }

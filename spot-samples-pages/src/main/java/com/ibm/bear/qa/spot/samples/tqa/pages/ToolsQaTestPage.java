@@ -85,6 +85,7 @@ public ToolsQaTestDialogsContainer getDialogsTest() {
 	return (ToolsQaTestDialogsContainer) this.container;
 }
 
+@SuppressWarnings("unused")
 private WebBrowserElement getGroupElement(final Group group) {
 	return waitForMandatoryDisplayedElement(By.xpath("//div[@class='element-group' and .//div[@class='header-text' and text()='"+group.getLabel()+"']]"));
 }

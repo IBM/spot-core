@@ -34,7 +34,7 @@ import com.ibm.bear.qa.spot.samples.config.SpotSamplesConfig;
  * <li>{@link #initData()}: Initialize the data.</li>
  * </ul>
  * </p>
- * 
+ *
  * @see SampleToolsQaScenarioData
  */
 public class SampleToolsQaScenarioExecution extends ScenarioExecution {

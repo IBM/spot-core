@@ -17,6 +17,7 @@ import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintln;
 import java.util.*;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.StaleElementReferenceException;
 
 import com.ibm.bear.qa.spot.core.api.elements.SpotTable;
@@ -170,7 +171,7 @@ public List<WebBrowserElement> getCellElements(final int column) throws Scenario
 		try {
 			List<WebBrowserElement> rowCells = rowElement.waitShortlyForMandatoryDisplayedChildrenElements(getRowCellsElementsLocator());
 			cells.add(rowCells.get(column));
-		} catch (@SuppressWarnings("unused") StaleElementReferenceException sere) {
+		} catch (@SuppressWarnings("unused") StaleElementReferenceException | NoSuchElementException ex) {
 			// Skip row which has disappeared
 			debugPrintln("A row has been removed from the list, ignore it ("+rowElement.getLocator()+")");
 		}
