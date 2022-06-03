@@ -1107,7 +1107,10 @@ public static String cleanStackTrace(final StackTraceElement[] elements, final i
 		StackTraceElement element = elements[i];
 		String elementClassName = element.getClassName();
 		if (elementClassName.startsWith("com.ibm") && !elementClassName.startsWith("com.ibm.bear.qa.spot.core.scenario.Scenario")) {
-			builder.append(tabs).append(element.toString()).append(LINE_SEPARATOR);
+			for (int t=0; t<tabs; t++) {
+				builder.append('\t');
+			}
+			builder.append(element.toString()).append(LINE_SEPARATOR);
 		}
 	}
 	return builder.toString();

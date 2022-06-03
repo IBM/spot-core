@@ -134,6 +134,6 @@ protected By getRowElementsLocator() {
 @Override
 public boolean isEmpty() {
 	WebBrowserElement bodyElement = this.element.findElement(By.tagName("tbody"));
-	return bodyElement == null || !bodyElement.isDisplayed();
+	return bodyElement == null || !bodyElement.isDisplayed() || bodyElement.getChildren().size() == 0;
 }
 }

@@ -42,7 +42,7 @@ public class SampleToolsQaStep00_General extends SampleToolsQaScenarioStep {
 public void test01_CheckDocumentTitle() {
 
 	// Open Tools QA home page
-	ToolsQaHomePage homePage = getScenarioOperation().openHomePage();
+	ToolsQaHomePage homePage = getToolsQaOperation().openHomePage();
 
 	// Check page document title
 	String pageDocumentTitle = homePage.getDocumentTitle();

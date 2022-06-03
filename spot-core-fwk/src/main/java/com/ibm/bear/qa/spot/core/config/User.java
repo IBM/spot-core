@@ -14,8 +14,8 @@ package com.ibm.bear.qa.spot.core.config;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.getParameterValue;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.println;
-
-import java.util.Base64;
+import static java.util.Base64.getDecoder;
+import static java.util.Base64.getEncoder;
 
 import com.ibm.bear.qa.spot.core.api.SpotUser;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
@@ -33,6 +33,7 @@ public class User implements UserConstants, SpotUser {
 	String id;
 	String name;
 	String password;
+	String apiKey;
 	String email;
 
 	// Encryption
@@ -85,8 +86,8 @@ protected User(final String prefix, final boolean encrypted) {
 /**
  * Create a user instance using either the given prefix or the given user name.
  * <p>
- * If prefix is not <code>null</code>, then information for user are
- * got from following system properties:
+ * If prefix is not <code>null</code>, then information for user are got from following
+ * system properties:
  * <ul>
  * <li><code><i>prefix</i>Username</code>: The user name</li>
  * <li><code><i>prefix</i>UserID</code>: The user ID</li>
@@ -95,8 +96,8 @@ protected User(final String prefix, final boolean encrypted) {
  * </ul>
  * <b>Warning: the properties names are case sensitive.</b>
  * </p><p>
- * If prefix is <code>null</code> or if prefixed properties are not defined,
- * then user argument is used to initialize the user name, id, password and email.
+ * If prefix is <code>null</code> or if prefixed properties are not defined, then user
+ * argument is used to initialize the user name, id, password and email.
  * For the email value, a default domain value is got from
  * {@link UserConstants#USER_DEFAULT_EMAIL_DOMAIN_PROPERTY} property.
  * </p>
@@ -110,17 +111,17 @@ public User(final String prefix, final String user) {
 		this.name = user;
 		this.id = user;
 		this.password = user;
-		this.email = user+defaultDomain;
+		this.email = user + defaultDomain;
 	} else {
-		this.name = getParameterValue(prefix+USERNAME_ID, user);
-		this.id = getParameterValue(prefix+USERID_ID, this.name);
-		this.password = getParameterValue(prefix+PASSWORD_ID);
+		this.name = getParameterValue(prefix + USERNAME_ID, user);
+		this.id = getParameterValue(prefix + USERID_ID, this.name);
+		this.password = getParameterValue(prefix + PASSWORD_ID);
 		// Discard password default initialization as that can lead to invalid login...
 		// Hence that will raise an SFE instead.
 //		if (this.password == null) {
 //			this.password = this.id;
 //		}
-		this.email = getParameterValue(prefix+EMAIL_ID, this.id+getParameterValue(MAIL_DOMAIN_ID, defaultDomain));
+		this.email = getParameterValue(prefix + EMAIL_ID, this.id + getParameterValue(MAIL_DOMAIN_ID, defaultDomain));
 	}
 
 	// Check that we got at least an ID, a name and a password
@@ -134,7 +135,7 @@ public User(final String prefix, final String user) {
 
 	// Warn if email has not been defined
 	if (this.email == null) {
-		println("Warning: no email has been defined for user "+this.id);
+		println("Warning: no email has been defined for user " + this.id);
 	}
 }
 
@@ -156,9 +157,23 @@ protected User(final String userId, final String userName, final String pwd, fin
 @Override
 public boolean equals(final Object obj) {
 	if (obj instanceof User) {
-	    return ((User)obj).id.equals(this.id);
+		return ((User) obj).id.equals(this.id);
 	}
 	return false;
+}
+
+/**
+ * Return the API key header.
+ *
+ * @return The encoded API key header or <code>null</code> if current user has
+ * no defined API key
+ */
+public String getApiKeyHeader() {
+	if (this.apiKey != null) {
+		String header = this.id + ":" + this.apiKey;
+		return new String(getEncoder().encode(header.getBytes()));
+	}
+	return null;
 }
 
 /**
@@ -171,11 +186,10 @@ public boolean equals(final Object obj) {
  * Note that this is a no-op if the password is not encrypted.
  * </p>
  * @return The decrypted password as a {@link String}
- * @since 6.0
  */
 final public String getDecryptedPassword() {
 	if (this.encrypted) {
-		return new String(Base64.getDecoder().decode(this.password.getBytes()));
+		return new String(getDecoder().decode(this.password.getBytes()));
 	}
 	return getPassword();
 }
@@ -222,16 +236,44 @@ final public String getPassword() {
 
 @Override
 public int hashCode() {
-    return this.id.hashCode();
+	return this.id.hashCode();
 }
 
 @Override
 public boolean matches(final SpotUser user) {
-    return this.id.equals(((User)user).id);
+	return this.id.equals(((User) user).id);
+}
+
+/**
+ * Set user API key with given value.
+ *
+ * @param key The API key to be set
+ */
+public void setApiKey(final String key) {
+	this.apiKey = key;
+}
+
+/**
+ * Set user password with given value.
+ *
+ * @param password The password to be set
+ */
+public void setPassword(final String password) {
+	this.password = password;
 }
 
 @Override
 public String toString() {
-	return "User id=" + this.id + ", name=" + this.name + ", passwd=" + this.password.charAt(0) + "*******" + (this.email == null ? "" : ", mail=" + this.email);
-}
+	StringBuffer buffer = new StringBuffer("User id=").append(this.id)
+		.append(", name=").append(this.name)
+		.append(", passwd=");
+	if (this.password == null) {
+		buffer.append("null");
+	} else {
+		buffer.append(this.password.charAt(0)).append("*******");
+	}
+	if (this.email != null) {
+		buffer.append(", mail=").append(this.email);
+	}
+	return buffer.toString();}
 }

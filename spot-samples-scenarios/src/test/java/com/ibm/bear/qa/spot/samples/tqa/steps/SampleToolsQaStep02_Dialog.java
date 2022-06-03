@@ -46,7 +46,7 @@ public class SampleToolsQaStep02_Dialog extends SampleToolsQaScenarioStep {
 public void test01_SmallModal() {
 
 	// Open test page on Alerts, Frame & Windows group
-	ToolsQaTestPage testPage = getScenarioOperation().openTestPage(Group.Windows);
+	ToolsQaTestPage testPage = getToolsQaOperation().openTestPage(Group.Windows);
 
 	// Select Modal Dialogs
 	ToolsQaTestDialogsContainer dialogsTest = testPage.getDialogsTest();
@@ -62,7 +62,7 @@ public void test01_SmallModal() {
 public void test02_LargeModal() {
 
 	// Open test page on Alerts, Frame & Windows group
-	ToolsQaTestPage testPage = getScenarioOperation().openTestPage(Group.Windows);
+	ToolsQaTestPage testPage = getToolsQaOperation().openTestPage(Group.Windows);
 
 	// Select Modal Dialogs
 	ToolsQaTestDialogsContainer dialogsTest = testPage.getDialogsTest();
@@ -84,7 +84,7 @@ public void test02_LargeModal() {
 public void test03_LargeModalCancelled() {
 
 	// Open test page on Alerts, Frame & Windows group
-	ToolsQaTestPage testPage = getScenarioOperation().openTestPage(Group.Windows);
+	ToolsQaTestPage testPage = getToolsQaOperation().openTestPage(Group.Windows);
 
 	// Select Modal Dialogs
 	ToolsQaTestDialogsContainer dialogsTest = testPage.getDialogsTest();

@@ -129,11 +129,31 @@ public WebBrowserElement getCellElement(final int column, final int row) {
  * Return the cell web element containing the given text for the given column index.
  *
  * @param column The 0-based index of the table columns
+ * @param text The text to be searched in the column
  * @return The web element or <code>null</code> if the element is not found.
  * @throws ScenarioFailedError If the index value exceeds the number of columns
  * in the table or if it's negative.
  */
 public WebBrowserElement getCellElement(final int column, final String text) {
+	List<WebBrowserElement> cellElements = getCellElements(column);
+	for (WebBrowserElement cellElement: cellElements) {
+		if (cellElement.getText().equals(text)) {
+			return cellElement;
+		}
+	}
+	return null;
+}
+
+/**
+ * Return the cell web element containing the given text for the given column.
+ *
+ * @param column The column header in which text must be found
+ * @param text The text to be searched in the column
+ * @return The web element or <code>null</code> if the element is not found.
+ * @throws ScenarioFailedError If the index value exceeds the number of columns
+ * in the table or if it's negative.
+ */
+public WebBrowserElement getCellElement(final String column, final String text) {
 	List<WebBrowserElement> cellElements = getCellElements(column);
 	for (WebBrowserElement cellElement: cellElements) {
 		if (cellElement.getText().equals(text)) {

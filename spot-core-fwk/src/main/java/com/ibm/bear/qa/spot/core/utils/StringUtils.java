@@ -118,7 +118,7 @@ public static String getSafeStringForPath(final String str) {
  * @return The hidden password.
  */
 public static String hidePassword(final String password) {
-	return password.charAt(0) + "******";
+	return (password == null ? "null" : password.charAt(0) + "******");
 }
 
 /**

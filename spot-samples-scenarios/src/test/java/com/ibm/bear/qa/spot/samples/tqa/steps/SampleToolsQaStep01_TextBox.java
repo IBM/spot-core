@@ -43,7 +43,7 @@ public class SampleToolsQaStep01_TextBox extends SampleToolsQaScenarioStep {
 public void test01_FullName() {
 
 	// Open test page on Elements group
-	ToolsQaTestPage testPage = getScenarioOperation().openTestPage(Group.Elements);
+	ToolsQaTestPage testPage = getToolsQaOperation().openTestPage(Group.Elements);
 
 	// Select Text Box
 	ToolsQaTestTextBoxContainer textBoxTest = testPage.getTextBoxTest();
@@ -67,7 +67,7 @@ public void test01_FullName() {
 public void test02_Email() {
 
 	// Open test page on Elements group
-	ToolsQaTestPage testPage = getScenarioOperation().openTestPage(Group.Elements);
+	ToolsQaTestPage testPage = getToolsQaOperation().openTestPage(Group.Elements);
 
 	// Select Text Box
 	ToolsQaTestTextBoxContainer textBoxTest = testPage.getTextBoxTest();
@@ -88,7 +88,7 @@ public void test02_Email() {
 public void test03_CurrentAddress() {
 
 	// Open test page on Elements group
-	ToolsQaTestPage testPage = getScenarioOperation().openTestPage(Group.Elements);
+	ToolsQaTestPage testPage = getToolsQaOperation().openTestPage(Group.Elements);
 
 	// Select Text Box
 	ToolsQaTestTextBoxContainer textBoxTest = testPage.getTextBoxTest();

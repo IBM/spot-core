@@ -13,6 +13,7 @@
 package com.ibm.bear.qa.spot.core.config;
 
 import static com.ibm.bear.qa.spot.core.config.Timeouts.*;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.getClassSimpleName;
 
 import com.ibm.bear.qa.spot.core.api.SpotConfig;
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
@@ -24,14 +25,31 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * <p>
  * To use framework page objects, following parameters need to be defined:
  * <ul>
- * <li><b>timeouts</b>: Timeouts on different tests operations, e.g. open a
- * web page (see {@link Timeouts} for more details).</li>
- * <li><b>topology</b>: The topology of the CLM applications (see {@link Topology}
- * for more details).</li>
- * <li><b>screenshots directory</b>: the directories where screenshots taken
- * during the scenario has to be put. There are two directories, one for
- * screenshots taken when a failure occurs and one for screenshots taken just
- * for information.</li>
+ * <li><b>timeouts</b>: Timeouts on different tests operations, e.g. open a web page (see {@link Timeouts} for more details).</li>
+ * <li><b>topology</b>: The topology of the CLM applications (see {@link Topology} for more details).</li>
+ * <li><b>screenshots directory</b>: the directories where screenshots taken during the scenario has to be put. There are two directories, one for screenshots taken when a failure occurs and one for screenshots taken just for information.</li>
+ * </ul>
+ * </p><p>
+ * This class defines following public API methods of {@link SpotConfig} interface:
+ * <ul>
+ * <li>{@link #closeDialogTimeout()}: Return the timeout used to wait for a dialog to be closed.<br> </li>
+ * <li>{@link #getBrowser(User)}: Get the browser used for a user.</li>
+ * <li>{@link #getDefaultTimeout()}: Return the default timeout used to wait for an expected element in</li>
+ * <li>{@link #getOpenPageTimeout()}: Return the timeout used to wait for a page to be loaded.</li>
+ * <li>{@link #getShortTimeout()}: Return the timeout used to wait for short run operation.</li>
+ * <li>{@link #getTopology()}: Return the topology used while running the scenario.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines following internal API methods:
+ * <ul>
+ * <li>{@link #getBrowserManager()}: Return the browsers manager used while using the framework page objects.</li>
+ * <li>{@link #toString()}: Answers a string containing a concise, human-readable</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #initTimeouts()}: Initialize the timeouts.</li>
+ * <li>{@link #initTopology()}: Initialize the topology.</li>
  * </ul>
  * </p>
  */
@@ -132,4 +150,12 @@ abstract protected void initTimeouts();
  * </p>
  */
 abstract protected void initTopology();
+
+
+@Override
+public String toString() {
+	return getClassSimpleName(getClass()) + " using topology " + getClassSimpleName(this.topology.getClass());
+}
+
+
 }

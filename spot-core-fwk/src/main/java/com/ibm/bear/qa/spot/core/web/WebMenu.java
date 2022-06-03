@@ -21,10 +21,10 @@ import org.openqa.selenium.*;
 
 import com.ibm.bear.qa.spot.core.api.elements.SpotWindow;
 import com.ibm.bear.qa.spot.core.dialog.SpotAbstractDialog;
-import com.ibm.bear.qa.spot.core.factories.SpotWindowFactory;
 import com.ibm.bear.qa.spot.core.performance.PerfManager;
 import com.ibm.bear.qa.spot.core.performance.PerfManager.RegressionType;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
+import com.ibm.bear.qa.spot.core.utils.SpotFactory;
 
 /**
  * Class to manage menus.
@@ -252,7 +252,7 @@ public <P extends WebPage> P clickItem(final String itemLabel, final Class<P> pa
  */
 public <D extends SpotAbstractDialog> D clickItem(final WebBrowserElement itemElement, final Class<D> dialogClass) {
 	try {
-		D dialog = SpotWindowFactory.createInstance(getPage(), dialogClass);
+		D dialog = SpotFactory.createWindowInstance(getPage(), dialogClass);
 		dialog.open(itemElement);
 		return dialog;
 	}
@@ -275,7 +275,7 @@ public <W extends SpotAbstractWindow> W clickItemAndOpenWindow(final String item
 	debugPrintEnteringMethod("item", item, "windowBy", windowBy, "windowClass", getClassSimpleName(windowClass), "data", getTextFromList(data));
 	WebBrowserElement itemElement = getItemElement(item);
 	try {
-		W window = SpotWindowFactory.createInstance(getPage(), windowBy, windowClass, data);
+		W window = SpotFactory.createWindowInstance(getPage(), windowBy, windowClass, data);
 		window.open(itemElement);
 		return window;
 	}

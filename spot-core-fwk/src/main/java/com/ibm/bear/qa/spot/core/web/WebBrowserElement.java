@@ -469,7 +469,7 @@ public void click(final boolean recovery, final boolean workaround) {
 		while (true) {
 			try {
 				this.webElement.click();
-				if (state != ClickableWorkaroundState.Init) {
+				if (workaround && state != ClickableWorkaroundState.Init) {
 					println("WARNING: Workaround "+state+" was applied when clicking on web element "+getFullLocator());
 					printStackTrace(1);
 					this.browser.printErrorMessage();

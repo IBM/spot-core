@@ -69,7 +69,7 @@ public ScenarioFailedError(final Throwable ex, final SpotAbstractDialog dialog) 
 }
 
 public ScenarioFailedError(final Throwable ex, final SpotAbstractDialog dialog, final boolean print) {
-	super(ex.getMessage() == null ? getClassSimpleName(ex.getClass()) : ex.getMessage());
+	super(ex.getMessage() == null ? getClassSimpleName(ex.getClass()) : getClassSimpleName(ex.getClass()) + ": " + ex.getMessage());
 	this.error = ex;
 	this.dialog = dialog;
 	if (print) {

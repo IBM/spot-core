@@ -31,7 +31,7 @@ import com.ibm.bear.qa.spot.samples.config.SpotSamplesConfig;
  * This class also defines or overrides following methods:
  * <ul>
  * <li>{@link #getConfig()}: Return the scenario configuration to use during the run.</li>
- * <li>{@link #getScenarioOperation()}: Return a new scenario operation.</li>
+ * <li>{@link #getToolsQaOperation()}: Return a new scenario operation.</li>
  * <li>{@link #getUser()}: Return the user used by scenario.</li>
  * </ul>
  * </p>
@@ -49,12 +49,12 @@ public SampleToolsQaScenarioData getData() {
 }
 
 /**
- * Return a new scenario operation.
+ * Return the scenario operation.
  *
  * @return The operation
  */
-protected ToolsQaScenarioOperation getScenarioOperation() {
-	return new ToolsQaScenarioOperation(this);
+protected ToolsQaScenarioOperation getToolsQaOperation() {
+	return getOperation(ToolsQaScenarioOperation.class);
 }
 
 /**

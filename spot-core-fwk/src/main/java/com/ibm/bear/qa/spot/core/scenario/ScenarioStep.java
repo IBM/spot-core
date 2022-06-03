@@ -26,6 +26,7 @@ import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
 import com.ibm.bear.qa.spot.core.config.Config;
 import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.topology.Topology;
+import com.ibm.bear.qa.spot.core.utils.SpotFactory;
 import com.ibm.bear.qa.spot.core.web.WebBrowser;
 import com.ibm.bear.qa.spot.core.web.WebPage;
 
@@ -48,7 +49,7 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
  * </p>
  * Design: To be finalized
  */
-public class ScenarioStep {
+public abstract class ScenarioStep {
 
 	class ScenarioStepRule implements TestRule {
 
@@ -146,6 +147,32 @@ public ScenarioData getData() {
 }
 
 /**
+ * Return the operation corresponding to the given class.
+ * <p>
+ * If operation is not already stored then creates it and store it in scenario
+ * execution operations list. Otherwise return a unique instance allowing steps
+ * to share them during the scenario execution.
+ * </p>
+ * @param <O> The operation class
+ * @param operationClass The operation class
+ * @return The operation unique instance
+ */
+protected <O extends ScenarioOperation> O getOperation(final Class<O> operationClass) {
+	if (isStoringOperations()) {
+		@SuppressWarnings("unchecked")
+		O operation = (O) this.scenarioExecution.getOperations().get(operationClass);
+		if (operation == null) {
+			operation = SpotFactory.createOperationInstance(operationClass, this);
+			this.scenarioExecution.getOperations().put(operationClass, operation);
+		} else {
+			operation.setStep(this);
+		}
+		return operation;
+	}
+	return SpotFactory.createOperationInstance(operationClass, this);
+}
+
+/**
  * Return the scenario execution.
  *
  * @return The scenario execution as a {@link ScenarioExecution}.
@@ -161,6 +188,19 @@ protected ScenarioExecution getScenarioExecution() {
  */
 public Topology getTopology() {
 	return getConfig().getTopology();
+}
+
+/**
+ * Tells whether current step stores operations used in during its tests execution.
+ * <p>
+ * Default is to not store operations. Subclasses has to override this method to change
+ * steps default behavior.
+ * </p>
+ * @return <code>true</code> if current step stores operations, <code>false</code>
+ * otherwise
+ */
+protected boolean isStoringOperations() {
+	return false;
 }
 
 /**

@@ -133,7 +133,7 @@ public WebBrowser getBrowser(final User user) {
  * @return The browser instance or <code>null</code> if no browser
  * is found and <code>open</code> flag is <code>false</code>
  */
-private WebBrowser getBrowser(final User user, final boolean open) {
+public WebBrowser getBrowser(final User user, final boolean open) {
 	debugPrintEnteringMethod("user", user, "open", open);
 	WebBrowser browser = user == null ? this.currentBrowser : this.browsers.get(user);
 	if (browser == null) {

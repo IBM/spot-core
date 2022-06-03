@@ -12,6 +12,8 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.scenario;
 
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.getClassSimpleName;
+
 import java.lang.annotation.Annotation;
 import java.util.*;
 
@@ -83,6 +85,9 @@ public ScenarioStepRunner(final Class< ? > klass) throws InitializationError {
 
 	// Extract critical tests
 	this.criticalTests = extractCriticalTests();
+
+	// Start step execution
+	startExecution();
 }
 
 /**
@@ -134,10 +139,6 @@ private List<FrameworkMethod> extractCriticalTests() {
  * @return the scenarioExecution
  */
 public ScenarioExecution getScenarioExecution() {
-	if (this.scenarioExecution == null) {
-		this.shouldEndExecution = true;
-		startExecution();
-	}
 	return this.scenarioExecution;
 }
 
@@ -149,7 +150,10 @@ public ScenarioExecution getScenarioExecution() {
  */
 @Override
 protected void runChild(final FrameworkMethod method, final RunNotifier notifier) {
-	if (!getScenarioExecution().shouldStop()) {
+	if (this.scenarioExecution == null) {
+		throw new RuntimeException("Cannot run SPOT test using this way. You need to run the entire scenario using -Dsteps="+getClassSimpleName(method.getDeclaringClass())+" -Dtests="+method.getName()+" properties...");
+	}
+	if (!this.scenarioExecution.shouldStop()) {
 		super.runChild(method, notifier);
 	}
 	if (++this.testCounter == testCount() && this.shouldEndExecution) {

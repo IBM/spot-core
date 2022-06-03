@@ -171,14 +171,16 @@ public ScenarioExecution getScenarioExecution() {
 public void run(final RunNotifier notifier) {
 
 	// Propagate config to step runners
-	for (Runner runner: getChildren()) {
+	for (Runner runner : getChildren()) {
 		try {
-	        ScenarioStepRunner stepRunner = (ScenarioStepRunner) runner;
-	        stepRunner.setScenarioExecution(this.scenarioExecution);
-        }
+			ScenarioStepRunner stepRunner = (ScenarioStepRunner) runner;
+			// Stored scenario execution depends on step runner scenario
+			ScenarioExecution stepScenarioExecution = this.scenarioExecution.getStepScenarioExecution(stepRunner.getScenarioExecution());
+			stepRunner.setScenarioExecution(stepScenarioExecution);
+		}
 		catch (@SuppressWarnings("unused") ClassCastException cce) {
-	        // Fail silently, error will be notified while executing super method
-        }
+			// Fail silently, error will be notified while executing super method
+		}
 	}
 
 	// Check synchronization
@@ -187,7 +189,7 @@ public void run(final RunNotifier notifier) {
 	}
 
 	// Looping of scenarios for performance testing
-	for (int i = 0; i < PERFORMANCE_LOOPS; i++){
+	for (int i = 0; i < PERFORMANCE_LOOPS; i++) {
 		// Run the scenario
 		super.run(notifier);
 	}

@@ -207,6 +207,7 @@ public abstract class ScenarioExecution {
 	private final boolean closeBrowserOnExit;
 	private final int pauseExec = getParameterIntValue(PAUSE_EXECUTION_ID);
 	private String stopStepExecution = null;
+	private final List<ScenarioExecution> childrenExecutions = new ArrayList<>();
 
 	// Configuration
 	protected Config config;
@@ -218,6 +219,7 @@ public abstract class ScenarioExecution {
 	protected String scenarioClass;
 	protected String stepName;
 	protected String testName;
+	private Map<Class<? extends ScenarioOperation>, ScenarioOperation> operations = new HashMap<>();
 
 	// Synchronization
 	final boolean testSynchronization;
@@ -351,6 +353,10 @@ public ScenarioData getData() {
 	return this.data;
 }
 
+Map<Class<? extends ScenarioOperation>, ScenarioOperation> getOperations() {
+	return this.operations;
+}
+
 private PerfManager getPerfManager() {
 	if (getBrowser() != null) {
 		return getBrowser().getPerfManager();
@@ -372,6 +378,35 @@ private String getShouldStopReason(final boolean mandatoryTest) {
 		reason += " browser could not be opened";
 	}
 	return reason;
+}
+
+/**
+ * Get the unique instance of scenario execution that caller should use.
+ * <p>
+ * This method gets the unique instance of each given scenario execution. That
+ * ensures the ability to share information during the entire scenario execution.
+ * </p><p>
+ * Note that given scenario execution might be different from current one. In
+ * such case a unique instance of the given scenario execution class is stored
+ * in children list allowing callers to mix steps from different scenario declarations
+ * but still sharing information between steps.
+ * </p>
+ * @param scenarioExecution The proposed scenario execution to be used by caller
+ * @return The unique instance of scenario execution that caller has to use
+ */
+public ScenarioExecution getStepScenarioExecution(final ScenarioExecution scenarioExecution) {
+	if (scenarioExecution.getClass().equals(getClass())) {
+		return this;
+	}
+	for (ScenarioExecution childExec: this.childrenExecutions) {
+		if (scenarioExecution.getClass().equals(childExec.getClass())) {
+			return childExec;
+		}
+	}
+	this.childrenExecutions.add(scenarioExecution);
+	scenarioExecution.operations = this.operations;
+	scenarioExecution.data = this.data;
+	return scenarioExecution;
 }
 
 /**
@@ -485,6 +520,7 @@ protected void manageFailure(final long start, final Throwable t, final boolean 
 	// Return now when test is not re-runnable
 	if (isNotRerunnable) {
 		if (getBrowser() == null) {
+			this.shouldStop = true;
 			throw t;
 		}
 		takeScreenshotFailure();
@@ -828,10 +864,21 @@ void setTestName(final String methodName) {
 }
 
 /**
- * @return the shouldStop
+ * Flag telling whether scenario execution should be stopped or not.
+ *
+ * @return <code>true</code> if the execution must be stopped,
+ * <code>false</code> otherwise
  */
 public boolean shouldStop() {
-	return this.shouldStop;
+	if (this.shouldStop) {
+		return true;
+	}
+	for (ScenarioExecution childExec: this.childrenExecutions) {
+		if (childExec.shouldStop()) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**

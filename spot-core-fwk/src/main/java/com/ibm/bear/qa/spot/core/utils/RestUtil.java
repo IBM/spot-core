@@ -13,6 +13,7 @@
 package com.ibm.bear.qa.spot.core.utils;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrint;
+import static org.apache.http.HttpHeaders.AUTHORIZATION;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -36,7 +37,7 @@ public class RestUtil {
 	 * @throws Exception
 	 */
 	public static String doDelete(final String url, final String login, final String password) throws Exception {
-		HttpURLConnection connection = getConnection(url, login, password);
+		HttpURLConnection connection = getConnection(url, login, password, null);
 		connection.setRequestMethod("DELETE");
 		connection.setRequestProperty("Accept", "*/*");
 		int responseCode = connection.getResponseCode();
@@ -58,7 +59,7 @@ public class RestUtil {
 	 * @throws Exception
 	 */
 	public static String doGet(final String url, final String login, final String password) throws Exception {
-		HttpURLConnection connection = getConnection(url, login, password);
+		HttpURLConnection connection = getConnection(url, login, password, null);
 		connection.setRequestMethod("GET");
 		connection.setRequestProperty("accept", "*/*");
 		int responseCode = connection.getResponseCode();
@@ -81,7 +82,7 @@ public class RestUtil {
 	 * @throws Exception
 	 */
 	public static void doGetToFile(final String url, final String login, final String password, final String outputPath) throws Exception {
-		HttpURLConnection connection = getConnection(url, login, password);
+		HttpURLConnection connection = getConnection(url, login, password, null);
 		connection.setRequestMethod("GET");
 		connection.setRequestProperty("Accept", "*/*");
 		int responseCode = connection.getResponseCode();
@@ -107,12 +108,13 @@ public class RestUtil {
 	 * @param url
 	 * @param login
 	 * @param password
+	 * @param apiKeyHeader
 	 * @param payload
 	 * @return response
 	 * @throws Exception
 	 */
-	public static String doPost(final String url, final String login, final String password, final String payload, final String contentType) throws Exception {
-		HttpURLConnection connection = getConnection(url, login, password);
+	public static String doPost(final String url, final String login, final String password, final String apiKeyHeader, final String payload, final String contentType) throws Exception {
+		HttpURLConnection connection = getConnection(url, login, password, apiKeyHeader);
 		connection.setRequestMethod("POST");
 		connection.setRequestProperty("Content-Type", contentType);
 		connection.setRequestProperty("Accept", "*/*");
@@ -146,7 +148,7 @@ public class RestUtil {
 	 * @throws Exception
 	 */
 	public static String doPostFile(final String url, final String login, final String password, final String filePath) throws Exception {
-		HttpURLConnection connection = getConnection(url, login, password);
+		HttpURLConnection connection = getConnection(url, login, password, null);
 		connection.setRequestMethod("POST");
 		connection.setRequestProperty("Accept", "*/*");
 		connection.setRequestProperty("Content-Type", "application/octet-stream");
@@ -176,13 +178,13 @@ public class RestUtil {
 		throw new Exception("POST returned response code " + responseCode + " with message " + result);
 	}
 
-	private static HttpURLConnection getConnection(final String url, final String login, final String password) throws IOException {
+	private static HttpURLConnection getConnection(final String url, final String login, final String password, final String apiKeyHeader) throws IOException {
 		HttpURLConnection connection = null;
 		SSLSocketFactory sf = null;
-		String basicAuth = null;
-		if(url.startsWith("http://")){
+		String authorization = null;
+		if (url.startsWith("http://")) {
 			String userpass = login + ":" + password;
-			basicAuth = "Basic " + new String(new Base64().encode(userpass.getBytes()));
+			authorization = "Basic " + new String(new Base64().encode(userpass.getBytes()));
 			connection = (HttpURLConnection) new URL(url).openConnection();
 		} else {
 			// Override hostname verification for vhost
@@ -202,15 +204,16 @@ public class RestUtil {
 						}
 					});
 			// Set credentials
-			String userpass = login + ":" + password;
-			basicAuth = "Basic " + new String(new Base64().encode(userpass.getBytes()));
+			if (apiKeyHeader == null) {
+				String userpass = login + ":" + password;
+				authorization = "Basic " + new String(new Base64().encode(userpass.getBytes()));
+			} else {
+				authorization = "ZenApiKey " + apiKeyHeader;
+			}
 			connection = (HttpsURLConnection) new URL(url).openConnection();
 
-		}
-
-		if(connection instanceof HttpsURLConnection){
 			sf = getSSLSocketFactory();
-			if(sf != null){
+			if (sf != null) {
 				debugPrint("Setting SSL Socket Factory on connection");
 				((HttpsURLConnection) connection).setSSLSocketFactory(sf);
 				// Now you can access an https URL without having the certificate in the truststore
@@ -218,7 +221,7 @@ public class RestUtil {
 				debugPrint("No  SSL Socket Factory needed for connection");
 			}
 		}
-		connection.setRequestProperty("Authorization", basicAuth);
+		connection.setRequestProperty(AUTHORIZATION, authorization);
 
 		return connection;
 	}

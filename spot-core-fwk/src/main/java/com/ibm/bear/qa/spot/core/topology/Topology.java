@@ -20,6 +20,7 @@ import java.util.*;
 
 import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
+import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioMissingImplementationError;
 
 /**
  * Manage the scenario topology. A topology is made of applications
@@ -54,8 +55,28 @@ public Topology() {
  * @param application The application to add
  */
 public void addApplication(final Application application) {
+	for (Application appli: this.applications) {
+		if (appli.getLocation().equals(application.getLocation())) {
+			// The application has already been stored in topology, hence do nothing
+			return;
+		}
+	}
 	this.applications.add(application);
 	updateServer(application);
+}
+
+/**
+ * Add an application that will be associated with page opened with given class and URL.
+ * <p>
+ * Subclasses has to override this method which default behavior is to raise a
+ * missing implementation error.
+ * </p>
+ * @param pageClassName The page class
+ * @param url The page URL
+ * @return The created and added application
+ */
+public Application addApplication(final String pageClassName, final String url) {
+	throw new ScenarioMissingImplementationError(whoAmI());
 }
 
 /**
@@ -123,11 +144,14 @@ public List<Application> getApplications() {
  * @see Application#getPageUrl(String)
  */
 public String getPageUrl(final String currentUrl) {
-	Application application = getApplication(currentUrl);
-	if (application != null) {
-		return application.getPageUrl(currentUrl);
+	if (currentUrl.startsWith("data")) {
+		return currentUrl;
 	}
-	return currentUrl;
+	Application app = getApplication(currentUrl);
+	if (app == null) {
+		return currentUrl;
+	}
+	return app.getPageUrl(currentUrl);
 }
 
 /**
@@ -187,9 +211,11 @@ public boolean login(final String location, final User user) {
 
 		// Second propagate to other applications on same server
 		List<Application> serverApplications = this.servers.get(application.getHost());
-		for (Application appli: serverApplications) {
-			if (appli != application) { // != is intentional
-				appli.login(user);
+		if (serverApplications != null) {
+			for (Application appli: serverApplications) {
+				if (appli != application) { // != is intentional
+					appli.login(user);
+				}
 			}
 		}
 	}

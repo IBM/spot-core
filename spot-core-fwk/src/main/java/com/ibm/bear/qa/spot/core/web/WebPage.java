@@ -35,7 +35,6 @@ import com.ibm.bear.qa.spot.core.api.pages.SpotPage;
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
 import com.ibm.bear.qa.spot.core.config.Config;
 import com.ibm.bear.qa.spot.core.config.User;
-import com.ibm.bear.qa.spot.core.factories.SpotWindowFactory;
 import com.ibm.bear.qa.spot.core.nls.NlsMessages;
 import com.ibm.bear.qa.spot.core.performance.PerfManager;
 import com.ibm.bear.qa.spot.core.performance.PerfManager.RegressionType;
@@ -43,6 +42,7 @@ import com.ibm.bear.qa.spot.core.scenario.errors.*;
 import com.ibm.bear.qa.spot.core.timeout.SpotAbstractTimeout;
 import com.ibm.bear.qa.spot.core.topology.Application;
 import com.ibm.bear.qa.spot.core.topology.Topology;
+import com.ibm.bear.qa.spot.core.utils.SpotFactory;
 import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
 
 /**
@@ -290,6 +290,24 @@ public abstract class WebPage implements SpotPage {
 	}
 
 	/**
+	 * Return a page class from the given name.
+	 *
+	 * @param <P> The page class type argument
+	 * @param pageClass The fully qualified name of the page class
+	 * @return The found page class
+	 * @throws ScenarioFailedError If the class is not found
+	 */
+	@SuppressWarnings("unchecked")
+	public static <P extends WebPage> Class<P> getPageClass(final String pageClass) throws ScenarioFailedError {
+		try {
+			return (Class<P>) Class.forName(pageClass);
+		}
+		catch (ClassNotFoundException cnfe) {
+			throw new ScenarioFailedError(cnfe.getMessage());
+		}
+	}
+
+	/**
 	 * Open the page for the given location.
 	 * <p>
 	 * Note that if it's the first time the page is requested, it's created using provided
@@ -399,11 +417,14 @@ protected WebPage(final String url, final Config config, final User user) {
 	this.config = config;
 	this.topology = config.getTopology();
 	this.application = this.topology.getApplication(url);
+	if (this.application == null) {
+		throw new ScenarioFailedError("Cannot find any application for URL: "+url);
+	}
 
 	// Get page location and check whether login is necessary or not
 	this.user = user;
 	this.location = this.application.getPageUrlForUser(url, user);
-	if (user == null || ((!this.topology.needLogin(this.location, user) && getApplication().isUserConnected(user)))) {
+	if (user == null || ((!this.topology.needLogin(this.location, user) && this.application.isUserConnected(user)))) {
 		this.loginOperation = null;
 	} else {
 		this.loginOperation = getLoginOperation(user);
@@ -1513,6 +1534,22 @@ abstract protected boolean matchDisplayedUser(User pageUser, WebBrowserElement l
  * @return The instance of the class associate with the page.
  */
 private <P extends WebPage> P openAndWaitForPage(final Class<P> pageClass, final boolean waiting, final String... pageData) {
+	return openAndWaitForPage(pageClass, this.config, getUser(), waiting, pageData);
+}
+
+/**
+ * Helper method to open a page and wait until it's finished loading.
+ *
+ * <p>
+ * Note that the page location is directly inferred from the browser URL
+ * modulo application possible modification (see {@link Application#getPageUrl(String)}).
+ * </p>
+ * @param pageClass The class associated with the page to open
+ * @param waiting Tells whether wait for the initial loading or not
+ * @param pageData Additional CLM information to be stored in the page
+ * @return The instance of the class associate with the page.
+ */
+private <P extends WebPage> P openAndWaitForPage(final Class<P> pageClass, final Config pageConfig, final User pageUser, final boolean waiting, final String... pageData) {
 
 	// Wait that at least 'Loading...' appears in the page
 	if (waiting) {
@@ -1520,7 +1557,7 @@ private <P extends WebPage> P openAndWaitForPage(final Class<P> pageClass, final
 	}
 
 	// Open the page and for it being loaded
-	P page = openPage(getUrl(), this.config, getUser(), pageClass, pageData);
+	P page = openPage(getUrl(), pageConfig, pageUser, pageClass, pageData);
 	page.waitForLoadingPageEnd();
 
 	// Return the opened page
@@ -1597,13 +1634,37 @@ public <M extends WebMenu> M openMenu(final WebBrowserElement linkElement, final
 	debugPrintEnteringMethod("locator", menuLocator.toString(), " linkElement", linkElement.toString(), "menuClass", getClassSimpleName(menuClass));
 	// Open the menu and return the created object
 	try {
-		M menu = SpotWindowFactory.createInstance(this, menuLocator, menuClass);
+		M menu = SpotFactory.createWindowInstance(this, menuLocator, menuClass);
 		menu.open(linkElement);
 		return menu;
 	}
 	catch (Exception ex) {
 		throw new RuntimeException(ex);
 	}
+}
+
+/**
+ * Retrieve the existing page for the browser current URL. Create it if it's the first
+ * time the page is requested.
+ *
+ * @param pageClass The class associated with the page to open
+ * @param pageData Additional CLM information to be stored in the page
+ * @return The instance of the class associate with the page.
+ */
+public <P extends WebPage> P openPageUsingBrowser(final String pageClass, final String... pageData) {
+	return openPageUsingBrowser(getPageClass(pageClass), pageData);
+}
+
+/**
+ * Retrieve the existing page for the browser current URL. Create it if it's the first
+ * time the page is requested.
+ *
+ * @param pageClass The class associated with the page to open
+ * @param pageData Additional CLM information to be stored in the page
+ * @return The instance of the class associate with the page.
+ */
+public <P extends WebPage> P openPageUsingBrowser(final Class<P> pageClass, final Config pageConfig, final User pageUser, final String... pageData) {
+	return openAndWaitForPage(pageClass, pageConfig, pageUser, true, pageData);
 }
 
 /**

@@ -1330,8 +1330,25 @@ public List<WebBrowserElement> findElementsInFrames(final By locator) {
  * @return The current page as a {@link WebPage} or <code>null</code>
  * if the page is not found in the cache.
  */
-@SuppressWarnings("unchecked")
 public <P extends WebPage> P focusOnPage(final Class<P> pageClass) {
+	debugPrintEnteringMethod("pageClass", pageClass);
+	return focusOnPage(pageClass, true);
+}
+
+/**
+ * Focus the browser on the given page.
+ * <p>
+ * Focus means that only the given page will be kept opened in the current browser.
+ * All other opened pages will be closed and removed from cache.
+ * </p><p>
+ * <b>Warning</b>: This is a no-op if the given page is not opened in the current
+ * browser (ie. it's not found in the cache).
+ * </p>
+ * @return The current page as a {@link WebPage} or <code>null</code>
+ * if the page is not found in the cache.
+ */
+@SuppressWarnings("unchecked")
+public <P extends WebPage> P focusOnPage(final Class<P> pageClass, final boolean closeOtherWindows) {
 	debugPrintEnteringMethod("pageClass", pageClass);
 	int size = this.pagesCache.size();
 	for (int i=size-1; i>=0; i--) {
@@ -1339,7 +1356,11 @@ public <P extends WebPage> P focusOnPage(final Class<P> pageClass) {
 		Class<? extends WebPage> cachedPageClass = page.getClass();
 		while (cachedPageClass != null) {
 			if (cachedPageClass.equals(pageClass)) {
-				closeOtherWindowsIfNeeded(page);
+				if (closeOtherWindows) {
+					closeOtherWindowsIfNeeded(page);
+				} else {
+					switchToHandle(page.handle);
+				}
 				return (P) page;
 			}
 			cachedPageClass = (Class<? extends WebPage>) cachedPageClass.getSuperclass();
