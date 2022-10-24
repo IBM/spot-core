@@ -58,7 +58,7 @@ import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
  * <ul>
  * <li>{@link #getLocation()}: Return the page location used when creating it.</li>
  * <li>{@link #getTitle()}: Return the page title.</li>
- * <li>{@link #refresh()}: Refresh the page content using {@link WebBrowser#refresh()} and wait for the page to be loaded.</li>
+ * <li>{@link #refresh()}: Refresh the page content.</li>
  * </ul>
  * </p><p>
  * This class also defines following internal API methods:
@@ -68,12 +68,15 @@ import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
  * <li>{@link #click(WebBrowserElement,By)}: Click on the web element found using the given locator relatively to</li>
  * <li>{@link #clickButton(By)}: Click on the button found in the current page using the given locator.</li>
  * <li>{@link #clickButton(By,boolean)}: Click on the button found in the current page using the given locator.</li>
+ * <li>{@link #close()}: Close current page.</li>
  * <li>{@link #equals(Object)}: Compares the argument to the receiver, and answers true</li>
  * <li>{@link #get()}: Get the page content.</li>
  * <li>{@link #getApplication()}: Return the application associated with the current page.</li>
  * <li>{@link #getBrowser()}: Return the browser associated with the current page.</li>
  * <li>{@link #getConfig()}: Return the configuration associated with the current page.</li>
+ * <li>{@link #getDocumentTitle()}: Return the value of the <code>document.title</code>.</li>
  * <li>{@link #getLocationUrl()}: Return the page location used when creating it</li>
+ * <li>{@link #getPageClass(String)}: Return a page class from the given name.</li>
  * <li>{@link #getUrl()}: Return the URL of the page loaded in the browser.</li>
  * <li>{@link #getUser()}: Return the user used when the page was loaded.</li>
  * <li>{@link #goBack()}: Move back a single "item" in the browser's history.</li>
@@ -86,6 +89,8 @@ import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
  * <li>{@link #openMenu(By,By,Class)}: Open a menu by clicking on the link element found using the given locator.</li>
  * <li>{@link #openMenu(WebBrowserElement,By,Class)}: Open a menu by clicking on the given link element.</li>
  * <li>{@link #openPage(String,Config,User,Class,String...)}: Open the page for the given location.</li>
+ * <li>{@link #openPageUsingBrowser(String,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
+ * <li>{@link #openPageUsingBrowser(Class,Config,User,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
  * <li>{@link #openPageUsingBrowser(Class,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
  * <li>{@link #openPageUsingBrowserWithoutWaiting(Class,String...)}: Retrieve the existing page for the browser current URL. Create it if it's the first</li>
  * <li>{@link #openPageUsingHoverTitle(WebRichHover,Class,String...)}: Click on the given hover title to open a new page.</li>
@@ -107,11 +112,11 @@ import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
  * <li>{@link #takeSnapshotWarning(String)}: Takes a warning snapshot.</li>
  * <li>{@link #timeout()}: Return the general timeout used on the page.</li>
  * <li>{@link #toString()}: Answers a string containing a concise, human-readable</li>
- * <li>{@link #waitForMandatoryDisplayedElement(By)}: Wait until have found the web element using the given locator.</li>
- * <li>{@link #waitForMandatoryDisplayedElementWithTimeout(By,int)}: Wait until have found a mandatory web element using the given locator and a specific timeout.</li>
- * <li>{@link #waitForFirstMandatoryDisplayedElementInList(By...)}: Wait until have found and identify one of the elements using the given locators list.</li>
- * <li>{@link #waitForPotentialDisplayedElementWithTimeout(By,int)}: Wait until have found a potential web element using the given locator with a specific timeout.</li>
- * <li>{@link #waitForPotentialElementWithTimeout(By,int)}: Wait until have found the web element using the given locator.</li>
+ * <li>{@link #waitForFirstMandatoryDisplayedElementInList(By...)}: Wait until have found one mandatory displayed element of the given locators list.</li>
+ * <li>{@link #waitForMandatoryDisplayedElement(By)}: Wait until have found a mandatory displayed element using the given locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedElementWithTimeout(By,int)}: Wait until have found a mandatory displayed element using the given locator and timeout.</li>
+ * <li>{@link #waitForPotentialDisplayedElementWithTimeout(By,int)}: Wait until have found a potential displayed element using the given locator and timeout.</li>
+ * <li>{@link #waitForPotentialElementWithTimeout(By,int)}: Wait until have found a potential element using the given locator and timeout.</li>
  * </ul>
  * </p><p>
  * This class also defines or overrides following methods:
@@ -164,10 +169,10 @@ import com.ibm.bear.qa.spot.core.utils.StringComparisonCriterion;
  * <li>{@link #typeTextWithParent(WebBrowserElement,By,String)}: Type a text into an input web element found inside the given parent web element</li>
  * <li>{@link #verifyPageUser()}: Verify that page user matches the expected one.</li>
  * <li>{@link #waitForLoadingPageEnd()}: Wait for the page loading to be finished.</li>
- * <li>{@link #waitForMandatoryDisplayedElements(By)}: Wait until have found some elements (ie. at least one) web elements using the given locator.</li>
- * <li>{@link #waitForMandatoryDisplayedElementsWithTimeout(By,int)}: Wait until have found some (ie. at least one) web elements using the given locator and a specific timeout.</li>
- * <li>{@link #waitForMandatoryElement(By)}: Wait until have found a possibly hidden web element using the given locator.</li>
- * <li>{@link #waitForPotentialDisplayedElementsWithTimeout(By,int)}: Wait until have potentially found some (ie. at least one) web elements using the given locator and a specific timeout.</li>
+ * <li>{@link #waitForMandatoryDisplayedElements(By)}: Wait until have found mandatory displayed elements using the given relative locator.</li>
+ * <li>{@link #waitForMandatoryDisplayedElementsWithTimeout(By,int)}: Wait until have found mandatory displayed elements using the given relative locator and timeout.</li>
+ * <li>{@link #waitForMandatoryElement(By)}: Wait until have found a mandatory element using the given locator.</li>
+ * <li>{@link #waitForPotentialDisplayedElementsWithTimeout(By,int)}: Wait until have found potential displayed elements using the given locator and timeout.</li>
  * <li>{@link #waitInitialPageLoading()}: Wait for the page initial load.</li>
  * <li>{@link #waitInitialPageLoading(boolean)}: Wait for the page initial load.</li>
  * <li>{@link #workaround(String)}: Execute a workaround to avoid raising the given</li>
@@ -946,6 +951,19 @@ protected void clickOnLink(final By locator) {
 			}
 		}
 	}
+}
+
+/**
+ * Close current page.
+ * <p>
+ * Note that it might close the browser if there's only this page currently displayed.
+ * </p>
+ * @return The closed page
+ */
+public WebPage close() {
+	debugPrintEnteringMethod();
+	this.browser.closePage(this);
+	return this;
 }
 
 @Override
@@ -2599,13 +2617,13 @@ protected void waitForLoadingPageEnd() {
 	long waitTimeout = openTimeout() * 1000 + System.currentTimeMillis();	 // Timeout currentTimeMilliseconds
 	while (!isLoaded()) {
 		if (System.currentTimeMillis() > waitTimeout) {
-			this.browser.takeScreenshotWarning("LoadTimeout_"+getClassSimpleName(getClass()));
 			println("WARNING: Page "+this+" never finish to load!");
 			println("	- browser URL: "+hidePasswordInLocation(this.browser.getCurrentUrl().replaceAll("%20", SPACE_STRING)));
 			println("	- location: "+hidePasswordInLocation(this.location));
 			println("	- page URL: "+hidePasswordInLocation(getTopology().getPageUrl(this.location).replaceAll("%20", SPACE_STRING)));
 			println("	- stack trace: ");
 			printStackTrace(2);
+			this.browser.takeScreenshotWarning("LoadTimeout_"+getClassSimpleName(getClass()));
 			println();
 			break;
 		}

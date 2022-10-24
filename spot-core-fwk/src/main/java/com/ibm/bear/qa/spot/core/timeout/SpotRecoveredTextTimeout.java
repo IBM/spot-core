@@ -12,6 +12,7 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.timeout;
 
+import com.ibm.bear.qa.spot.core.utils.StringUtils.Comparison;
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
 
 public class SpotRecoveredTextTimeout extends SpotTextTimeout {

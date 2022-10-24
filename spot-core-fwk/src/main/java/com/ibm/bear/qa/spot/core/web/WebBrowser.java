@@ -240,7 +240,8 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 
 	// Selenium specific
 	public static final String JAVASCRIPT_ERROR_ALERT_PATTERN = "JavaScript Error: \"(e|h) is null\"";
-	private static final String SELECT_ALL_CMD = Keys.chord(getOsName().equals("mac") ? Keys.COMMAND : Keys.CONTROL, "a");
+	private static final String SELECT_ALL_CMD = Keys.chord(isMacOs() ? Keys.COMMAND : Keys.CONTROL, "a");
+	private static final Keys CTRL_CMD = isMacOs() ? Keys.COMMAND : Keys.CONTROL;
 
 	/*
 	 * Fields
@@ -281,12 +282,16 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 	StringBuilder errorMessage = null;
 
 protected WebBrowser(final BrowsersManager manager) {
+	this(manager, null);
+}
+
+protected WebBrowser(final BrowsersManager manager, final User user) {
 
 	// Init manager
 	this.manager = manager;
 
 	// Initialize the profile
-	initProfile();
+	initProfile(user);
 
 	// Init driver
 	initDriver();
@@ -433,27 +438,27 @@ public WebPage back() {
  * Return the first cached page matching the given url and connected with given user.
  *
  * @param pageUrl The page URL
- * @param user The user associated with the page
+ * @param pageUser The user associated with the page
  * @return The found page or <code>null</code> if none was found.
  */
-WebPage cachedPage(final String pageUrl, final User user) {
+WebPage cachedPage(final String pageUrl, final User pageUser) {
 	int size = this.pagesCache.size();
 	for (int i=size-1; i>=0; i--) {
 		WebPage page = this.pagesCache.get(i);
 		String pageLocation = page.getLocation();
-		if (pageLocation.equals(pageUrl) && ((user == null && page.getUser() == null) || (user != null && user.equals(page.getUser())))) {
+		if (pageLocation.equals(pageUrl) && ((pageUser == null && page.getUser() == null) || (pageUser != null && pageUser.equals(page.getUser())))) {
 			return page;
 		}
 	}
 	return null;
 }
 
-private int cacheIndex(final String pageUrl, final User user) {
+private int cacheIndex(final String pageUrl, final User pageUser) {
 	int size = this.pagesCache.size();
 	for (int i=size-1; i>=0; i--) {
 		WebPage page = this.pagesCache.get(i);
 		String pageLocation = page.getLocation();
-		if (pageLocation.equals(pageUrl) && ((user == null && page.getUser() == null) || (user != null && user.equals(page.getUser())))) {
+		if (pageLocation.equals(pageUrl) && ((pageUser == null && page.getUser() == null) || (pageUser != null && pageUser.equals(page.getUser())))) {
 			return i;
 		}
 	}
@@ -721,9 +726,12 @@ public void close() {
 		return;
 	}
 
-	// TODO Clean page caches
-//	this.page = null;
-//	this.history.clear();
+	// Remove page from cache and disconnect them from application
+	int size = this.pagesCache.size();
+	for (int i=size-1; i>=0; i--) {
+		WebPage page = this.pagesCache.remove(i);
+		page.getApplication().logout(page.user);
+	}
 }
 
 /**
@@ -827,6 +835,72 @@ public void closeOtherWindows() {
 }
 
 /**
+ * Close the window of the given page.
+ * <p>
+ * Note that it will close the browser if the page is the only one opened in the browser.
+ * </p><p>
+ * Note also that it's a no-op if the page handle does not match any existing one.
+ * </p>
+ * @param page The page to be closed in current browser
+ */
+public void closePage(final WebPage page) {
+	debugPrintEnteringMethod("page", page.getLocation());
+
+	// Close page handle and keep first other one
+	for (String handle: this.driver.getWindowHandles()) {
+		if (handle.equals(page.handle)) {
+			if (DEBUG) debugPrintln("		  -> switch to handle "+handle+" to close it...");
+			this.driver.switchTo().window(handle);
+			this.driver.close();
+			break;
+		}
+	}
+
+	// Set main window handle if necessary
+	Set<String> handles = null;
+	try {
+		handles = this.driver.getWindowHandles();
+		if (page.handle.equals(this.mainWindowHandle)) {
+			this.mainWindowHandle = handles.iterator().next();
+			this.driver.switchTo().window(this.mainWindowHandle);
+		}
+	}
+	catch (@SuppressWarnings("unused") NoSuchSessionException nsse) {
+		// Browser has been entirely closed, no remaining main window
+		this.mainWindowHandle = null;
+	}
+
+	// Remove page from cache
+	int size = this.pagesCache.size();
+	for (int i=size-1; i>=0; i--) {
+		if (this.pagesCache.get(i).getLocation().equals(page.location)) {
+			this.pagesCache.remove(i);
+			break;
+		}
+	}
+
+
+	// Remove instance from browsers manager if necessary
+	boolean anotherActivePageWithUser = false;
+	for (WebPage cachedPage: this.pagesCache) {
+		if (handles != null && handles.contains(cachedPage.handle) && cachedPage.user.equals(page.user)) {
+			// We got another opened page with page user
+			anotherActivePageWithUser = true;
+			break;
+		}
+	}
+	if (!anotherActivePageWithUser) {
+		page.getApplication().logout(page.user);
+		BrowsersManager.getInstance().remove(page.user);
+	}
+
+	// Clear cache if browser has been entirely closed
+	if (this.mainWindowHandle == null) {
+		this.pagesCache.clear();
+	}
+}
+
+/**
  * Close all other windows than the one displaying the given page.
  *
  * @param page The page to be kept opened in current browser
@@ -873,10 +947,11 @@ public void deleteCookieNamed(final String cookieName) {
 /**
  * Double-click on the given element;
  *
- * @param element The web element to doubl-click on
+ * @param element The web element to double-click on
  */
 public void doubleClick(final WebBrowserElement element) {
-	this.actions.doubleClick(element).build().perform();
+	WebElement webElement = element.getWebElement();
+	this.actions.moveToElement(webElement).doubleClick(webElement).build().perform();
 }
 
 /**
@@ -1798,8 +1873,10 @@ protected abstract void initDriver();
 
 /**
  * Init the browser profile.
+ *
+ * @param user Possible user associated with profile, might be <code>null</code>
  */
-protected abstract void initProfile();
+protected abstract void initProfile(User user);
 
 private void initScreenshotsDir() {
 	String screenshotsRootDir = getParameterValue(SPOT_SCREENSHOT_DIR_ID, SPOT_SCREENSHOT_DIR_DEFAULT);
@@ -2294,9 +2371,9 @@ public WebBrowserElement[] select(final WebBrowserElement listElement, final By 
 			String optionText = optionElement.getText();
 			if (optionText.isEmpty()) {
 				optionText = optionElement.getAttribute("aria-label");
-				if (optionText.isEmpty()) {
+				if (optionText == null || optionText.isEmpty()) {
 					optionText = optionElement.getAttribute("value");
-					if (optionText.isEmpty()) {
+					if (optionText == null || optionText.isEmpty()) {
 						throw new ScenarioFailedError("Cannot find text for option '"+optionElement+"' of selection '"+listElement+"'");
 					}
 				}
@@ -2778,9 +2855,7 @@ private void setWindow(final Dimension dimension, final Point location) {
 	Dimension wSize = window.getSize();
 	debugPrintln("		  -> current window size: "+wSize);
 	if (wSize.width < newDimension.width || wSize.height < newDimension.height) {
-		int windowWidth = wSize.getWidth() < newDimension.width ? newDimension.width : wSize.getWidth();
-		int windowHeight= wSize.getHeight() < newDimension.height ? newDimension.height : wSize.getHeight();
-		this.windowSize = new Dimension(windowWidth, windowHeight);
+		this.windowSize = new Dimension(newDimension.width, newDimension.height);
 		debugPrintln("		  -> new window size: "+this.windowSize);
 		window.setSize(this.windowSize);
 	} else {
@@ -3071,12 +3146,11 @@ public String toString() {
  * </p>
  * @param element The input field.
  * @param timeout The timeout before giving up if the text is not enabled
- * @param user User whom password has to be typed
+ * @param usr User whom password has to be typed
  * @throws ScenarioFailedError if the input is not enabled before the timeout
- * @since 6.0
  */
-public void typePassword(final WebBrowserElement element, final int timeout, final SpotUser user) {
-	typeText(element, null, Keys.TAB, 100/*delay works for most of the cases*/, true/*clear*/, timeout, user);
+public void typePassword(final WebBrowserElement element, final int timeout, final SpotUser usr) {
+	typeText(element, null, Keys.TAB, 100/*delay works for most of the cases*/, true/*clear*/, timeout, usr);
 }
 
 /**
@@ -3116,9 +3190,9 @@ public void typeText(final WebBrowserElement element, final String text, final K
 	typeText(element, text, key, keyDelay, clear, timeout, null/*user*/);
 }
 
-private void typeText(final WebBrowserElement element, final String text, final Keys key, final int keyDelay, final boolean clear, final int timeout, final SpotUser user) {
+private void typeText(final WebBrowserElement element, final String text, final Keys key, final int keyDelay, final boolean clear, final int timeout, final SpotUser usr) {
 	String printedText;
-	if (user == null) {
+	if (usr == null) {
 		printedText = "text '"+text+"'";
 	} else {
 		printedText = "password '******'";
@@ -3126,7 +3200,7 @@ private void typeText(final WebBrowserElement element, final String text, final 
 	if (DEBUG) debugPrintln("		+ Type "+printedText+(clear?" (cleared)":EMPTY_STRING));
 
 	// Check argument
-	if (text == null && user == null) {
+	if (text == null && usr == null) {
 		throw new ScenarioFailedError("Invalid null arguments while type text in input web element.");
 	}
 
@@ -3148,21 +3222,36 @@ private void typeText(final WebBrowserElement element, final String text, final 
 		// Due to Firefox bug https://bugzilla.mozilla.org/show_bug.cgi?id=1292178
 		// The moveToElement is not working for Firefox yet, hence trying to simulate it
 		// by using a click() operation instead...
-		element.click();
-		debugPrintln("			 ( -> done by simulating the move with click operation as Firefox is used.)");
+		try {
+			element.click(true, false);
+			debugPrintln("			 ( -> done by simulating the move with click operation as Firefox is used.)");
+		}
+		catch (@SuppressWarnings("unused") ElementNotInteractableException enie) {
+			debugPrintln("			 ( -> hiding ElementNotInteractableException when trying to simulate move to element with click when Firefox is used.)");
+		}
 	} else {
 		element.moveToElement();
 	}
 
 	// Type text
 	if (clear) {
-		element.sendKeys(SELECT_ALL_CMD);
-		element.sendKeys(Keys.BACK_SPACE);
+		if (isMacOs()) {
+			this.actions
+				.click(element.getWebElement())
+				.keyDown(CTRL_CMD)
+				.sendKeys("a")
+				.keyUp(CTRL_CMD)
+				.sendKeys(Keys.BACK_SPACE)
+				.perform();
+		} else {
+			element.sendKeys(SELECT_ALL_CMD);
+			element.sendKeys(Keys.BACK_SPACE);
+		}
 	}
-	if (user == null) {
+	if (usr == null) {
 		element.sendKeys(text);
 	} else {
-		element.enterPassword(user);
+		element.enterPassword(usr);
 	}
 
 	// Hit the key

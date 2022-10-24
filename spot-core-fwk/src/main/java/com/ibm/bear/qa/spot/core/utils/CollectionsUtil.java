@@ -13,24 +13,33 @@
 package com.ibm.bear.qa.spot.core.utils;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.utils.StringUtils.compare;
 
 import java.util.*;
 
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioImplementationError;
+import com.ibm.bear.qa.spot.core.utils.StringUtils.Comparison;
+import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
 
 /**
- * Class to provide utilities around {@link Collection} and array that neither
- * {@link Collections} nor {@link Arrays} currently offers.
+ * Class to provide utilities around {@link Collection} and array that neither {@link Collections}
+ * nor {@link Arrays} currently offers.
  * <p>
- * Availables methods of this utility class are:
+ * This class defines following internal API methods:
  * <ul>
- * <li>{@link #addArrayToList(List, Object[])}: Add given array items to the given list.</li>
- * <li>{@link #checkEquality(List, List)}: Check whether given collections are equals or not.</li>
- * <li>{@link #getListFromArray(Object[])}: Return the given array as a list of same objects.</li>
+ * <li>{@link #addArrayToList(List,T[])}: Add given array items to the given list.</li>
+ * <li>{@link #checkComparison(List,List,Comparison)}: Check given comparison for given collections.</li>
+ * <li>{@link #checkEquality(List,String[])}: Check whether given collections are equals or not.</li>
+ * <li>{@link #checkEquality(List,List)}: Check whether given collections are equals or not.</li>
+ * <li>{@link #getListFromArray(T[])}: Return the given array as a list of same objects.</li>
+ * <li>{@link #getStringArrayFromList(List)}: Return the given array as a list of same objects.</li>
+ * <li>{@link #getStringListFromElements(List)}: Return a texts list of given elements list.</li>
+ * <li>{@link #sortListAndCheckEquality(String,List,String,List)}: Check whether given collections are equals or not.</li>
  * </ul>
  * </p>
  */
+@SuppressWarnings("javadoc")
 public class CollectionsUtil {
 
 /**
@@ -53,35 +62,55 @@ public static <T> List<T> addArrayToList(final List<T> list, final T[] array) {
  * @param first First collection to compare
  * @param second Second collection to compare
  */
+public static void checkEquality(final List<String> first, final String[] second) {
+	checkEquality(first, getListFromArray(second));
+}
+
+/**
+ * Check whether given collections are equals or not.
+ *
+ * @param first First collection to compare
+ * @param second Second collection to compare
+ */
 public static void checkEquality(final List<String> first, final List<String> second) {
+	checkComparison(first, second, Comparison.Equals);
+}
+
+/**
+ * Check given comparison for given collections.
+ *
+ * @param first First collection to compare
+ * @param second Second collection to compare
+ */
+public static void checkComparison(final List<String> first, final List<String> second, final Comparison comparison) {
 	debugPrintEnteringMethod();
 	StringBuffer buffer = new StringBuffer();
 	if (first == null || second == null) {
-		throw new ScenarioFailedError("Unexpected null lst while checking equality between collections.");
+		throw new ScenarioFailedError("Unexpected null lst while checking "+comparison+" between collections.");
 	}
 	int firstSize = first.size();
 	int secondSize = second.size();
 	int n = 0;
 	if (firstSize != secondSize) {
-		buffer.append("	Errors while checking lists equality:").append(LINE_SEPARATOR);
+		buffer.append("	Errors while checking lists "+comparison+":").append(LINE_SEPARATOR);
 		buffer.append("	    "+ ++n + ") Collections have not the same size: first="+firstSize+", second="+secondSize).append(LINE_SEPARATOR);
 	}
 	int size = Math.min(firstSize, secondSize);
 	for (int i=0; i<size; i++) {
-		if (!first.get(i).equals(second.get(i))) {
-			if (n==0) buffer.append("	Errors while checking lists equality:").append(LINE_SEPARATOR);
+		if (!compare(first.get(i), second.get(i), comparison)) {
+			if (n==0) buffer.append("	Errors while checking lists "+comparison+":").append(LINE_SEPARATOR);
 			buffer.append("	    "+ ++n + ") Strings at index "+i+" do not match: first='"+first.get(i)+"', second='"+second.get(i)+"'").append(LINE_SEPARATOR);
 		}
 	}
 	if (firstSize > secondSize) {
-		if (n==0) buffer.append("	Errors while checking lists equality:").append(LINE_SEPARATOR);
+		if (n==0) buffer.append("	Errors while checking lists "+comparison+":").append(LINE_SEPARATOR);
 		buffer.append("	    "+ ++n + ") Following strings are only present in the first collection:").append(LINE_SEPARATOR);
 		for (int i=secondSize; i<firstSize; i++) {
 			buffer.append("		    - index "+i+": '"+first.get(i)+"'").append(LINE_SEPARATOR);
 		}
 	}
 	else if (firstSize < secondSize) {
-		if (n==0) buffer.append("	Errors while checking lists equality:").append(LINE_SEPARATOR);
+		if (n==0) buffer.append("	Errors while checking lists "+comparison+":").append(LINE_SEPARATOR);
 		buffer.append("	    "+ ++n + ") Following strings are only present in the second collection:").append(LINE_SEPARATOR);
 		for (int i=firstSize; i<secondSize; i++) {
 			buffer.append("		    - index "+i+": '"+first.get(i)+"'").append(LINE_SEPARATOR);
@@ -89,7 +118,7 @@ public static void checkEquality(final List<String> first, final List<String> se
 	}
 	if (n > 0) {
 		println(buffer.toString());
-		throw new ScenarioFailedError("Error while comparing two collections which were expected to be equals. See console for more details on this error...");
+		throw new ScenarioFailedError("Error while comparing two collections for "+comparison+". See console for more details on this error...");
 	}
 }
 
@@ -116,6 +145,20 @@ public static <T> List<T> getListFromArray(final T[] array) {
 		list.add(item);
 	}
 	return list;
+}
+
+/**
+ * Return a texts list of given elements list.
+ *
+ * @param elements The elements list
+ * @return The elements text list
+ */
+public static List<String> getStringListFromElements(final List<WebBrowserElement> elements) {
+	List<String> texts = new ArrayList<>();
+	for (WebBrowserElement element: elements) {
+		texts.add(element.getText());
+	}
+	return texts;
 }
 
 /**
@@ -197,5 +240,4 @@ public static String sortListAndCheckEquality(final String firstTitle, final Lis
 	}
 	return null;
 }
-
 }

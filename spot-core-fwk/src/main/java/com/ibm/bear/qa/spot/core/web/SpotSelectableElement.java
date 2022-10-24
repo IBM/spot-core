@@ -36,6 +36,8 @@ import com.ibm.bear.qa.spot.core.timeout.SpotAbstractTimeout;
  * This class also defines following internal API methods:
  * <ul>
  * <li>{@link #action(Actions)}: Perform the given action on the selectable element.</li>
+ * <li>{@link #click()}: Click on the element without taking into account its selection status.</li>
+ * <li>{@link #clickAndWaitForSelection()}: Click on element and wait for the element to be selected.</li>
  * <li>{@link #getText()}: Return the text of the wrapped element.</li>
  * </ul>
  * </p><p>
@@ -225,6 +227,54 @@ public boolean action(final Actions type) {
 }
 
 /**
+ * Click on the element without taking into account its selection status.
+ *
+ * @return The selection state of the element after the click occurred
+ */
+public boolean click() {
+	debugPrintEnteringMethod();
+	getSelectionElement().click();
+	if (this.element.browser.isFirefox() && this.element.browser.getVersion().startsWith("78")) {
+		// for an unknown reason, Firefox needs 2 clicks on the element to actually select it...!?
+		debugPrintln("		  -> Double click for Firefox browser");
+		pause(200);
+		getSelectionElement().click();
+	}
+	return isSelected();
+}
+
+/**
+ * Click on element and wait for the element to be selected.
+ */
+public void clickAndWaitForSelection() {
+	clickAndWaitSelection(true);
+}
+
+private void clickAndWaitSelection(final boolean selected) {
+	pause(200);
+	debugPrintln("		  -> Click on element to select it...");
+	getSelectionElement().click();
+	if (this.element.browser.isFirefox() && this.element.browser.getVersion().startsWith("78") && !waitUntilSelection(selected, false, 1)) {
+		// for an unknown reason, Firefox needs 2 clicks on the element to actually select it...!?
+		debugPrintln("		  -> Double click for Firefox browser");
+		pause(200);
+		getSelectionElement().click();
+		pause(600);
+		if (!waitUntilSelection(selected, false)) {
+			// In certain circumstance, even the double click does not work, hence try to workaround it by entering Return on the element
+			debugPrintln("		  -> Double click was inefficient for Firefox browser");
+			debugPrintln("		  -> Apply workaround to send ENTER key to the node element...");
+			this.element.sendKeys(Keys.RETURN);
+			pause(200);
+			getSelectionElement().click();
+			pause(800);
+		}
+	}
+	debugPrintln("		  -> Wait that element becomes selected...");
+	waitUntilSelection(selected, true);
+}
+
+/**
  * Return the element to perform the selection operation.
  * <p>
  * If {@link #selectionLocator} is defined then its the element found with
@@ -268,44 +318,28 @@ public boolean isSelected() throws ScenarioFailedError {
 @Override
 public void select() throws ScenarioFailedError {
 	debugPrintEnteringMethod();
-	pause(200);
-	getSelectionElement().click();
-	if (this.element.browser.isFirefox() && !waitUntilSelection(true, false, 1)) {
-		// for an unknown reason, Firefox needs 2 clicks on the element to actually selects it...!?
-		debugPrintln("		  -> Double click for Firefox browser");
-		pause(200);
-		getSelectionElement().click();
-		pause(600);
-		// In certain circumstance, even the double click does not work, hence try to workaround it by entering Return on the element
-		if (waitUntilSelection(true, false)) {
-			return;
-		}
-		debugPrintln("		  -> Double click was inefficient for Firefox browser");
-		debugPrintln("		  -> Apply workaround to send ENTER key to the node element...");
-		this.element.sendKeys(Keys.RETURN);
-		pause(200);
-		getSelectionElement().click();
-		pause(800);
+	if (isSelected()) {
+		debugPrintln("		  -> Element is already selected, do nothing...");
+		return;
 	}
-	waitUntilSelection(true, true);
+	clickAndWaitSelection(true);
 }
 
 @Override
 public boolean toggle() throws ScenarioFailedError {
 	boolean selected = isSelected();
-	getSelectionElement().click();
-	waitUntilSelection(!selected, true);
+	clickAndWaitSelection(!selected);
 	return !selected;
 }
 
 @Override
 public void unselect() throws ScenarioFailedError {
-	if (isSelected()) {
-		getSelectionElement().select();
-	} else {
-		debugPrintln("		  -> the element is already not selected do nothing...");
+	debugPrintEnteringMethod();
+	if (!isSelected()) {
+		debugPrintln("		  -> Element is already unselected, do nothing...");
+		return;
 	}
-	waitUntilSelection(false, true);
+	clickAndWaitSelection(false);
 }
 
 /**

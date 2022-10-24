@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-core-root</artifactId>
-	<version>4.2.0</version>
+	<version>4.3.1</version>
 	<packaging>pom</packaging>
 
 	<name>Root for SPOT Core projects</name>

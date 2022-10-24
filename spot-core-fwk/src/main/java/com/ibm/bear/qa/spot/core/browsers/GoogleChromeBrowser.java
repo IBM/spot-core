@@ -12,8 +12,7 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.browsers;
 
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.print;
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.println;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +22,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
+import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.web.WebBrowser;
 /**
  * The specialized class when Google Chrome browser is used to run the tests.
@@ -40,7 +40,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * This class also defines or overrides following methods:
  * <ul>
  * <li>{@link #initDriver()}: Init the driver corresponding to the current browser.</li>
- * <li>{@link #initProfile()}: Init the browser profile.</li>
+ * <li>{@link #initProfile(User)}: Init the browser profile.</li>
  * </ul>
  * </p>
  */
@@ -49,8 +49,8 @@ public class GoogleChromeBrowser extends WebBrowser {
 	/* Fields */
 	private ChromeOptions options;
 
-public GoogleChromeBrowser(final BrowsersManager manager) {
-	super(manager);
+public GoogleChromeBrowser(final BrowsersManager manager, final User user) {
+	super(manager, user);
 }
 
 @Override
@@ -93,14 +93,16 @@ protected void initDriver() {
 }
 
 @Override
-protected void initProfile() {
+protected void initProfile(final User user) {
 
 	// Set options
 	this.options = new ChromeOptions();
 
 	List<String> arguments = new ArrayList<String>();
-	// Start browser in maximized mode
-	arguments.add("--start-maximized");
+	// Start browser in maximized mode by default
+	if (getParameterBooleanValue("windowMax", true) && getParameterIntValue("windowWidth") == 0 && getParameterIntValue("windowHeight") == 0) {
+		arguments.add("--start-maximized");
+	}
 	arguments.add("--ignore-certificate-errors");
 	arguments.add("--lang=en"); // force English locale when starting Chrome
 	if (this.manager.isHeadless()) {
@@ -113,14 +115,14 @@ protected void initProfile() {
 	// is only specified for the test execution if a default download directory is not
 	// provided. In other words, the default profile will be used for the test execution
 	// if a default download directory is provided.
-	if (this.manager.getProfile() != null) {
+	if (this.manager.getProfile(user) != null) {
 		if (hasDownloadDir()) {
 			print("		+ A download directory for the browser is specified via parameter ");
 			print(BROWSER_DOWNLOAD_DIR_ID);
 			print(". Therefore, the default browser profile is used for the test execution even though a custom browser profile is provided via parameter ");
 			println(BROWSER_PROFILE_ID);
 		} else {
-			arguments.add("--user-data-dir=" + this.manager.getProfile());
+			arguments.add("--user-data-dir=" + this.manager.getProfile(user));
 		}
 	}
 
@@ -132,7 +134,7 @@ protected void initProfile() {
 	}
 
 	// Set private mode for browser if requested
-	if (this.manager.isInPrivateMode()) {
+	if (this.manager.isInPrivateMode(user)) {
 		this.options.addArguments("--incognito");
 	}
 }

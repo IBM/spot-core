@@ -204,7 +204,7 @@ public boolean login(final String location, final User user) {
 	if (login) {
 		// First propagate to other applications using same login operation
 		for (Application appli: this.applications) {
-			if (appli != application && appli.loginOperationClass == application.loginOperationClass) { // != is intentional
+			if (application.matchApplicationLoginOperationForUser(appli, user)) {
 				appli.login(user);
 			}
 		}
@@ -213,7 +213,7 @@ public boolean login(final String location, final User user) {
 		List<Application> serverApplications = this.servers.get(application.getHost());
 		if (serverApplications != null) {
 			for (Application appli: serverApplications) {
-				if (appli != application) { // != is intentional
+				if (application.matchApplicationLoginOperationForUser(appli, user)) {
 					appli.login(user);
 				}
 			}

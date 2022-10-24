@@ -63,6 +63,13 @@ void collapse();
 void expand();
 
 /**
+ * Return all nodes labels of the current node.
+ *
+ * @return All nodes as a {@link List} of {@link String}.
+ */
+List<String> getAllLabels() ;
+
+/**
  * Return the labels list of current node children.
  *
  * @return The labels list
@@ -158,7 +165,7 @@ boolean isSelected();
 SpotTreeNode searchNode(final String name) throws ScenarioImplementationError;
 
 /**
- * Select the current node.
+ * Select the current node by clicking on it.
  */
 void select();
 

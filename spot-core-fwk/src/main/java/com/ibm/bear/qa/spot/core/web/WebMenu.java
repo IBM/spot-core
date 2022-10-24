@@ -635,6 +635,7 @@ public boolean isOpenedBeforeTimeout(final int seconds) {
  * </p><p>
  * When possible, it also waits for all items to be loaded before returning.
  * </p>
+ * @return The menu web element
  */
 @Override
 public WebBrowserElement open(final WebBrowserElement webElement) {

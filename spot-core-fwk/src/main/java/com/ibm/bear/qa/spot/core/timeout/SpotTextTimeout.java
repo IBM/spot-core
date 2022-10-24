@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
+import com.ibm.bear.qa.spot.core.utils.StringUtils.Comparison;
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
 
 /**
@@ -73,36 +74,6 @@ import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
  * </p>
  */
 public class SpotTextTimeout extends SpotAbstractTimeout {
-
-	/**
-	 * Enumeration of all supported text comparison for the current timeout
-	 */
-	public enum Comparison {
-		/** Check that the element text is equals to the expected one. */
-		Equals("equals"),
-		/** Check that the element text starts with the expected one. */
-		StartsWith("starts with"),
-		/** Check that the element text is the start of the expected one. */
-		IsStartOf("is start of"),
-		/** Check that the element text ends with the expected one. */
-		EndsWith("ends with"),
-		/** Check that the element text end is the end of the expected one. */
-		IsEndOf("is end of"),
-		/** Check that the element text contains the expected one. */
-		Contains("contains"),
-		/** Check that the element text matches the expected regular expression. */
-		Regex("does not match regular expression"),
-		/** Check that the element text json matches the expected text json. */
-		Json_Equals("does not equal json");
-		final private String label;
-		Comparison(final String text) {
-			this.label = text;
-		}
-		@Override
-		public String toString() {
-			return this.label;
-		}
-	}
 
 	/* Fields */
 	// The text that the element text will be compared to

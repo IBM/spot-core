@@ -777,6 +777,7 @@ public void runTest(final Statement statement, final Description description) th
 	catch (BrowserError be) {
 		if (be.isFatal() || getBrowser() == null) {
 			println("Fatal error while trying to open browser, stop scenario execution!");
+			printException(be);
 			this.shouldStop = true;
 			throw be;
 		}

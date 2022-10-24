@@ -18,6 +18,7 @@ import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.safari.SafariDriver;
 
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
+import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.web.WebBrowser;
 
 /**
@@ -36,7 +37,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * This class also defines or overrides following methods:
  * <ul>
  * <li>{@link #initDriver()}: Init the driver corresponding to the current browser.</li>
- * <li>{@link #initProfile()}: Init the browser profile.</li>
+ * <li>{@link #initProfile(User)}: Init the browser profile.</li>
  * </ul>
  * </p>
  */
@@ -63,7 +64,7 @@ protected void initDriver() {
 }
 
 @Override
-protected void initProfile() {
+protected void initProfile(final User user) {
 	// Do nothing
 }
 

@@ -27,9 +27,10 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
  * <li>{@link #getColumnsSize()}: Return the table columns size.</li>
  * <li>{@link #getContent()}: Return the content of the table as a list of strings list.</li>
  * <li>{@link #getHeaderIndex(String)}: Return the header index of the given column name.</li>
- * <li>{@link #getNumberOfRows()}: Get the number of rows of the table.</li>
+ * <li>{@link #getRowContent(int)}: Return the row content of the given index.</li>
  * <li>{@link #isColumnDisplayed(String)}: Check if the given column is displayed.</li>
  * <li>{@link #isEmpty()}: Return whether the table is empty or not.</li>
+ * <li>{@link #size()}: Get the number of rows of the table.</li>
  * </ul>
  * </p>
  */
@@ -87,8 +88,17 @@ int getHeaderIndex(final String column);
  * Get the number of rows of the table.
  *
  * @return the number of rows of the table.
+ * @deprecated Use #size() instead
  */
+@Deprecated
 int getNumberOfRows();
+
+/**
+ * Return the row content of the given index.
+ *
+ * @return The row content
+ */
+List<String> getRowContent(int index);
 
 /**
  * Check if the given column is displayed.
@@ -104,4 +114,11 @@ boolean isColumnDisplayed(final String columnTitle);
  * @return <code>true</code> if the table is empty, <code>false</code> otherwise
  */
 boolean isEmpty();
+
+/**
+ * Get the number of rows of the table.
+ *
+ * @return the number of rows of the table.
+ */
+int size();
 }

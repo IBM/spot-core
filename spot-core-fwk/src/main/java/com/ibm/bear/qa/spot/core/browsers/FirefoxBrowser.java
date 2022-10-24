@@ -23,6 +23,7 @@ import org.openqa.selenium.firefox.*;
 import org.openqa.selenium.remote.CapabilityType;
 
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
+import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.scenario.errors.BrowserError;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 import com.ibm.bear.qa.spot.core.utils.FileUtil;
@@ -44,7 +45,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * This class also defines or overrides following methods:
  * <ul>
  * <li>{@link #initDriver()}: Init the driver corresponding to the current browser.</li>
- * <li>{@link #initProfile()}: Init the browser profile.</li>
+ * <li>{@link #initProfile(User)}: Init the browser profile.</li>
  * </ul>
  * </p>
  */
@@ -53,8 +54,8 @@ public class FirefoxBrowser extends WebBrowser {
 	// Firefox specific info
 	FirefoxProfile firefoxProfile;
 
-public FirefoxBrowser(final BrowsersManager manager) {
-	super(manager);
+public FirefoxBrowser(final BrowsersManager manager, final User user) {
+	super(manager, user);
 }
 
 @Override
@@ -145,15 +146,16 @@ protected void initDriver() {
 }
 
 @Override
-protected void initProfile() {
+protected void initProfile(final User user) {
 
 	// Set profile
-	if (this.manager.getProfile() == null) {
+	String userProfile = this.manager.getProfile(user);
+	if (userProfile == null) {
 		this.firefoxProfile = new FirefoxProfile();
 	} else {
-		File dir = FileUtil.createDir(this.manager.getProfile());
+		File dir = FileUtil.createDir("profiles", userProfile);
 		if (dir == null) {
-			throw new ScenarioFailedError("Cannot create firefox profile at "+this.manager.getProfile()+"!");
+			throw new ScenarioFailedError("Cannot create firefox profile at "+userProfile+"!");
 		}
 		this.firefoxProfile = new FirefoxProfile(dir);
 	}
@@ -170,7 +172,7 @@ protected void initProfile() {
 	}
 
 	// Set private mode for browser if requested
-	if (this.manager.isInPrivateMode()) {
+	if (this.manager.isInPrivateMode(user)) {
 		this.firefoxProfile.setPreference("browser.privatebrowsing.autostart", true);
 	}
 }

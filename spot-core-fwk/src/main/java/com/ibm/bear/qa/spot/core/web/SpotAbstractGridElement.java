@@ -24,7 +24,7 @@ import com.ibm.bear.qa.spot.core.api.elements.SpotTable;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
 import com.ibm.bear.qa.spot.core.timeout.SpotAbstractTimeout;
 import com.ibm.bear.qa.spot.core.timeout.SpotTextTimeout;
-import com.ibm.bear.qa.spot.core.timeout.SpotTextTimeout.Comparison;
+import com.ibm.bear.qa.spot.core.utils.StringUtils.Comparison;
 
 /**
  * Class to handle common code for web element with <code>table</code> tag name using grid
@@ -67,6 +67,12 @@ public abstract class SpotAbstractGridElement extends SpotAbstractTableElement i
 	private static final String THERE_ARE_NO_ITEMS_TO_DISPLAY = "There are no items to display";
 	private static final String NO_ITEMS_TO_DISPLAY = "No items to display";
 
+	/* Fields */
+	// Temporary header element storage
+	// Be cautious with this field which has to be used only inside a method to avoid getting this web element multiple times
+	// When using it the first time in a method, always assume it's either null or stale. Hence, reinitialize it first using getHeaderElement(String) method...
+	private WebBrowserElement headerElement;
+	// Flag to filter rows which are not checked
 	protected boolean onlyChecked = false;
 
 public SpotAbstractGridElement(final WebElementWrapper parent) {
@@ -146,6 +152,17 @@ public SortMode getColumnSortMode(final String column) throws ScenarioFailedErro
 		throw new ScenarioFailedError("There's no column '"+column+"' in the current table.");
 	}
 	return getSortMode(this.headerElement);
+}
+
+/**
+ * {@inheritDoc}
+ * <p>
+ * Note that this method is setting {@link #headerElement} field.
+ * </p>
+ */
+@Override
+public WebBrowserElement getHeaderElement(final String column) {
+	return this.headerElement = super.getHeaderElement(column);
 }
 
 /**

@@ -27,10 +27,12 @@ public interface BrowserConstants {
 	// Parameters IDs
 	String BROWSER_PATH_ID = "browserPath";
 	String BROWSER_PROFILE_ID = "browserProfile";
+	String BROWSER_SPECIFIC_USER_PROFILE = "spot.browser.specific.user.profile";
 	String BROWSER_KIND_ID = "browserKind";
 	String BROWSER_LOCALE_ID = "browserLocale";
 	String BROWSER_HEADLESS_ID = "browserHeadless";
 	String BROWSER_PRIVATE_ID = "browserPrivate";
+	String BROWSER_PRIVATE_USERS = "spot.browser.private.users";
 
 	// Browser kinds
 	int BROWSER_KIND_FIREFOX = 1;

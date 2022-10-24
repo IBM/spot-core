@@ -41,44 +41,35 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser.ClickableWorkaroundState;
 /**
  * A web browser element found in a {@link WebBrowser} page content.
  * <p>
- * This class implements the {@link WebElement} interface to be as most
- * compatible as possible with Selenium behavior.
+ * This class implements the {@link WebElement} interface to be as most compatible as possible with
+ * Selenium behavior.
  * </p><p>
- * This object is instantiated while finding element through {@link SearchContext}
- * interface. As {@link WebBrowser} and {@link WebBrowserElement} implement
- * this interface, they only produce this kind of object when finding element in
- * the current web page content.
+ * This object is instantiated while finding element through {@link SearchContext} interface. As
+ * {@link WebBrowser} and {@link WebBrowserElement} implement this interface, they only produce this
+ * kind of object when finding element in the current web page content.
  * </p><p>
- * The main functionality of this specific web element is to be able to self recover
- * when a {@link StaleElementReferenceException} occurs while trying to execute
- * any of the {@link WebElement} interface operations.
+ * The main functionality of this specific web element is to be able to self recover when a
+ * {@link StaleElementReferenceException} occurs while trying to execute any of the
+ * {@link WebElement} interface operations.
  * </p><p>
- * The recovery uses the stored {@link SearchContext context} from which the
- * initial {@link WebElement} has been found and the locator to find it (ie.
- * {@link By}). When an exception occurs, it's caught and the element is
- * searched again (ie. {@link SearchContext#findElement(By)} or
- * {@link SearchContext#findElements(By)}).
+ * This recovery is retried several times before given up if maximum of retries (
+ * {@link #MAX_RECOVERY_ATTEMPTS} ) is reached.
  * </p><p>
- * This recovery is retried several times before given up if maximum of retries
- * ({@link #MAX_RECOVERY_ATTEMPTS}) is reached.
+ * When searching the web element for the first time, the browser, the frame and the index of the
+ * elements in the parent's list are also stored to have the precise context used for the initial
+ * research and then be sure to find the same element when recovering.
  * </p><p>
- * When searching the web element for the first time, the browser, the frame and
- * the index of the elements in the parent's list are also stored to have the
- * precise context used for the initial research and then be sure to find the same
- * element when recovering.
- * </p><p>
- * Additionally to the WebElement methods, this class also provide some useful
- * functionalities as:
+ * Additionally to the WebElement methods, this class also provide some useful functionalities as:
  * <ul>
  * <li>{@link #alter(boolean)}: Alter the selection status of the element.</li>
  * <li>{@link #click(boolean)}: Perform the {@link WebElement#click()} operation w/o recovery.</li>
  * <li>{@link #clickToMove()}: Perform a righ-click to select an element.</li>
  * <li>{@link #enterPassword(SpotUser)}: Enter the given password in current element.</li>
  * <li>{@link #executeScript(String)}: Execute the given script on the current web element.</li>
- * <li>{@link #findElement(By, boolean)}: Perform the {@link WebElement#findElement(By)} operation w/o recovery.</li>
- * <li>{@link #findElement(By, WebBrowserFrame, boolean)}: Perform the {@link WebElement#findElement(By)} operation in a frame w/o recovery.</li>
- * <li>{@link #findElements(By, boolean)}: Perform the {@link WebElement#findElements(By)} operation w/o recovery.</li>
- * <li>{@link #findElement(By, WebBrowserFrame, boolean)}: Perform the {@link WebElement#findElements(By)} operation in a frame w/o recovery.</li>
+ * <li>{@link #findElement(By,boolean)}: Perform the {@link WebElement#findElement(By)} operation w/o recovery.</li>
+ * <li>{@link #findElement(By,WebBrowserFrame,boolean)}: Perform the {@link WebElement#findElement(By)} operation in a frame w/o recovery.</li>
+ * <li>{@link #findElements(By,boolean)}: Perform the {@link WebElement#findElements(By)} operation w/o recovery.</li>
+ * <li>{@link #findElement(By,WebBrowserFrame,boolean)}: Perform the {@link WebElement#findElements(By)} operation in a frame w/o recovery.</li>
  * <li>{@link #getAncestor(int)}: Return the ancestor of the current element.</li>
  * <li>{@link #getAttributeClass()}: Return the value of the the &quot;class&quot; attribute.</li>
  * <li>{@link #getAttributeId()}: Return the value of the the &quot;id&quot; attribute.</li>
@@ -92,14 +83,109 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser.ClickableWorkaroundState;
  * <li>{@link #getFollowingSibling(String)}: Return the next sibling element from current one with the given tag.</li>
  * <li>{@link #getFrame()}: Return the element frame.</li>
  * <li>{@link #getFullLocator()}: Return the full locator for the current element.</li>
- * <li>{@link #getLocator()}:  Return the locator to find the current element.</li>
+ * <li>{@link #getLocator()}: Return the locator to find the current element.</li>
  * <li>{@link #getParent()}: Return the parent of the current element.</li>
  * <li>{@link #getText(boolean)}: Perform the {@link WebElement#getText()} operation w/o recovery.</li>
  * <li>{@link #getTextEvenIfHidden()}: Returns the text of the web element even if it's hidden.</li>
- * <li>{@link #getWebElement()}: Return the wrapped {@link WebElement}.</li>
- * <li>{@link #isDisplayed(boolean)}:  Perform the {@link WebElement#isDisplayed()} operation w/o recovery.</li>
+ * <li>{@link #getWebElement()}: Return the wrapped {@link WebElement} .</li>
+ * <li>{@link #isDisplayed(boolean)}: Perform the {@link WebElement#isDisplayed()} operation w/o recovery.</li>
  * <li></li>
  * </ul>
+ * <p>
+ * This class defines following public API methods of {@link WebElement} interface:
+ * <ul>
+ * <li>{@link #clear()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #click()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #findElement(By)}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #findElements(By)}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getAttribute(String)}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getCssValue(String)}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getLocation()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getRect()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getSize()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getTagName()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getText()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #isDisplayed()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #isEnabled()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #isSelected()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #sendKeys(CharSequence...)}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #submit()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * </ul>
+ * </p><p>
+ * This class also defines following internal API methods:
+ * <ul>
+ * <li>{@link #alter(boolean)}: Alter the selection status of the element.</li>
+ * <li>{@link #click(boolean)}: Perform the</li>
+ * <li>{@link #click(boolean,boolean)}: Perform the</li>
+ * <li>{@link #clickToMove()}: Perform a righ-click to select an element.</li>
+ * <li>{@link #enterPassword(SpotUser)}: Enter the given password in current element.</li>
+ * <li>{@link #executeScript(String)}: Execute the given script on the current web element.</li>
+ * <li>{@link #findElement(By,boolean)}: Perform the</li>
+ * <li>{@link #findElement(By,WebBrowserFrame,boolean)}: Perform the</li>
+ * <li>{@link #findElements(By,boolean)}: Perform the</li>
+ * <li>{@link #findElements(By,boolean,boolean)}: Perform the</li>
+ * <li>{@link #getAllChildren()}: Return all children of the current element.</li>
+ * <li>{@link #getAncestor(int)}: Return the ancestor of the current element.</li>
+ * <li>{@link #getAttributeClass()}: Return the value of the the &quot;class&quot; attribute.</li>
+ * <li>{@link #getAttributeId()}: Return the value of the the &quot;id&quot; attribute.</li>
+ * <li>{@link #getAttributeValue(String)}: Safely return the value of the given attribute.</li>
+ * <li>{@link #getChild()}: Return the single child of the current element.</li>
+ * <li>{@link #getChild(int)}: Return the child at the given index of the current element.</li>
+ * <li>{@link #getChild(String)}: Return the child with the given tag of the current element.</li>
+ * <li>{@link #getChildren()}: Return children of the current element.</li>
+ * <li>{@link #getChildren(String)}: Return specific children of the current element.</li>
+ * <li>{@link #getCoordinates()}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getFollowingSibling()}: Return the next sibling element from current one.</li>
+ * <li>{@link #getFollowingSibling(String)}: Return the next sibling element from current one with the given tag.</li>
+ * <li>{@link #getFrame()}: Return the element frame.</li>
+ * <li>{@link #getFullLocator()}: Return the full locator for the current element.</li>
+ * <li>{@link #getList(List)}: Return a list of</li>
+ * <li>{@link #getLocator()}: Return the locator to find the current element.</li>
+ * <li>{@link #getParent()}: Return the parent of the current element.</li>
+ * <li>{@link #getRelative(By)}: Find the relative element with given locator from current web element context.</li>
+ * <li>{@link #getScreenshotAs(OutputType)}: TODO Add a javadoc with a meaningful summary to this method !</li>
+ * <li>{@link #getText(boolean)}: Perform the</li>
+ * <li>{@link #getTextEvenIfHidden()}: Returns the text of the web element even if it's hidden.</li>
+ * <li>{@link #getWebElement()}: Return the wrapped</li>
+ * <li>{@link #isDisplayed(boolean)}: Perform the</li>
+ * <li>{@link #isEnabled(boolean)}: Perform the</li>
+ * <li>{@link #isInFrame()}: Tells whether the current element is in a frame or not.</li>
+ * <li>{@link #makeVisible()}: Make the web element visible.</li>
+ * <li>{@link #makeVisible(boolean)}: Make the web element visible.</li>
+ * <li>{@link #mouseOver()}: Simulate a mouse over by forcing a trigger of the javascript <code>mouseover</code></li>
+ * <li>{@link #moveToElement()}: Move to the current web element.</li>
+ * <li>{@link #moveToElement(boolean)}: Move to the current web element.</li>
+ * <li>{@link #rightClick()}: Performs a right click action on the element.</li>
+ * <li>{@link #scrollIntoView()}: Scroll the page to the given element.</li>
+ * <li>{@link #scrollSmoothIntoView()}: Scroll the page to the given element.</li>
+ * <li>{@link #select()}: Select or check the given element. This operation only applies to input</li>
+ * <li>{@link #sendKeys(boolean,CharSequence...)}: Perform the</li>
+ * <li>{@link #setVisibility(boolean)}: Set current element visibility to given value.</li>
+ * <li>{@link #setVisible(int)}: Set the current element visible with the given width.</li>
+ * <li>{@link #synchronize()}: Resynchronize the current with web element displayed in the page.</li>
+ * <li>{@link #toString()}: Answers a string containing a concise, human-readable</li>
+ * <li>{@link #waitForMandatoryDisplayedChildElement(By,int)}: Wait until have found the mandatory child element using the given relative locator and timeout.</li>
+ * <li>{@link #waitForPotentialChildElement(By,int)}: Wait until have found a potential child element using the given relative locator and timeout.</li>
+ * <li>{@link #waitForPotentialChildrenElements(By,int)}: Wait until have found potential children elements using the given relative locator and timeout.</li>
+ * <li>{@link #waitForPotentialDisplayedChildElement(By,int)}: Wait until have found a potential displayed element using the given relative locator and timeout.</li>
+ * <li>{@link #waitForPotentialDisplayedChildrenElements(By,int)}: Wait until have found potential displayed elements using the given relative locator and timeout.</li>
+ * <li>{@link #waitShortlyForFirstMandatoryDisplayedChildElementInList(By...)}: Wait shortly until have found one mandatory displayed child element of the given relative locators list.</li>
+ * <li>{@link #waitShortlyForMandatoryChildElement(By)}: Wait shortly until have found the mandatory child element using the given relative locator.</li>
+ * <li>{@link #waitShortlyForMandatoryChildrenElements(By)}: Wait shortly until have found mandatory children elements using the given relative locator.</li>
+ * <li>{@link #waitShortlyForMandatoryDisplayedChildElement(By)}: Wait shortly until have found mandatory displayed child element using the given relative locator.</li>
+ * <li>{@link #waitShortlyForMandatoryDisplayedChildrenElements(By)}: Wait shortly until have found mandatory displayed children elements using the given relative locator.</li>
+ * <li>{@link #waitWhileDisplayed(int)}: Wait while the current web element is displayed in the page.</li>
+ * <li>{@link #waitWhileDisplayed(int,boolean)}: Wait while the current web element is displayed in the page.</li>
+ * <li>{@link #waitWhileEnabled(int)}: Wait while the current web element is enabled in the page.</li>
+ * <li>{@link #waitWhileEnabled(int,boolean)}: Wait while the current web element is enabled in the page.</li>
+ * <li>{@link #waitWhileHasText(int)}: Wait until the current web element has text visible.</li>
+ * <li>{@link #waitWhileHasText(int,boolean)}: Wait until the current web element has text visible.</li>
+ * <li>{@link #waitWhileNotDisplayed(int)}: Wait until the current web element gets displayed in the page.</li>
+ * <li>{@link #waitWhileNotDisplayed(int,boolean)}: Wait until the current web element gets displayed in the page.</li>
+ * <li>{@link #waitWhileNotEnabled(int)}: Wait until the current web element gets enabled in the page.</li>
+ * <li>{@link #waitWhileNotEnabled(int,boolean)}: Wait until the current web element gets enabled in the page.</li>
+ * </ul>
+ * </p>
  */
 public class WebBrowserElement implements WebElement, Locatable {
 
@@ -478,6 +564,9 @@ public void click(final boolean recovery, final boolean workaround) {
 				return;
 			}
 			catch (ElementNotInteractableException enie) {
+				if (!workaround) {
+					throw enie;
+				}
 				state = this.browser.workaroundForNotClickableException(state, this, enie);
 			}
 			catch (WebDriverException wde) {
@@ -1090,7 +1179,9 @@ public WebBrowserElement getFollowingSibling() throws WaitElementTimeoutError {
  * with the given tag.
  */
 public WebBrowserElement getFollowingSibling(final String tag) throws WaitElementTimeoutError {
-	return waitShortlyForMandatoryDisplayedChildElement(By.xpath("./following-sibling::"+tag));
+	By siblingLocator = By.xpath("./following-sibling::"+tag);
+	return this.browser.waitForElement(this, siblingLocator, /*fail: */true, SHORT_TIMEOUT, /*displayed:*/true, /*single:*/false);
+
 }
 
 /**
@@ -1214,6 +1305,16 @@ public WebBrowserElement getParent() {
 @Override
 public Rectangle getRect() {
 	return new Rectangle(getLocation(), getSize());
+}
+
+/**
+ * Find the relative element with given locator from current web element context.
+ *
+ * @param relativeLocator The locator of the searched element relatively to current context
+ * @return Found element or <code>null</code> if no element is found
+ */
+public WebBrowserElement getRelative(final By relativeLocator) {
+	return new WebBrowserElement(this.browser, this.context, relativeLocator);
 }
 
 @Override
@@ -1904,6 +2005,21 @@ public void rightClick() {
 public void scrollIntoView() {
 	debugPrintEnteringMethod();
 	executeScript("scrollIntoView( true );");
+}
+
+/**
+ * Scroll the page to the given element.
+ * <p>
+ * This is a no-op if the web element is already visible in the browser view.
+ * </p><p>
+ * Note that when element is actually scrolled to the view (ie. if it was not
+ * visible in the view prior the call), we will use the behavior property set to
+ * smooth scrolling option, and the block property set to nearest value.
+ * </p>
+ */
+public void scrollSmoothIntoView() {
+	debugPrintEnteringMethod();
+	executeScript("scrollIntoView( {behavior: \"smooth\", block: \"nearest\"} )");
 }
 
 /**

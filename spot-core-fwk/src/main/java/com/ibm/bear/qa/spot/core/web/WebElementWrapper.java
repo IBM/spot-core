@@ -71,6 +71,7 @@ abstract public class WebElementWrapper extends WebPageElement {
  * Using this constructor assume that the element is <b>not </b> in any frame.
  * </p>
  * @param parent The element wrapper in which the element is located
+ * @param locator The locator to find the element relatively to the parent
  */
 public WebElementWrapper(final WebElementWrapper parent, final By locator) {
 	this(parent, locator, null);
@@ -80,6 +81,9 @@ public WebElementWrapper(final WebElementWrapper parent, final By locator) {
  * Wrap an element found in given frame of given parent page using given locator.
  *
  * @param parent The element wrapper in which page the element is located
+ * @param locator The locator to find the element relatively to the parent
+ * @param frame The frame in which the element is located. If <code>null</code>
+ * then the element is directly located in the given page.
  */
 public WebElementWrapper(final WebElementWrapper parent, final By locator, final WebBrowserFrame frame) {
 	this(parent.getPage(), frame==null ? parent.element.waitShortlyForMandatoryDisplayedChildElement(locator) : parent.getPage().waitForMandatoryDisplayedElement(locator), frame);
@@ -131,6 +135,7 @@ public WebElementWrapper(final WebPage page) {
  * Using this constructor assume that the element is <b>not </b> in any frame.
  * </p>
  * @param page The page in which the element is located
+ * @param locator The locator to find the element in the page
  */
 public WebElementWrapper(final WebPage page, final By locator) {
 	super(page);
@@ -141,9 +146,10 @@ public WebElementWrapper(final WebPage page, final By locator) {
 /**
  * Wrap an element found in given frame of given page using given locator.
  *
+ * @param page The page in which the frame is located
+ * @param locator The locator to find the element in the page
  * @param frame The frame in which the element is located. If <code>null</code>
  * then the element is directly located in the given page.
- * @param page The page in which the frame is located
  */
 public WebElementWrapper(final WebPage page, final By locator, final WebBrowserFrame frame) {
 	super(page, frame);

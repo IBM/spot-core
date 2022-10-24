@@ -968,6 +968,24 @@ public static String getTextFromList(final Object[] objects, final String separa
 }
 
 /**
+ * Tells whether the current OS is a Mac or not.
+ *
+ * @return <code>true</code> if OS is Mac, <code>false</code> otherwise
+ */
+public static boolean isMacOs() {
+	return getOsName().equals("mac");
+}
+
+/**
+ * Tells whether the current OS is a Windows or not.
+ *
+ * @return <code>true</code> if OS is Windows, <code>false</code> otherwise
+ */
+public static boolean isWinOs() {
+	return getOsName().equals("win");
+}
+
+/**
  * Pause during the given milli-seconds time.
  *
  * @param millisecs
@@ -1237,21 +1255,20 @@ public static List<String> toStrings(final List<? extends WebElement> elements, 
 }
 
 /**
- * Wait the given amount of seconds and print a dot in the console
- * every thenth of the global time.
+ * Wait the given amount of seconds and print a dot in the console every 10 seconds.
  * <p>
- * For example, if <code>seconds=60</code> and <code>period=10</code>
- * then, the method will wait one minute and print a dot in the console every 6 seconds.
+ * For example, if <code>seconds=60</code> then the method will wait one minute
+ * while printing a dot in the console every 10 seconds.
  * </p>
  * @param seconds The total number of seconds to wait before returning
  */
 public static void waitSeveralSeconds(final int seconds) {
-	waitSeveralSeconds(seconds, seconds/10);
+	waitSeveralSeconds(seconds, 10);
 }
 
 /**
  * Wait the given amount of seconds and print a dot in the console
- * every period of seconds.
+ * every given period of seconds.
  *
  * @param seconds The total number of seconds to wait before returning
  * @param period The period of dot printing. No dot are printed if this number is less or equals to 0

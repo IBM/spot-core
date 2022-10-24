@@ -33,21 +33,44 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
 /**
  * Manage a list of tests to execute in a scenario step.
  * <p>
- * Scenario may have several steps which are defined using a specific {@link ScenarioRunner}
- * and a list of classes as argument of {@link SuiteClasses} annotation.
+ * Scenario may have several steps which are defined using a specific {@link ScenarioRunner} and a
+ * list of classes as argument of {@link SuiteClasses} annotation.
  * </p><p>
  * The step provides easy access to scenario configuration and data through its
  * {@link ScenarioExecution} stored instance.
  * </p><p>
- * This step is connected to a web page. The page might be stored by the step
- * when loaded. If so, it's automatically stored to the {@link ScenarioExecution}
- * at the end of the test execution to allow next test or step to have the last
- * page used by previous step in hand when starting.
+ * This step is connected to a web page. The page might be stored by the step when loaded. If so,
+ * it's automatically stored to the {@link ScenarioExecution} at the end of the test execution to
+ * allow next test or step to have the last page used by previous step in hand when starting.
  * </p><p>
- * The step also stores all workaround used during the tests and can provide
- * information about them.
+ * The step also stores all workaround used during the tests and can provide information about them.
  * </p>
  * Design: To be finalized
+ * <p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #closePage(User,Class)}: Close the opened page of given class for the given user.</li>
+ * <li>{@link #getCurrentPage(User)}: Return current page displayed in the browser associated with the given user.</li>
+ * <li>{@link #getData()}: Return the scenario data to use during the run.</li>
+ * <li>{@link #getTopology()}: Return the scenario topology used during the run.</li>
+ * <li>{@link #setUpStep()}: Setup for each step of the scenario.</li>
+ * <li>{@link #setUpTest()}: Setup executed at the beginning of each test step.</li>
+ * <li>{@link #sleepIfSlowServer(int)}: Sleep for a given number of seconds if the server is considered slow.</li>
+ * <li>{@link #tearDownTest()}: Tear down executed at the end of each test step.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #deleteAllCookies(User)}: Delete all cookies on browser used by given user.</li>
+ * <li>{@link #getBrowserManager()}: Return the browser manager.</li>
+ * <li>{@link #getBrowserOpened(User)}: Get the browser used and opened for the given user..</li>
+ * <li>{@link #getConfig()}: Return the scenario configuration to use during the run.</li>
+ * <li>{@link #getOperation(Class)}: Return the operation corresponding to the given class.</li>
+ * <li>{@link #getScenarioExecution()}: Return the scenario execution.</li>
+ * <li>{@link #isStoringOperations()}: Tells whether current step stores operations used in during its tests execution.</li>
+ * <li>{@link #runsWithFirefoxBrowser()}: Tell whether test execution is using Firefox browser or not.</li>
+ * </ul>
+ * </p>
  */
 public abstract class ScenarioStep {
 
@@ -77,6 +100,9 @@ public abstract class ScenarioStep {
 	// Step info
 	protected static boolean FIRST_TEST = true;
 
+	/**
+	 * Setup for each step of the scenario.
+	 */
 	@BeforeClass
 	public static void setUpStep() {
 		FIRST_TEST = true;
@@ -87,6 +113,41 @@ public abstract class ScenarioStep {
 
 	@Rule
 	public ScenarioStepRule stepRule = new ScenarioStepRule();
+
+/**
+ * Close the opened page of given class for the given user.
+ * <p>
+ * It's a no-op if there's no existing such page for the given user.
+ * </p>
+ *
+ * @param user The user
+ * @param expectedPageClass The page expected class
+ * @return <code>true</code> if a browser has an opened page on the given user
+ * and it successfully closed it, <code>false</code> otherwise
+ */
+@SuppressWarnings("rawtypes")
+public boolean closePage(final User user, final Class<? extends WebPage> expectedPageClass) {
+	WebBrowser browser = getBrowserManager().getBrowser(user, false);
+	if (browser != null) {
+		WebPage currentPage = browser.getPage(expectedPageClass);
+		if (currentPage != null && user.equals(currentPage.getUser())) {
+			if (expectedPageClass != null) {
+				Class pageClass = currentPage.getClass();
+				while (pageClass != null) {
+					if (pageClass.equals(expectedPageClass)) {
+						browser.closePage(currentPage);
+						return true;
+					}
+					pageClass = pageClass.getSuperclass();
+				}
+				return false;
+			}
+			browser.closePage(currentPage);
+			return true;
+		}
+	}
+	return false;
+}
 
 /**
  * Delete all cookies on browser used by given user.
@@ -112,6 +173,8 @@ protected BrowsersManager getBrowserManager() {
 }
 
 /**
+ * Get the browser used and opened for the given user..
+ *
  * @see BrowsersManager#getBrowserOpened(User)
  */
 protected WebBrowser getBrowserOpened(final User user) {

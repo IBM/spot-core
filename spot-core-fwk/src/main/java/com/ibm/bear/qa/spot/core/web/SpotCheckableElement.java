@@ -12,9 +12,6 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.web;
 
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintEnteringMethod;
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.pause;
-
 import org.openqa.selenium.By;
 
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
@@ -187,6 +184,7 @@ public SpotCheckableElement(final WebPage page, final WebBrowserElement wwElemen
 
 @Override
 public void select() throws ScenarioFailedError {
+	/* TODO Remove the entire method after having been 100% sure that this change has no impact
 	if (!isSelected()) {
 		debugPrintEnteringMethod();
 		pause(250);
@@ -194,5 +192,7 @@ public void select() throws ScenarioFailedError {
 		pause(250);
 		waitUntilSelection(true, true);
 	}
+	*/
+	super.select();
 }
 }

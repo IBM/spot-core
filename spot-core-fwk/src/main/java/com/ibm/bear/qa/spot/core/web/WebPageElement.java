@@ -545,7 +545,7 @@ public WebBrowserElement waitForMandatoryDisplayedPageElementWithTimeout(final B
 /**
  * @see WebPage#waitForMandatoryElement(By)
  */
-protected WebBrowserElement waitForMandatoryPageElement(final By locator) {
+public WebBrowserElement waitForMandatoryPageElement(final By locator) {
 	return this.page.waitForMandatoryElement(locator);
 }
 

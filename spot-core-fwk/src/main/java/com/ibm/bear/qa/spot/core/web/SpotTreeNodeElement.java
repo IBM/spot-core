@@ -30,6 +30,7 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioImplementationError;
  * <ul>
  * <li>{@link #collapse()}: Collapse the current node.</li>
  * <li>{@link #expand()}: Expand the current node.</li>
+ * <li>{@link #getAllLabels()}: Return all nodes labels of the current node.</li>
  * <li>{@link #getChildrenLabels()}: Return the labels list of current node children.</li>
  * <li>{@link #getLabel()}: Return the node label.</li>
  * <li>{@link #getNode(String)}: Get the node for the given path.</li>
@@ -46,22 +47,21 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioImplementationError;
  * </p><p>
  * This class also defines following internal API methods:
  * <ul>
- * <li>{@link #getAllLeafNodes()}: Return all leaves of the current folder.</li>
- * <li>{@link #getAllLeavesPath()}: Return path for all leaves of the current folder.</li>
- * <li>{@link #getAllNodes()}: Return all nodes of the current folder.</li>
- * <li>{@link #getChildren()}: Returns the folder's children.</li>
- * <li>{@link #getChildrenNodes()}: Return children nodes of the current folder.</li>
- * <li>{@link #getPath()}: Returns the path of the current folder.</li>
+ * <li>{@link #getAllLeafNodes()}: Return all leaf nodes of the current node.</li>
+ * <li>{@link #getAllLeavesPath()}: Return paths for all leaves of the current node.</li>
+ * <li>{@link #getChildren()}: Returns the node's children.</li>
+ * <li>{@link #getChildrenNodes()}: Return children nodes of the current node.</li>
+ * <li>{@link #getPath()}: Returns the path of the current node.</li>
  * <li>{@link #getText()}: Return the text of the expandable element.</li>
- * <li>{@link #getVisibleChildren()}: Returns the folder's children.</li>
+ * <li>{@link #getVisibleChildren()}: Returns the node's children.</li>
  * <li>{@link #getVisibleElements()}: Return the list of visible nodes in the tree from the current node.</li>
- * <li>{@link #isExpanded()}: Returns whether the current folder is expanded or not.</li>
+ * <li>{@link #isExpanded()}: Returns whether the current node is expanded or not.</li>
  * </ul>
  * </p><p>
  * This class also defines or overrides following methods:
  * <ul>
- * <li>{@link #createChildNodeElement(WebBrowserElement)}: Creates the folder element instance from the given web element.</li>
- * <li>{@link #getChild(String)}: Returns the folder's child matching the given name.</li>
+ * <li>{@link #createChildNodeElement(WebBrowserElement)}: Create the node element instance from the given web element.</li>
+ * <li>{@link #getChild(String)}: Returns the node's child matching the given name.</li>
  * <li>{@link #getChildrenElements()}: Returns the children web elements list.</li>
  * <li>{@link #getContainerElement()}: Returns the web element containing children elements.</li>
  * <li>{@link #getExpandableElement()}: Returns the element used to expand the tree node.</li>
@@ -70,8 +70,8 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioImplementationError;
  * <li>{@link #initExpandableElement()}: Initialize the expandable element using the corresponding locator.</li>
  * <li>{@link #initRowNodeElement()}: Initialize the expandable element using the corresponding locator.</li>
  * <li>{@link #initSelectableElement()}: Initialize the expandable element using the corresponding locator.</li>
- * <li>{@link #isContainer()}: Returns whether the current folder is a container or not.</li>
- * <li>{@link #isLeaf()}: Returns whether the current folder is a leaf or not.</li>
+ * <li>{@link #isContainer()}: Returns whether the current node is a container or not.</li>
+ * <li>{@link #isLeaf()}: Returns whether the current node is a leaf or not.</li>
  * </ul>
  * </p>
  */
@@ -266,12 +266,8 @@ public List<String> getAllLeavesPath() {
 	return allPaths;
 }
 
-/**
- * Return all nodes of the current node.
- *
- * @return All nodes as a {@link List} of {@link String}.
- */
-public List<String> getAllNodes() {
+@Override
+public List<String> getAllLabels() {
 
 	// Init list
 	List<String> allNodes = new ArrayList<String>();
@@ -285,7 +281,7 @@ public List<String> getAllNodes() {
     	allNodes.add(child.getText());
 
 		if (child.isContainer()) {
-	    	allNodes.addAll(child.getAllNodes());
+	    	allNodes.addAll(child.getAllLabels());
 	    }
     }
 
@@ -714,7 +710,7 @@ public SpotTreeNode searchNode(final String node) throws ScenarioImplementationE
 
 @Override
 public void select() {
-	getSelectableElement().select();
+	getSelectableElement().clickAndWaitForSelection();
 }
 
 @Override
@@ -722,7 +718,7 @@ public SpotTreeNode selectNode(final String nodePath) throws ScenarioFailedError
 	debugPrintEnteringMethod("nodePath", nodePath);
 	SpotTreeNode treeNode = getNode(nodePath);
 	if (treeNode == null) {
-		throw new ScenarioFailedError("No node '"+nodePath+" has been found in the current node tree '"+getLabel()+"'.");
+		throw new ScenarioFailedError("No node '"+nodePath+"' has been found in the current node tree '"+getLabel()+"'.");
 	}
 	treeNode.select();
 	return treeNode;

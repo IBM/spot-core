@@ -17,6 +17,7 @@ import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
 import java.util.*;
 
+import org.junit.internal.runners.ErrorReportingRunner;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.manipulation.Filter;
@@ -67,11 +68,35 @@ public abstract class ScenarioRunner extends Suite {
 	final static String LAST_TEST = getParameterValue("lastTest");
 	final static String TESTS = getParameterValue("tests");
 	final static List<String> TESTS_LIST = new ArrayList<String>();
+	final static List<String> TESTS_STEPS_LIST = new ArrayList<String>();
 	static {
-		if (TESTS != null) {
-			StringTokenizer tokenizer = new StringTokenizer(TESTS, ",");
+		tokenizeTestsList("tests", TESTS_LIST, TESTS_STEPS_LIST);
+	}
+	final static String IGNORE_TESTS = getParameterValue("ignore.tests");
+	final static List<String> IGNORE_TESTS_LIST = new ArrayList<String>();
+	final static List<String> IGNORE_TESTS_STEPS_LIST = new ArrayList<String>();
+	static {
+		tokenizeTestsList("ignore.tests", IGNORE_TESTS_LIST, IGNORE_TESTS_STEPS_LIST);
+	}
+
+	private static void tokenizeTestsList(final String param, final List<String> tests, final List<String> testsSteps) throws ScenarioFailedError {
+		String value = getParameterValue(param);
+		if (value != null) {
+			StringTokenizer tokenizer = new StringTokenizer(value, ",");
 			while (tokenizer.hasMoreTokens()) {
-				TESTS_LIST.add(tokenizer.nextToken());
+				String[] items = tokenizer.nextToken().split(":|\\.");
+				switch (items.length) {
+					case 1:
+						tests.add(items[0]);
+						testsSteps.add("*");
+						break;
+					case 2:
+						tests.add(items[1]);
+						testsSteps.add(items[0]);
+						break;
+					default:
+						throw new ScenarioFailedError("Invalid '"+param+"' property content: "+value);
+				}
 			}
 		}
 	}
@@ -88,7 +113,7 @@ public abstract class ScenarioRunner extends Suite {
 	protected Description firstTest = null, lastTest = null;
 
 public ScenarioRunner(final Class< ? > klass, final RunnerBuilder builder) throws InitializationError {
-    super(klass, builder);
+	super(klass, builder);
 
 	// Start execution
 	startExecution();
@@ -99,8 +124,8 @@ public ScenarioRunner(final Class< ? > klass, final RunnerBuilder builder) throw
 	// Show Selenium and Browser information
 	getScenarioExecution().showInfo();
 
-    // Build class filter
-    Filter filter = new Filter() {
+	// Build class filter
+	Filter filter = new Filter() {
 
 		@Override
 		public String describe() {
@@ -138,10 +163,10 @@ public ScenarioRunner(final Class< ? > klass, final RunnerBuilder builder) throw
 
 	// Filter steps and tests
 	try {
-	    filter(filter);
-    } catch (NoTestsRemainException e) {
-	    e.printStackTrace();
-    }
+		filter(filter);
+	} catch (NoTestsRemainException e) {
+		e.printStackTrace();
+	}
 }
 
 /**
@@ -172,15 +197,16 @@ public void run(final RunNotifier notifier) {
 
 	// Propagate config to step runners
 	for (Runner runner : getChildren()) {
-		try {
-			ScenarioStepRunner stepRunner = (ScenarioStepRunner) runner;
-			// Stored scenario execution depends on step runner scenario
-			ScenarioExecution stepScenarioExecution = this.scenarioExecution.getStepScenarioExecution(stepRunner.getScenarioExecution());
-			stepRunner.setScenarioExecution(stepScenarioExecution);
+		// Check if there was an error while creating the step runner...
+		if (runner instanceof ErrorReportingRunner) {
+			ErrorReportingRunner error = (ErrorReportingRunner) runner;
+			Description description = error.getDescription();
+			throw new ScenarioFailedError(description.getChildren().get(0).getDisplayName());
 		}
-		catch (@SuppressWarnings("unused") ClassCastException cce) {
-			// Fail silently, error will be notified while executing super method
-		}
+		// Stored scenario execution depends on step runner scenario
+		ScenarioStepRunner stepRunner = (ScenarioStepRunner) runner;
+		ScenarioExecution stepScenarioExecution = this.scenarioExecution.getStepScenarioExecution(stepRunner.getScenarioExecution());
+		stepRunner.setScenarioExecution(stepScenarioExecution);
 	}
 
 	// Check synchronization
@@ -291,16 +317,16 @@ boolean shouldRun(final Description description) {
 		// Class description
 		if (stepShouldRun(description)) {
 			if (this.firstStep == null) {
-	        	this.firstStep = description;
-	        }
+				this.firstStep = description;
+			}
 			return true;
 		}
 	} else {
 		// Method description
 		if (testShouldRun(description)) {
 			if (this.firstTest == null) {
-	        	this.firstTest = description;
-	        }
+				this.firstTest = description;
+			}
 			if (description.getAnnotation(DependsOn.class) != null) {
 				this.scenarioExecution.shouldSynchronize = true;
 			}
@@ -319,48 +345,65 @@ boolean shouldRun(final Description description) {
  * otherwise.
  */
 protected boolean testShouldRun(final Description methodDescription) {
-	if (this.firstStep.getClassName().equals(methodDescription.getClassName())) {
-		String testClassSimpleName = getClassSimpleName(methodDescription.getClassName());
-		String testName = methodDescription.getMethodName();
-		final String testQualifiedName = testClassSimpleName+"."+testName;
-		if (TESTS_LIST.size() == 0) {
-			if (this.firstTest == null && FIRST_TEST != null && FIRST_TEST.length() != 0) {
-				if (!testName.contains(FIRST_TEST)) {
-					println("Filtering " + testQualifiedName + " due to 'firstTest' argument set to \"" + FIRST_TEST + "\"");
-					this.filteredTests.add(methodDescription);
-					return false;
-				}
-			}
-			if (this.lastTest == null) {
-				if (LAST_TEST != null && LAST_TEST.length() != 0) {
-					if (testName.contains(LAST_TEST)) {
-						this.lastTest = methodDescription;
-					}
-				}
-			} else {
-				println("Filtering " + testQualifiedName + " due to 'lastTest' argument set to \"" + LAST_TEST + "\"");
+	String testClassSimpleName = getClassSimpleName(methodDescription.getClassName());
+	String testName = methodDescription.getMethodName();
+	final String testQualifiedName = testClassSimpleName+"."+testName;
+	if (TESTS_LIST.size() == 0) {
+		if (this.firstTest == null && FIRST_TEST != null && FIRST_TEST.length() != 0) {
+			if (!testName.contains(FIRST_TEST)) {
+				println("Filtering " + testQualifiedName + " due to 'firstTest' argument set to \"" + FIRST_TEST + "\"");
 				this.filteredTests.add(methodDescription);
 				return false;
 			}
+		}
+		if (this.lastTest == null) {
+			if (LAST_TEST != null && LAST_TEST.length() != 0) {
+				if (testName.contains(LAST_TEST)) {
+					this.lastTest = methodDescription;
+				}
+			}
 		} else {
-			boolean found = false;
-			for (String test: TESTS_LIST) {
-				if (testName.contains(test)) {
-					if (methodDescription.getAnnotation(DependsOn.class) != null) {
-						String message = "Cannot insert "+testQualifiedName+" in tests list because it depends on another test.";
-						System.err.println(message);
-						throw new ScenarioFailedError(message);
-					}
-					/* Having the test not re-runnable does not mean we can't start from it...
-					 * We should introduce a specific annotation to prevent test to start from a test (e.g. NotStartable)
-					if (methodDescription.getAnnotation(NotRerunnable.class) != null) {
-						String message = "Cannot insert "+testQualifiedName+" in tests list because it's not rerunnable.";
-						System.err.println(message);
-						throw new ScenarioFailedError(message);
-					}
-					*/
-					found = true;
+			println("Filtering " + testQualifiedName + " due to 'lastTest' argument set to \"" + LAST_TEST + "\"");
+			this.filteredTests.add(methodDescription);
+			return false;
+		}
+	} else {
+		boolean found = false;
+		for (int i=0; i<TESTS_LIST.size(); i++) {
+			String testStep = TESTS_STEPS_LIST.get(i);
+			String test = TESTS_LIST.get(i);
+			if ((test.equals("*") || testName.contains(test)) && (testStep.equals("*") || testClassSimpleName.contains(testStep))) {
+				if (methodDescription.getAnnotation(DependsOn.class) != null) {
+					String message = "Cannot insert "+testQualifiedName+" in tests list because it depends on another test.";
+					System.err.println(message);
+					throw new ScenarioFailedError(message);
+				}
+				/* Having the test not re-runnable does not mean we can't start from it...
+				 * We should introduce a specific annotation to prevent test to start from a test (e.g. NotStartable)
+				if (methodDescription.getAnnotation(NotRerunnable.class) != null) {
+					String message = "Cannot insert "+testQualifiedName+" in tests list because it's not rerunnable.";
+					System.err.println(message);
+					throw new ScenarioFailedError(message);
+				}
+				*/
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			boolean testStepClass = false;
+			for (String testStep: TESTS_STEPS_LIST) {
+				if (testStep.equals("*") || testClassSimpleName.contains(testStep)) {
+					testStepClass = true;
 					break;
+				}
+			}
+			if (!testStepClass) {
+				for (String step: STEPS_LIST) {
+					if (testClassSimpleName.contains(step)) {
+						found = true;
+						break;
+					}
 				}
 			}
 			if (!found) {
@@ -369,23 +412,41 @@ protected boolean testShouldRun(final Description methodDescription) {
 				return false;
 			}
 		}
-		if (this.firstTest == null) {
-			this.firstTest = methodDescription;
-			if (FIRST_TEST != null && FIRST_TEST.length() != 0) {
-				if (methodDescription.getAnnotation(DependsOn.class) != null) {
-					String message = "Cannot start scenario from test "+testQualifiedName+" because it depends on another test.";
-					System.err.println(message);
-					throw new ScenarioFailedError(message);
+	}
+	if (IGNORE_TESTS_LIST.size() > 0) {
+		for (int i=0; i<IGNORE_TESTS_LIST.size(); i++) {
+			String testStep = IGNORE_TESTS_STEPS_LIST.get(i);
+			String test = IGNORE_TESTS_LIST.get(i);
+			if ((test.equals("*") || testName.contains(test)) && (testStep.equals("*") || testClassSimpleName.contains(testStep))) {
+				// Test has to be ignored
+				if (TESTS_LIST.size() > 0) {
+					println("WARNING: test "+testQualifiedName+" is both specified to be run in 'tests' parameter and to be ignored:");
+					println("	-run through 'tests' parameter = "+TESTS);
+					println("	-ignored through 'ignore.tests' parameter = "+IGNORE_TESTS);
+					println("	Priority has been given to ignore parameter, hence it won't be run...");
 				}
-				/* Having the test not re-runnable does not mean we can't start from it...
-				 * We should introduce a specific annotation to prevent test to start from a test (e.g. NotStartable)
-				if (methodDescription.getAnnotation(NotRerunnable.class) != null) {
-					String message = "Cannot start scenario from test "+testQualifiedName+" because it's not rerunnable.";
-					System.err.println(message);
-					throw new ScenarioFailedError(message);
-				}
-				*/
+				println("Filtering " + testQualifiedName + " due to 'ignore.tests' argument set to \"" + IGNORE_TESTS + "\"");
+				this.filteredTests.add(methodDescription);
+				return false;
 			}
+		}
+	}
+	if (this.firstTest == null) {
+		this.firstTest = methodDescription;
+		if (FIRST_TEST != null && FIRST_TEST.length() != 0) {
+			if (methodDescription.getAnnotation(DependsOn.class) != null) {
+				String message = "Cannot start scenario from test "+testQualifiedName+" because it depends on another test.";
+				System.err.println(message);
+				throw new ScenarioFailedError(message);
+			}
+			/* Having the test not re-runnable does not mean we can't start from it...
+			 * We should introduce a specific annotation to prevent test to start from a test (e.g. NotStartable)
+			if (methodDescription.getAnnotation(NotRerunnable.class) != null) {
+				String message = "Cannot start scenario from test "+testQualifiedName+" because it's not rerunnable.";
+				System.err.println(message);
+				throw new ScenarioFailedError(message);
+			}
+			*/
 		}
 	}
 	if (this.firstTest == null) {

@@ -35,7 +35,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * This class is responsible of storing the browser instances and retrieve them
  * when requested. The current model is to have one different browser per user.
  * </p><p>
- * Sub-class has to implement {@link #getNewBrowser()} method in order
+ * Sub-class has to implement {@link #getNewBrowser(User)} method in order
  * to return a specific kind of browser specified by {@link BrowserConstants#BROWSER_KIND_ID}
  * property.
  * </p><p>
@@ -52,10 +52,10 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * <li>{@link #getDownloadDir()}: Close all browsers.</li>
  * <li>{@link #getLocale()}: Close all browsers.</li>
  * <li>{@link #getPath()}: Close all browsers.</li>
- * <li>{@link #getProfile()}: Close all browsers.</li>
+ * <li>{@link #getProfile(User)}: Close all browsers.</li>
  * <li>{@link #getType()}: Close all browsers.</li>
  * <li>{@link #openNewBrowser(User)}: Close all browsers.</li>
- * <li>{@link #printBrowserInfo(WebBrowser)}: Close all browsers.</li>
+ * <li>{@link #printBrowserInfo(WebBrowser, User)}: Close all browsers.</li>
  * <li>{@link #shutdown()}: Close all browsers.</li>
  * </ul>
  * </p><p>
@@ -90,6 +90,27 @@ public static BrowsersManager getInstance() {
  * Private constructor in order to use singleton pattern.
  */
 private BrowsersManager() {}
+
+/**
+ * Close the browser associated with the given user.
+ */
+public void closeAll() {
+	debugPrintEnteringMethod();
+	Set<WebBrowser> uniqueBrowsers = new HashSet<>(this.browsers.values());
+	for (WebBrowser browser: uniqueBrowsers) {
+		List<User> toBeRemoved = new ArrayList<>();
+		for (User user: this.browsers.keySet()) {
+			if (browser == this.browsers.get(user)) { // == is intentionnal
+				toBeRemoved.add(user);
+			}
+		}
+		for (User user: toBeRemoved) {
+			this.browsers.remove(user);
+		}
+		browser.close();
+	}
+	this.currentBrowser = null;
+}
 
 /**
  * Close the browser associated with the given user.
@@ -140,11 +161,11 @@ public WebBrowser getBrowser(final User user, final boolean open) {
 		debugPrintln("		  -> No browser found for given user...");
 		if (open) {
 			debugPrintln("		  -> Open a new browser...");
-			this.currentBrowser = getNewBrowser();
+			this.currentBrowser = getNewBrowser(user);
 		}
 		else if (this.currentBrowser == null) {
 			debugPrintln("		  -> There's no current browser, hence we need to open a new one...");
-			this.currentBrowser = getNewBrowser();
+			this.currentBrowser = getNewBrowser(user);
 		}
 		if (user != null) {
 			this.browsers.put(user, this.currentBrowser);
@@ -220,17 +241,17 @@ public String getLocale() {
 	return getParameterValue(BROWSER_LOCALE_ID);
 }
 
-private WebBrowser getNewBrowser() {
+private WebBrowser getNewBrowser(final User user) {
 	final int type = getType();
 	WebBrowser newBrowser;
 	switch (type) {
 		case BROWSER_KIND_FIREFOX:
-			newBrowser = new FirefoxBrowser(this);
+			newBrowser = new FirefoxBrowser(this, user);
 			break;
 		case BROWSER_KIND_IEXPLORER:
 			throw new RuntimeException("Internet Explorer is no longer supported use MS Edge instead.");
 		case BROWSER_KIND_GCHROME:
-			newBrowser = new GoogleChromeBrowser(this);
+			newBrowser = new GoogleChromeBrowser(this, user);
 			break;
 		case BROWSER_KIND_MSEDGE:
 			newBrowser = new EdgeBrowser(this);
@@ -241,7 +262,7 @@ private WebBrowser getNewBrowser() {
 		default:
 			throw new RuntimeException("'"+type+"' is not a know browser kind, only 1 (Firefox), 3 (Chrome), 4 (Edge) and 5 (Safari) are currently supported");
 	}
-	printBrowserInfo(newBrowser);
+	printBrowserInfo(newBrowser, user);
 	newBrowser.deleteAllCookies();
 	return newBrowser;
 }
@@ -259,13 +280,20 @@ public String getPath() {
 }
 
 /**
- * Return the browser profile name.
+ * Return the browser profile name for the given user.
  *
+ * @param user The optional user the profile is associated with, might be <code>null</code>
  * @return The profile name to be used when creating a browser instance
  * or <code>null</code> if no specific profile has to be used
  */
-public String getProfile() {
-	return getParameterValue(BROWSER_PROFILE_ID);
+public String getProfile(final User user) {
+	String profile;
+	if (user != null && getParameterBooleanValue(BROWSER_SPECIFIC_USER_PROFILE)) {
+		profile = user.getId();
+	} else {
+		profile = getParameterValue(BROWSER_PROFILE_ID);
+	}
+	return profile;
 }
 
 /**
@@ -329,10 +357,26 @@ public boolean isHeadless() {
  * <p>
  * Default is not headless.
  * </p>
+ * @param user The optional user the profile is associated with, might be <code>null</code>
  * @return <code>true</code> if browser is headless, <code>false</code> otherwise
  */
-public boolean isInPrivateMode() {
-	return getParameterBooleanValue(BROWSER_PRIVATE_ID);
+public boolean isInPrivateMode(final User user) {
+	if (getParameterBooleanValue(BROWSER_PRIVATE_ID)) {
+		return true;
+	}
+	if (user == null) {
+		return false;
+	}
+	String browserPrivateUsers = getParameterValue(BROWSER_PRIVATE_USERS);
+	if (browserPrivateUsers != null) {
+		String[] privateUsers = browserPrivateUsers.split(" ,");
+		for (String privateUser: privateUsers) {
+			if (user.getId().equals(privateUser)) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 /**
@@ -361,7 +405,16 @@ public WebBrowser openNewBrowser(final User user) {
  * @param user
  */
 public void remove(final User user) {
-	this.browsers.remove(user);
+	WebBrowser userBrowser = this.browsers.remove(user);
+	if (this.currentBrowser == userBrowser) { // == is intentional!
+		for (WebBrowser browser: this.browsers.values()) {
+			if (browser == userBrowser) { // == is intentional!
+				// We've found another user using current browser hence do not reset it
+				return;
+			}
+		}
+		this.currentBrowser = null;
+	}
 }
 
 /**
@@ -375,12 +428,12 @@ public void remove(final User user) {
  * </ul>
  * </p>
  */
-void printBrowserInfo(final WebBrowser browser) {
+void printBrowserInfo(final WebBrowser browser, final User user) {
 	println("Browser information:");
 	println("	- " + browser.getName()+" version: "+browser.getVersion());
 	println("	- " + browser.getDriverInfo());
 	println("	- Browser is headless = " + isHeadless());
-	println("	- Browser in private mode = " + isInPrivateMode());
+	println("	- Browser in private mode = " + isInPrivateMode(user));
 	println("	- Browser window size = " + browser.getWindowSize());
 	println("	- Browser window position = " + browser.getWindowPosition());
 }

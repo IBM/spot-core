@@ -204,12 +204,31 @@ public final SpotAbstractLoginOperation getLoginOperation(final WebPage page, fi
 		return null;
 	}
 	try {
-		Constructor<? extends SpotAbstractLoginOperation> constructor = this.loginOperationClass.getConstructor(WebPage.class, User.class);
+		Constructor<? extends SpotAbstractLoginOperation> constructor = getLoginOperationClassForUser(appUser).getConstructor(WebPage.class, User.class);
 		return constructor.newInstance(page, appUser);
 	}
 	catch (Exception ex) {
 		throw new ScenarioImplementationError(ex);
 	}
+}
+
+/**
+ * Return the login operation class which should be used with the current application
+ * for the given user.
+ * <p>
+ * This method might return <code>null</code> in case no login operation is
+ * necessary to access the application (typically when using basic auth in
+ * application URL).
+ * </p><p>
+ * Note that default is the login operation class stored when creating the application
+ * Subclasses might want to override this behavior.
+ * </p>
+ * @param user The user which needs to be logged to the application
+ * @return The login operation class to be used or <code>null</code> if there's no
+ * necessary login operation
+ */
+public Class< ? extends SpotAbstractLoginOperation> getLoginOperationClassForUser(@SuppressWarnings("unused") final User user) {
+	return this.loginOperationClass;
 }
 
 /**
@@ -277,7 +296,7 @@ protected String getPageUrlForUser(final URL pageUrl, final String path, final U
 	if (pageUrl.getRef() != null) {
 		newLocation += "#" + pageUrl.getRef();
 	}
-	if (user != null && this.loginOperationClass == null && !isUserConnected(user)) {
+	if (user != null && getLoginOperationClassForUser(user) == null && !isUserConnected(user)) {
 		newLocation = pageUrl.getProtocol()+"://"+user.getId()+":"+user.getPassword()+"@"+newLocation.substring(newLocation.indexOf("://")+3);
 	}
 	return newLocation;
@@ -445,6 +464,18 @@ public boolean logout(final User user) {
 		}
 	}
 	return false;
+}
+
+/**
+ * Return whether login operation of the the given application for the given user match current one.
+ *
+ * @param app The application to match
+ * @param user The user to use
+ * @return <code>true</code> if the login operation matches, <code>false</code> otherwise
+ */
+boolean matchApplicationLoginOperationForUser(final Application app, final User user) {
+	return this != app  // != is intentional
+		&& getLoginOperationClassForUser(user) == app.getLoginOperationClassForUser(user); // == is intentional
 }
 
 /**

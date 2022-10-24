@@ -381,7 +381,8 @@ protected int openDialogTimeout() {
  * Get the element on an already opened dialog.
  *
  * @return The dialog web element
- * @throws WaitElementTimeoutError If the dialog is not opened before the given timeout
+ * @throws WaitElementTimeoutError If the dialog is not opened before the dialog
+ * timeout (see {@link #openDialogTimeout()})
  * @noreference Framework internal API, this method must not be used by any scenario test.
  */
 public WebBrowserElement opened() throws WaitElementTimeoutError {

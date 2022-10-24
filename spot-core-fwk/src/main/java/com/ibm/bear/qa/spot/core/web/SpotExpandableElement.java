@@ -57,6 +57,39 @@ public class SpotExpandableElement extends WebElementWrapper implements SpotExpa
 	protected WebBrowserElement expansionElement;
 
 /**
+ * Create an expandable element in the given parent using the wrapped web element
+ * found by the given locator.
+ * @param parent The element wrapper in which the expandable element is located
+ * @param locator The locator to find the wrapped web element
+ */
+public SpotExpandableElement(final WebElementWrapper parent, final By locator) {
+	this(parent, locator, null);
+}
+
+/**
+ * Create an expandable element in the given parent using the wrapped and expansion
+ * web elements found by the given locators.
+ * @param parent The element wrapper in which the expandable element is located
+ * @param locator The locator to find the wrapped web element
+ * @param expansionLocator The locator to find the expansion web element
+ */
+public SpotExpandableElement(final WebElementWrapper parent, final By locator, final By expansionLocator) {
+	super(parent, locator);
+	this.expansionElement = expansionLocator == null ? this.element : waitShortlyForMandatoryChildElement(expansionLocator);
+}
+
+/**
+ * Create an expandable element in the given parent using the given wrapped web
+ * element.
+ * @param parent The element wrapper in which the expandable element is located
+ * @param element The wrapped web element
+ */
+public SpotExpandableElement(final WebElementWrapper parent, final WebBrowserElement element) {
+	super(parent, element);
+	this.expansionElement = element;
+}
+
+ /**
  * Create an expandable element in the given page using the wrapped web element
  * found by the given locator.
  * <p>
