@@ -1,12 +1,15 @@
-/*
-* Licensed Materials - Property of IBM
-* 5725-B69 5655-Y17 5655-Y31 5724-X98 5724-Y15 5655-V82
-* Copyright IBM Corp. 1987, 2021. All Rights Reserved.
+/*********************************************************************
+* Copyright (c) 2012, 2023 IBM Corporation and others.
 *
-* Note to U.S. Government Users Restricted Rights:
-* Use, duplication or disclosure restricted by GSA ADP Schedule
-* Contract with IBM Corp.
-*/
+* This program and the accompanying materials are made
+* available under the terms of the Eclipse Public License 2.0
+* which is available at https://www.eclipse.org/legal/epl-2.0/
+*
+* SPDX-License-Identifier: EPL-2.0
+*
+* Contributors:
+*     IBM Corporation - initial API and implementation
+**********************************************************************/
 package com.ibm.bear.qa.spot.core.timeout;
 
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
