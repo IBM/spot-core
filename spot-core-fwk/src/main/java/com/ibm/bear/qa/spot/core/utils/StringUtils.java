@@ -14,9 +14,17 @@ package com.ibm.bear.qa.spot.core.utils;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
@@ -31,6 +39,7 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioImplementationError;
  * <li>{@link #compare(String,String,Comparison)}: Compare two given strings using the given comparison method.</li>
  * <li>{@link #convertLineDelimitersToUnix(String)}: Convert line delimiters of the given string to Unix instead of Windows.</li>
  * <li>{@link #equalsNonWhitespaces(String,String)}: Compare the two given strings ignoring all white spaces.</li>
+ * <li>{@link #filterXmlContent(String,String,String)}: Get the content of the XML given file with elements of the given tag replaced by the given string.</li>
  * <li>{@link #getSafeStringForPath(String)}: Return a string from the given one which will be safe to be used in file path.</li>
  * <li>{@link #hidePassword(String)}: Return the given password hidden.</li>
  * <li>{@link #hidePasswordInLocation(String)}: Return the location with hidden password.</li>
@@ -43,7 +52,21 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioImplementationError;
  */
 public class StringUtils {
 	/**
-	 * Enumeration of all supported text comparison for the current timeout
+	 * Enumeration of all supported comparison between two strings.
+	 * <p>
+	 * It can be:
+	 * <ul>
+	 * <li>Equals: strict equality between items using <code>equals(...)</code> method</li>
+	 * <li>StartsWith: first item starts with second item using <code>startsWith(...)</code> method</li>
+	 * <li>IsStartOf: second item starts with first item using <code>startsWith(...)</code> method</li>
+	 * <li>EndsWith: first item ends with second item using <code>endsWith(...)</code> method</li>
+	 * <li>IsEndOf: second item ends with first item using <code>endsWith(...)</code> method</li>
+	 * <li>Contains: first item contains second item using <code>contains(...)</code> method</li>
+	 * <li>IsPartOf: second item contains first item using <code>contains(...)</code> method</li>
+	 * <li>Regex: first item matches second item regular expression</li>
+	 * <li>Json_Equals: first item json tree equals second item json tree</li>
+	 * </ul>
+	 * </p>
 	 */
 	public enum Comparison {
 		/** Check that the element text is equals to the expected one. */
@@ -58,6 +81,8 @@ public class StringUtils {
 		IsEndOf("is end of"),
 		/** Check that the element text contains the expected one. */
 		Contains("contains"),
+		/** Check that the element text is a part of the expected one. */
+		IsPartOf("is part of"),
 		/** Check that the element text matches the expected regular expression. */
 		Regex("does not match regular expression"),
 		/** Check that the element text json matches the expected text json. */
@@ -73,8 +98,85 @@ public class StringUtils {
 	}
 
 	/**
- * Private class to handle digits in a {@link DigitalizedVersion digitalized version }.
- */
+	 * Class to digitalize string supposed to represent version.
+	 */
+	public static class DigitalizedVersion implements Comparable<DigitalizedVersion>{
+		VersionDigit[] digits;
+
+		public DigitalizedVersion(final String version) {
+			super();
+			digitalize(version);
+		}
+
+		@Override
+		public int compareTo(final DigitalizedVersion dv) {
+			int minLength = Integer.min(this.digits.length, dv.digits.length);
+			for (int i=0; i<minLength; i++) {
+				int digitComparison = this.digits[i].compareTo(dv.digits[i]);
+				if (digitComparison != 0) {
+					return digitComparison;
+				}
+			}
+			return 0;
+		}
+
+		/**
+		 * Compare current version to the given string one.
+		 *
+		 * @param version the version to compare to
+		 * @return  a negative integer, zero, or a positive integer as this object
+		 * is less than, equal to, or greater than the specified object.
+		 */
+		public int compareTo(final String version) {
+			return compareTo(new DigitalizedVersion(version));
+		}
+
+		/**
+		 * Digitalize the given version assuming it matches usual <code>digit(.digit)*</code> pattern.
+		 *
+		 * @param version The version text
+		 */
+		public void digitalize(final String version) {
+			StringTokenizer tk = new StringTokenizer(version, ".");
+			this.digits = new VersionDigit[tk.countTokens()];
+			int count = 0;
+			while (tk.hasMoreTokens()) {
+				this.digits[count++] = new VersionDigit(tk.nextToken());
+			}
+		}
+
+		@Override
+		public boolean equals(final Object o) {
+			if (o instanceof DigitalizedVersion) {
+				return compareTo((DigitalizedVersion)o) == 0;
+			}
+			return super.equals(o);
+		}
+
+		@Override
+		public int hashCode() {
+			int hc = 0;
+			for (int i=0; i<this.digits.length; i++) {
+				hc += this.digits[i].hashCode() * 10^i;
+			}
+			return hc;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			String separator = EMPTY_STRING;
+			for (VersionDigit digit: this.digits) {
+				builder.append(separator).append(digit.digit);
+				separator = ".";
+			}
+			return builder.toString();
+		}
+	}
+
+	/**
+	 * Private class to handle digits in a {@link DigitalizedVersion digitalized version }.
+	 */
 	private static class VersionDigit implements Comparable<VersionDigit> {
 		String digit;
 		int value;
@@ -110,75 +212,7 @@ public class StringUtils {
 		public String toString() {
 			return this.digit;
 		}
-
 	}
-
-	/**
- * Private class to digitalize string supposed to represent version.
- */
-	private static class DigitalizedVersion implements Comparable<DigitalizedVersion>{
-		VersionDigit[] digits;
-
-		DigitalizedVersion(final String version) {
-			super();
-			digitalize(version);
-		}
-
-		/**
-		 * Digitalize the given version assuming it matches usual <code>digit(.digit)*</code> pattern.
-		 *
-		 * @param version The version text
-		 */
-		private void digitalize(final String version) {
-			StringTokenizer tk = new StringTokenizer(version, ".");
-			this.digits = new VersionDigit[tk.countTokens()];
-			int count = 0;
-			while (tk.hasMoreTokens()) {
-				this.digits[count++] = new VersionDigit(tk.nextToken());
-			}
-		}
-
-		@Override
-		public int compareTo(final DigitalizedVersion dv) {
-			int minLength = Integer.min(this.digits.length, dv.digits.length);
-			for (int i=0; i<minLength; i++) {
-				int digitComparison = this.digits[i].compareTo(dv.digits[i]);
-				if (digitComparison != 0) {
-					return digitComparison;
-				}
-			}
-			return 0;
-		}
-		@Override
-		public boolean equals(final Object o) {
-			if (o instanceof DigitalizedVersion) {
-				return compareTo((DigitalizedVersion)o) == 0;
-			}
-			return super.equals(o);
-		}
-		@Override
-		public int hashCode() {
-			int hc = 0;
-			for (int i=0; i<this.digits.length; i++) {
-				hc += this.digits[i].hashCode() * 10^i;
-			}
-			return hc;
-		}
-		@Override
-		public String toString() {
-			StringBuilder builder = new StringBuilder();
-			String separator = EMPTY_STRING;
-			for (VersionDigit digit: this.digits) {
-				builder.append(separator).append(digit.digit);
-				separator = ".";
-			}
-			return builder.toString();
-		}
-	}
-
-private StringUtils() {
-	// Non instanciable class
-}
 
 /**
  * Clean the given string from any white spaces characters.
@@ -234,6 +268,8 @@ public static boolean compare(final String first, final String second, final Com
 			return second.endsWith(first);
 		case Contains:
 			return first.contains(second);
+		case IsPartOf:
+			return second.contains(first);
 		case Regex:
 			return Pattern.compile(second).matcher(first).matches();
 		case Json_Equals:
@@ -273,6 +309,58 @@ public static boolean equalsNonWhitespaces(final String str1, final String str2)
 	String nwss1 = removeWhiteCharacters(str1);
 	String nwss2 = removeWhiteCharacters(str2);
 	return nwss1.equals(nwss2);
+}
+
+private static void filterAllTagElements(final Node node, final String tag, final String replaced) {
+	NodeList nodesList = node.getChildNodes();
+	for (int idx=0; idx<nodesList.getLength(); idx++) {
+		Node childNode = nodesList.item(idx);
+		if (childNode instanceof Element) {
+			if (((Element) childNode).getTagName().toLowerCase().contains(tag)) {
+				if (replaced == null) {
+					node.removeChild(childNode);
+				} else {
+					childNode.setTextContent(replaced);
+				}
+			} else if (childNode.hasChildNodes()) {
+				filterAllTagElements(childNode, tag, replaced);
+			}
+		}
+	}
+}
+
+/**
+ * Get the content of the XML given file with elements of the given tag replaced by the given string.
+ *
+ * @param xmlContent The XML content to filter
+ * @param tag The tag to replace the content. If <code>null</code>, then no replacement is done
+ * @param replaced The string to replace the tag content. if <code>null</code>, then the element is removed
+ * @return The filtered content of the XML file
+ */
+public static String filterXmlContent(final String xmlContent, final String tag, final String replaced) {
+	try {
+		DocumentBuilder dBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		Document doc = dBuilder.parse(new ByteArrayInputStream(xmlContent.getBytes()));
+		doc.getDocumentElement().normalize();
+		doc.getChildNodes().getLength();
+		if (tag != null) {
+			filterAllTagElements(doc, tag, replaced);
+		}
+		StringWriter sw = new StringWriter();
+		TransformerFactory tf = TransformerFactory.newInstance();
+		Transformer transformer = tf.newTransformer();
+		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+		transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+		transformer.setOutputProperty(OutputKeys.INDENT, "no");
+		transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+
+		transformer.transform(new DOMSource(doc), new StreamResult(sw));
+		return sw.toString();
+	}
+	catch (Exception ex) {
+		printException(ex);
+		throw new ScenarioFailedError(ex);
+	}
 }
 
 /**
@@ -432,5 +520,9 @@ public static List<String> sortVersions(final List<String> versions) {
 		sortedVersions.add(dVersion.toString());
 	}
 	return sortedVersions;
+}
+
+private StringUtils() {
+	// Non instanciable class
 }
 }

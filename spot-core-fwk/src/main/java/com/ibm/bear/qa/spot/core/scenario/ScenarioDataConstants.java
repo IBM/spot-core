@@ -12,7 +12,8 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.scenario;
 
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.EMPTY_STRING;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.getParameterValue;
 
 public interface ScenarioDataConstants {
 
@@ -28,7 +29,7 @@ public interface ScenarioDataConstants {
 	/**
 	 * Define root directory where all data related artifacts of the test plug-in are located.
 	 */
-	String DATA_ROOT_DIR = getParametersValue("dataRootDir");
+	String DATA_ROOT_DIR = getParameterValue("dataRootDir");
 
 
 	/**

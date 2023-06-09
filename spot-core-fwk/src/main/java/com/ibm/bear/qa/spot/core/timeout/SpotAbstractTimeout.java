@@ -187,13 +187,14 @@ boolean wait(final boolean whileLoop) throws WaitElementTimeoutError {
 	long start = System.currentTimeMillis();
 	long current = start;
 	long timeout = start + this.duration;
+	long waitDuration = 0L;
 	while ((whileLoop && condition) || (!whileLoop && !condition)) {
 		current = System.currentTimeMillis();
 		if (current > timeout) {
 			if (whileLoop) {
-				debugPrintln("		  => condition is still true after "+this.duration+"ms, give up!");
+				debugPrintln("		  => condition is still true after "+waitDuration+"ms, give up!");
 			} else {
-				debugPrintln("		  => condition is still false after "+this.duration+"ms, give up!");
+				debugPrintln("		  => condition is still false after "+waitDuration+"ms, give up!");
 			}
 			if (this.fail) {
 				fail(whileLoop);
@@ -202,9 +203,14 @@ boolean wait(final boolean whileLoop) throws WaitElementTimeoutError {
 		}
 		pause(this.pause);
 		condition = getCondition();
-		debugPrintln("		  -> condition '"+getConditionLabel()+"' is "+condition+" after "+(System.currentTimeMillis()-start)+"ms...");
+		waitDuration = System.currentTimeMillis() - start;
+		debugPrintln("		  -> condition '"+getConditionLabel()+"' is "+condition+" after "+waitDuration+"ms...");
 	}
-	debugPrintln("		  => it took "+(current-start)+"ms for the condition to become "+condition+".");
+	if (waitDuration == 0) {
+		debugPrintln("		  => no wait as the condition was already "+condition+".");
+	} else {
+		debugPrintln("		  => it took "+waitDuration+"ms for the condition to become "+condition+".");
+	}
 	return true;
 }
 

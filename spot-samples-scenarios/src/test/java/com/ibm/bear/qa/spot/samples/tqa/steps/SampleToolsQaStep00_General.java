@@ -33,7 +33,7 @@ import com.ibm.bear.qa.spot.samples.tqa.scenario.SampleToolsQaScenarioStepRunner
 public class SampleToolsQaStep00_General extends SampleToolsQaScenarioStep {
 
 	// Constants
-	private static final String HOME_PAGE_DOCUMENT_TITLE = "ToolsQA";
+	private static final String HOME_PAGE_DOCUMENT_TITLE = "DEMOQA";
 
 /**
  * Test <b>Full Name</b> simple input field.

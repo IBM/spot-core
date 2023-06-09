@@ -30,12 +30,15 @@ import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
  * <ul>
  * <li>{@link #addArrayToList(List,T[])}: Add given array items to the given list.</li>
  * <li>{@link #checkComparison(List,List,Comparison)}: Check given comparison for given collections.</li>
- * <li>{@link #checkEquality(List,String[])}: Check whether given collections are equals or not.</li>
  * <li>{@link #checkEquality(List,List)}: Check whether given collections are equals or not.</li>
+ * <li>{@link #checkEquality(List,String[])}: Check whether given collections are equals or not.</li>
  * <li>{@link #getListFromArray(T[])}: Return the given array as a list of same objects.</li>
+ * <li>{@link #getListFromCommaString(String)}: Return a texts list from a string with given separator..</li>
+ * <li>{@link #getListFromString(String,String)}: Return a texts list from a string with given separator..</li>
  * <li>{@link #getStringArrayFromList(List)}: Return the given array as a list of same objects.</li>
  * <li>{@link #getStringListFromElements(List)}: Return a texts list of given elements list.</li>
- * <li>{@link #sortListAndCheckEquality(String,List,String,List)}: Check whether given collections are equals or not.</li>
+ * <li>{@link #sortListAndCheckEquality(String,List,String,List)}: Check whether given sorted collections are equals or not.</li>
+ * <li>{@link #sortListAndCompareEquality(String,List,String,List)}: Compare given sorted collections are equals or not.</li>
  * </ul>
  * </p>
  */
@@ -57,23 +60,17 @@ public static <T> List<T> addArrayToList(final List<T> list, final T[] array) {
 }
 
 /**
- * Check whether given collections are equals or not.
+ * Return a list from the given given array.
  *
- * @param first First collection to compare
- * @param second Second collection to compare
+ * @param array The array to build as a list
+ * @return The list as as {@link List}
  */
-public static void checkEquality(final List<String> first, final String[] second) {
-	checkEquality(first, getListFromArray(second));
-}
-
-/**
- * Check whether given collections are equals or not.
- *
- * @param first First collection to compare
- * @param second Second collection to compare
- */
-public static void checkEquality(final List<String> first, final List<String> second) {
-	checkComparison(first, second, Comparison.Equals);
+public static <T> List<T> arrayToList(final T[] array) {
+	List<T> list = new ArrayList<>();
+	for (T item: array) {
+		list.add(item);
+	}
+	return list;
 }
 
 /**
@@ -81,12 +78,14 @@ public static void checkEquality(final List<String> first, final List<String> se
  *
  * @param first First collection to compare
  * @param second Second collection to compare
+ * @param comparison The type of {@link Comparison comparison} to use for each item of compared collections
+ * @throws ScenarioFailedError If comparison between collections fails
  */
-public static void checkComparison(final List<String> first, final List<String> second, final Comparison comparison) {
+public static void checkComparison(final List<String> first, final List<String> second, final Comparison comparison) throws ScenarioFailedError {
 	debugPrintEnteringMethod();
 	StringBuffer buffer = new StringBuffer();
 	if (first == null || second == null) {
-		throw new ScenarioFailedError("Unexpected null lst while checking "+comparison+" between collections.");
+		throw new ScenarioFailedError("Unexpected null list while checking "+comparison+" between collections.");
 	}
 	int firstSize = first.size();
 	int secondSize = second.size();
@@ -123,14 +122,25 @@ public static void checkComparison(final List<String> first, final List<String> 
 }
 
 /**
- * Return the given array as a list of same objects.
+ * Check whether given collections are equals or not.
  *
- * @param list The list to build as an array
- * @return The built array
+ * @param first First collection to compare
+ * @param second Second collection to compare
+ * @throws ScenarioFailedError If collections are not equals
  */
-public static String[] getStringArrayFromList(final List<String> list) {
-	String[] array = new String[list.size()];
-	return list.toArray(array);
+public static void checkEquality(final List<String> first, final List<String> second) throws ScenarioFailedError {
+	checkComparison(first, second, Comparison.Equals);
+}
+
+/**
+ * Check whether given collections are equals or not.
+ *
+ * @param first First collection to compare
+ * @param second Second collection to compare
+ * @throws ScenarioFailedError If collection and array  are not equals
+ */
+public static void checkEquality(final List<String> first, final String[] second) throws ScenarioFailedError {
+	checkEquality(first, getListFromArray(second));
 }
 
 /**
@@ -148,6 +158,45 @@ public static <T> List<T> getListFromArray(final T[] array) {
 }
 
 /**
+ * Return a strings list from a string with comma separator.
+ *
+ * @param text The string representing a list separated by comma
+ * @return The items list might be empty if given text is <code>null</code>
+ */
+public static List<String> getListFromCommaString(final String text) {
+	return getListFromString(text, ",");
+}
+
+/**
+ * Return a strings list from a string with given separator.
+ *
+ * @param text The string representing a list separated by given separator
+ * @param separator The item separator in the given string
+ * @return The items list might be empty if given text is <code>null</code>
+ */
+public static List<String> getListFromString(final String text, final String separator) {
+	List<String> items = new ArrayList<>();
+	if (text != null) {
+		StringTokenizer tokenizer = new StringTokenizer(text, separator);
+		while (tokenizer.hasMoreTokens()) {
+			items.add(tokenizer.nextToken().trim());
+		}
+	}
+	return items;
+}
+
+/**
+ * Return the given array as a list of same objects.
+ *
+ * @param list The list to build as an array
+ * @return The built array
+ */
+public static String[] getStringArrayFromList(final List<String> list) {
+	String[] array = new String[list.size()];
+	return list.toArray(array);
+}
+
+/**
  * Return a texts list of given elements list.
  *
  * @param elements The elements list
@@ -162,15 +211,19 @@ public static List<String> getStringListFromElements(final List<WebBrowserElemen
 }
 
 /**
- * Check whether given collections are equals or not.
+ * Check whether given sorted collections are equals or not.
+ *
  * @param firstTitle Title for the first list
  * @param first First collection to compare
  * @param secondTitle Title of the second list
  * @param second Second collection to compare
- *
- * @return a message displaying the lists if they are not equal, <code>null</code> otherwise.
+ * @throws ScenarioFailedError If sorted collections are not equals
  */
-public static String sortListAndCheckEquality(final String firstTitle, final List<String> first, final String secondTitle, final List<String> second) {
+public static void sortListAndCheckEquality(final String firstTitle, final List<String> first, final String secondTitle, final List<String> second) throws ScenarioFailedError {
+	sortListAndCheckEquality(firstTitle, first, secondTitle, second, true);
+}
+
+private static String sortListAndCheckEquality(final String firstTitle, final List<String> first, final String secondTitle, final List<String> second, final boolean fail) throws ScenarioFailedError {
 	String title1 = firstTitle==null ? "first" : firstTitle;
 	String title2 = secondTitle==null ? "second" : secondTitle;
 	debugPrintEnteringMethod();
@@ -236,8 +289,25 @@ public static String sortListAndCheckEquality(final String firstTitle, final Lis
 		}
 	}
 	if (message != null) {
+		if (fail) {
+			println(message.toString());
+			throw new ScenarioFailedError("Sorted collections are not equals, see console above for more details on this error...");
+		}
 		return message.toString();
 	}
 	return null;
+}
+
+/**
+ * Compare given sorted collections are equals or not.
+ *
+ * @param firstTitle Title for the first list
+ * @param first First collection to compare
+ * @param secondTitle Title of the second list
+ * @param second Second collection to compare
+ * @throws ScenarioFailedError If sorted collections are not equals
+ */
+public static String sortListAndCompareEquality(final String firstTitle, final List<String> first, final String secondTitle, final List<String> second) throws ScenarioFailedError {
+	return sortListAndCheckEquality(firstTitle, first, secondTitle, second, false);
 }
 }

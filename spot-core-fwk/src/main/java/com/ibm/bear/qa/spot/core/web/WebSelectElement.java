@@ -30,34 +30,34 @@ public class WebSelectElement extends WebElementWrapper {
 
 public WebSelectElement(final WebPage page, final By locator, final WebBrowserFrame frame) {
 	super(page, locator, frame);
-	this.select = new Select(this.element);
+	this.select = new Select(this.element.getWebElement());
 }
 
 	final Select select;
 
 public WebSelectElement(final WebElementWrapper parent, final By selectBy) {
 	super(parent, selectBy);
-	this.select = new Select(this.element);
+	this.select = new Select(this.element.getWebElement());
 }
 
 public WebSelectElement(final WebElementWrapper parent, final WebBrowserElement element) {
 	super(parent, element);
-	this.select = new Select(this.element);
+	this.select = new Select(this.element.getWebElement());
 }
 
 public WebSelectElement(final WebPage page, final By selectBy) {
 	super(page, selectBy);
-	this.select = new Select(this.element);
+	this.select = new Select(this.element.getWebElement());
 }
 
 public WebSelectElement(final WebPage page, final WebBrowserElement element) {
 	super(page, element);
-	this.select = new Select(this.element);
+	this.select = new Select(this.element.getWebElement());
 }
 
 public WebSelectElement(final WebPage page, final WebBrowserElement parent, final By selectBy) {
 	super(page, parent.waitShortlyForMandatoryDisplayedChildElement(selectBy));
-	this.select = new Select(this.element);
+	this.select = new Select(this.element.getWebElement());
 }
 
 /**
@@ -235,9 +235,10 @@ public void select(final String option, final ComparisonPattern pattern) throws 
 			}
 			return;
 		}
-		// Fix for: https://jazz.net/jazz/resource/itemName/com.ibm.team.workitem.WorkItem/330554
-		// The option we want is not this one.  Deselect this one.
-		this.select.deselectByIndex(index++);
+		if (this.select.isMultiple()) {
+			this.select.deselectByIndex(index);
+		}
+		index++;
 	}
 	throw new ScenarioFailedError(option+" was not found in selection element "+this.element);
 }

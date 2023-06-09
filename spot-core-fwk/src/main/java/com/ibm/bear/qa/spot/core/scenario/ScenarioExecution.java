@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2021 IBM Corporation and others.
+* Copyright (c) 2012, 2022 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -13,6 +13,7 @@
 package com.ibm.bear.qa.spot.core.scenario;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.utils.CollectionsUtil.getListFromCommaString;
 import static com.ibm.bear.qa.spot.core.utils.FileUtil.getDir;
 import static com.ibm.bear.qa.spot.core.utils.FileUtil.rmdir;
 import static com.ibm.bear.qa.spot.core.web.WebBrowser.JAVASCRIPT_ERROR_ALERT_PATTERN;
@@ -21,6 +22,7 @@ import static javax.naming.Context.PROVIDER_URL;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.*;
 
 import javax.jms.*;
@@ -48,45 +50,81 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
 /**
  * Manage scenario execution.
  * <p>
- * This class is responsible to initialize and store the configuration and the data.
+ * This class is responsible to initialize and store the configuration and the data and control
+ * tests execution. By default it's expected to be a singleton known by any {@link ScenarioStep}
+ * defined in scenario, but that might be more complex if scenario definition includes steps from
+ * different scenario locations.
  * </p><p>
- * It also controls the scenario behavior when failure occurs using following
- * arguments:
+ * Basically this executes the test using {@link #runTest(Statement,Description)} method called from
+ * test rule {@link ScenarioStep.ScenarioStepRule} . Execution behavior is defined by default and
+ * can be modified using various properties.
+ * </p><p>
+ * <ol>
+ * <li>Failure or exception occurring during this test execution is managed using
+ * {@link SpotScenarioExecutionCounters} and following properties:
  * <ul>
- * <li>{@link #STOP_ON_FAILURE_ID}: flag to tell whether the scenario can
- * continue after a test failure or should stop immediately. By default, the
- * execution will continue after a failure, but setting this argument to <code>true</code>
- * will make it stop at the first failure.</li>
- * <li>{@link #FAILURES_THRESHOLD_ID}: Number of tolerated failure coming
- * from selenium WebDriver API (ie. when a {@link WebDriverException} is raised)
- * when running the <b>entire</b> scenario.<br>
- * Above the threshold, the test will fail, otherwise it will run it again in case
- * it was a transient problem. In the latter case, a snapshot will be taken and
- * put in the warning directory and the failure stack trace will be written in the
- * console output.</li>
- * <li>{@link #ALERTS_THRESHOLD_ID}: Number of tolerated alerts when running
- * the <b>entire</b> scenario.<br>
- * Above the threshold, the test will fail, otherwise it will accept the alert and
- * continue the execution.</li>
- * <li>{@link #RETRIABLES_THRESHOLD_ID}: Number of tolerated timeouts failure
- * when running the <b>entire</b> scenario.<br>
- * Above the threshold, the test will fail, otherwise it will run it again in case
- * it was a transient problem. In the latter case, a snapshot will be taken and
- * put in the warning directory and the failure stack trace will be written in the
- * console output.</li>
+ * <li>{@link #STOP_ON_FAILURE_ID}: flag to tell whether the scenario can continue after a test
+ * failure or should stop immediately. By default, the execution will continue after a failure, but
+ * setting this argument to <code>true</code> will make it stop at first one.</li>
+ * <li>{@link #STOP_ON_EXCEPTION_ID}: flag to tell whether the scenario can continue after a test
+ * exception or should stop immediately. By default, the execution will continue after an exception,
+ * but setting this argument to <code>true</code> will make it stop at first one.</li>
+ * </ul>
+ * </li>
+ * <li>{@link #PAUSE_EXECUTION_ID}: number of seconds to sleep at the end of the execution of each
+ * scenario test. Default is <code>0</code>.</li>
+ * </ol>
+ * </p><p>
+ * This class also manages several other aspects:
+ * <ul>
+ * <li>mandatory tests (ie. stopping scenario execution when a failure occurs in a test which has a
+ * {@link FailureBlocker} annotation)</li>
+ * <li>test dependencies when synchronization is activated (ie. when {@link #SPOT_SYNCHRO} is set to
+ * <code>true</code>)</li>
+ * <li>checking server speed when annotation {@link CheckServerSpeed} is set on executed test</li>
+ * <li>scenario operations which might be stored here by tests in order to have specific behavior
+ * for some operations used during their execution</li>
+ * <li>children executions when scenario definition is a mix of steps from several different
+ * scenarios</li>
  * </ul>
  * </p><p>
- * Another important thing done by this class is to store the current {@link WebPage page}
- * to be able to pass it from test to test inside a scenario step and also from step
- * to step inside the scenario. That allow easy transition between tests when
- * a test ends on the same page where the following one starts.
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #addMandatoryTests(List)}: Add a list of mandatory tests.</li>
+ * <li>{@link #getBrowser()}: Return the current browser used while executing current test.</li>
+ * <li>{@link #getConfig()}: Return the scenario configuration to use during the run.</li>
+ * <li>{@link #getCurrentPage()}: Return the current browser page used while executing current test.</li>
+ * <li>{@link #getData()}: Return the scenario data to use during the run.</li>
+ * <li>{@link #getStepScenarioExecution(ScenarioExecution)}: Get the unique instance of scenario execution that caller should use.</li>
+ * <li>{@link #getTopology()}: Return the scenario topology used during the run.</li>
+ * <li>{@link #isSingleStep()}: Return whether or not the step is single.</li>
+ * <li>{@link #isSlowServer()}: Return whether or not a server is considered slow.</li>
+ * <li>{@link #runTest(Statement,Description)}: Run the current test and take specific actions when some typical exception</li>
+ * <li>{@link #shouldStop()}: Flag telling whether scenario execution should be stopped or not.</li>
+ * <li>{@link #showInfo()}: Show some general information in the console.</li>
+ * <li>{@link #shutdown()}: Ends the scenario execution.</li>
+ * <li>{@link #takeScreenshotFailure()}: Takes a failure snapshot.</li>
+ * <li>{@link #takeScreenshotInfo()}: Takes an information snapshot.</li>
+ * <li>{@link #takeScreenshotInfo(String)}: Takes a graph snapshot.</li>
+ * <li>{@link #takeScreenshotWarning()}: Takes a warning snapshot.</li>
+ * <li>{@link #takeScreenshotWarning(String)}: Takes a warning snapshot, adding text to console for reason.</li>
+ * <li>{@link #toString()}: Return the current step.test names</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #cleanUp(Throwable)}: Do some cleanup usually before re-run the test when it failed.</li>
+ * <li>{@link #initConfig()}: Initialize the configuration.</li>
+ * <li>{@link #initData()}: Initialize the data.</li>
+ * <li>{@link #manageFailure(long,Throwable,boolean,int)}: Manage the given failure.</li>
+ * </ul>
  * </p>
  */
 public abstract class ScenarioExecution {
 
 	/**
-	 * Timeout class to wait for test dependencies.
-	 */
+ * Timeout class to wait for test dependencies.
+ */
 	class SpotDependsOnTimeout extends SpotAbstractTimeout {
 		final List<String> blockers;
 		final String queueName;
@@ -158,7 +196,7 @@ public abstract class ScenarioExecution {
 
 		@Override
 		protected String getConditionLabel() {
-			return "Not all blockers messages has arrived";
+			return "Wait for all blockers message to arrive...";
 		}
 	}
 
@@ -170,35 +208,12 @@ public abstract class ScenarioExecution {
 	private static final String DYNAMIC_QUEUES_SHUTDOWN = "dynamicQueues/shutdown";
 	// Control the execution after a failure
 	private final static String STOP_ON_FAILURE_ID = "stopOnFailure";
-	private final static String FAILURES_THRESHOLD_ID = "failuresThreshold";
-	private final static int DEFAULT_FAILURES_THRESHOLD = 2;
-	private final static String ALERTS_THRESHOLD_ID = "alertsThreshold";
-	private final static int DEFAULT_ALERTS_THRESHOLD = 10;
-	private final static String RETRIABLES_THRESHOLD_ID = "retriablesThreshold";
-	private final static String RETRIABLES_FAILURES_THRESHOLD_ID = "retriablesFailuresThreshold";
-	private final static String MULTIPLES_THRESHOLD_ID = "multiplesThreshold";
-	private final static String BROWSER_ERRORS_THRESHOLD_ID = "browserErrorsThreshold";
-	private final static int DEFAULT_RETRIABLES_THRESHOLD = 2;
-	private final static int DEFAULT_RETRIABLES_FAILURES_THRESHOLD = 3;
-	private final static int DEFAULT_MULTIPLES_THRESHOLD = 2;
-	private final static int DEFAULT_BROWSER_ERRORS_THRESHOLD = 2;
 	private final static String STOP_ON_EXCEPTION_ID = "stopOnException";
 	private final static String PAUSE_EXECUTION_ID = "pause.execution";
 
 	// Execution control
+	protected final SpotScenarioExecutionCounters counters = new SpotScenarioExecutionCounters();
 	private final boolean stopOnFailure;
-	private final int failuresThreshold;
-	private int failures;
-	private final int alertsThreshold;
-	private int alerts = 0;
-	private final int retriablesThreshold;
-	private int retriables = 0;
-	private final int retriablesFailuresThreshold;
-	private int retriablesFailures = 0;
-	private final int multiplesThreshold;
-	private int multiples;
-	private final int browserErrorsThreshold;
-	private int browserErrors = 0;
 	private boolean shouldStop = false;
 	private boolean singleStep = false;
 	private List<Description> mandatoryTests = new ArrayList<Description>();
@@ -208,6 +223,10 @@ public abstract class ScenarioExecution {
 	private final int pauseExec = getParameterIntValue(PAUSE_EXECUTION_ID);
 	private String stopStepExecution = null;
 	private final List<ScenarioExecution> childrenExecutions = new ArrayList<>();
+
+	// Closing browsers control
+	final static List<String> CLOSE_BROWSERS_STEPS = getListFromCommaString(getParameterValue("spot.close.browsers.steps"));
+	final static SpotTestsList CLOSE_BROWSERS_TESTS = new SpotTestsList("spot.close.browsers.tests");
 
 	// Configuration
 	protected Config config;
@@ -220,6 +239,7 @@ public abstract class ScenarioExecution {
 	protected String stepName;
 	protected String testName;
 	private Map<Class<? extends ScenarioOperation>, ScenarioOperation> operations = new HashMap<>();
+	private long scenarioStart = -1;
 
 	// Synchronization
 	final boolean testSynchronization;
@@ -236,12 +256,6 @@ public ScenarioExecution() {
 	// Init execution controls
 	this.stopOnFailure = getParameterBooleanValue(STOP_ON_FAILURE_ID, false);
 	this.stopOnException = getParameterBooleanValue(STOP_ON_EXCEPTION_ID, this.stopOnFailure);
-	this.failuresThreshold = getParameterIntValue(FAILURES_THRESHOLD_ID, DEFAULT_FAILURES_THRESHOLD);
-	this.alertsThreshold = getParameterIntValue(ALERTS_THRESHOLD_ID, DEFAULT_ALERTS_THRESHOLD);
-	this.retriablesThreshold = getParameterIntValue(RETRIABLES_THRESHOLD_ID, DEFAULT_RETRIABLES_THRESHOLD);
-	this.retriablesFailuresThreshold = getParameterIntValue(RETRIABLES_FAILURES_THRESHOLD_ID, DEFAULT_RETRIABLES_FAILURES_THRESHOLD);
-	this.browserErrorsThreshold = getParameterIntValue(BROWSER_ERRORS_THRESHOLD_ID, DEFAULT_BROWSER_ERRORS_THRESHOLD);
-	this.multiplesThreshold = getParameterIntValue(MULTIPLES_THRESHOLD_ID, DEFAULT_MULTIPLES_THRESHOLD);
 	this.closeBrowserOnExit = getParameterBooleanValue("closeBrowserOnExit", true);
 
 	// Init Config
@@ -269,6 +283,55 @@ public void addMandatoryTests(final List<FrameworkMethod> tests) {
 	for (FrameworkMethod method: tests) {
 		Description description = Description.createTestDescription(method.getMethod().getDeclaringClass(), method.getName(), method.getAnnotations());
 		this.mandatoryTests.add(description);
+	}
+}
+
+/**
+ * Add a skipped test.
+ */
+void addSkippedTest() {
+	this.counters.skippedTests++;
+}
+
+/**
+ * Check whether the step has the {@link CloseBrowsers} annotation when
+ * starting or ending the step execution.
+ *
+ * @param method The test method currently executed
+ * @param lastTest Flag to tell whether it's the first or last step test
+ */
+void checkClosingBrowser(final FrameworkMethod method, final boolean lastTest) {
+	String closeBrowsersReason = null;
+	Class< ? > testClass = method.getDeclaringClass();
+	String testClassName = getClassSimpleName(testClass).toLowerCase();
+	for (Annotation annotation: testClass.getAnnotations()) {
+		if (annotation.annotationType().equals(CloseBrowsers.class)) {
+			switch (((CloseBrowsers) annotation).value()) {
+				case AT_START:
+					if (lastTest == false) {
+						closeBrowsersReason = "CloseBrowsers(CloseBrowsersPolicy.AT_START) annotation on class"+testClassName;
+					}
+					break;
+				case AT_END:
+					if (lastTest) {
+						closeBrowsersReason = "CloseBrowsers(CloseBrowsersPolicy.AT_END) annotation on class"+testClassName;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	if (lastTest && closeBrowsersReason == null) {
+		for (String step: CLOSE_BROWSERS_STEPS) {
+			if (testClassName.contains(step)) {
+				closeBrowsersReason = "test "+testClassName+"."+method.getName()+" matches 'spot.close.browsers.steps' property: "+getTextFromList(CLOSE_BROWSERS_STEPS);
+				break;
+			}
+		}
+	}
+	if (closeBrowsersReason != null) {
+		closeAllBrowsers(closeBrowsersReason);
 	}
 }
 
@@ -307,13 +370,18 @@ private void checkServerSpeed(final long start, final int timeLimit) {
  * </p>
  * @param t The failure which requires a clean-up
  */
-protected void cleanUp(final Throwable t) {
+protected void cleanUp(@SuppressWarnings("unused") final Throwable t) {
 	println("		-> Cleanup test by clearing the pages cache.");
 	if (getBrowser() == null) {
 		println("WARNING: There's no browser available to cleanup !");
 	} else {
 		getBrowser().clearCache();
 	}
+}
+
+private void closeAllBrowsers(final String reason) {
+	debugPrintln("		-> Closing all browsers due to "+reason);
+	BrowsersManager.getInstance().closeAll();
 }
 
 /**
@@ -425,14 +493,13 @@ private void handleAlert(final Description description, final WebDriverException
 	} else {
 		getBrowser().purgeAlert("Running test "+this.testName, 0);
 	}
-	if (this.alerts > this.alertsThreshold) {
+	if (this.counters.hasMaxAlerts()) {
 		takeScreenshotFailure();
 		this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description);
 		throw wde;
 	}
 	println("WORKAROUND: Try to run the test again in case the alert was a transient issue...");
 	takeScreenshotWarning(); // take a snapshot just to notify the warning
-	this.alerts++;
 }
 
 /**
@@ -454,7 +521,9 @@ abstract protected void initConfig();
 abstract protected void initData();
 
 /**
- * @return the singleStep
+ * Return whether or not the step is single.
+ *
+ * @return <code>true</code> if the step is single; <code>false</code> otherwise.
  */
 public boolean isSingleStep() {
 	return this.singleStep;
@@ -552,20 +621,6 @@ private void pauseExecution() {
 	}
 }
 
-/**
- * Run the current test and take specific actions when some typical exception
- * or error occurs (e.g. take a snapshot when a error occurs, retry when allowed).
- * <p>
- * <b>Design Needs finalization</b>
- * </p>
- */
-public void rerunTest(final Statement statement, final Description description) throws Throwable {
-	if (description.getAnnotation(NotRerunnable.class) != null) {
-		throw new ScenarioFailedError("It was specified that test '"+description.getMethodName()+" was not rerunnable, give up right now...");
-	}
-	runTest(statement, description);
-}
-
 /*
  * Restart the browser assuming the current session has gone...
  */
@@ -599,17 +654,6 @@ public void runTest(final Statement statement, final Description description) th
 	setStepName(description.getClassName());
 	setTestName(description.getMethodName());
 
-	// Test whether the test should be skipped due to a previous step blocker test or not
-	if (this.stopStepExecution != null) {
-		if (this.stopStepExecution.equals(this.stepName)) {
-			String message = "Test case '"+this.testName+"' is skipped due to previous test has failed and was a step blocker";
-			println("	- "+TIME_FORMAT.format(new Date(System.currentTimeMillis()))+": "+message+"!");
-			println("	  -> Unknown result");
-			throw new SkippedTestError(message);
-		}
-		this.stopStepExecution = null;
-	}
-
 	// Store performances information if necessary
 	PerfManager perfManager = getPerfManager();
 	if (perfManager != null) {
@@ -627,12 +671,73 @@ public void runTest(final Statement statement, final Description description) th
 		throw sse;
 	}
 
+	// Check if browsers should be closed before starting test execution
+	CloseBrowsers methodAnnotation = description.getAnnotation(CloseBrowsers.class);
+	if (methodAnnotation != null && methodAnnotation.value() == CloseBrowsersPolicy.AT_START) {
+		closeAllBrowsers("CloseBrowsers(CloseBrowsersPolicy.AT_START) annotation on test "+this.testName);
+	}
+
+	// Run the test for the first time
+	try {
+		this.counters.executedTests++;
+		runTest(statement, description, 0);
+		this.counters.succeededTests++;
+	}
+	catch (Throwable t) {
+		this.counters.failedTests++;
+		throw t;
+	} finally {
+		String closeBrowsersReason = null;
+		if (methodAnnotation != null) {
+			switch (methodAnnotation.value()) {
+				case AT_END:
+				case ON_EACH_TEST:
+					closeBrowsersReason = "CloseBrowsers(CloseBrowsersPolicy."+methodAnnotation.value()+") annotation on test "+this.testName;
+					break;
+				default:
+					break;
+			}
+		} else {
+			for (Annotation annotation: description.getTestClass().getAnnotations()) {
+				if (annotation.annotationType().equals(CloseBrowsers.class)) {
+					if (((CloseBrowsers)annotation).value() == CloseBrowsersPolicy.ON_EACH_TEST) {
+						closeBrowsersReason = "CloseBrowsers(CloseBrowsersPolicy.ON_EACH_TEST) annotation on class"+this.stepName;
+						break;
+					}
+				}
+			}
+		}
+		if (closeBrowsersReason == null && CLOSE_BROWSERS_TESTS.match(this.stepName, this.testName)) {
+			closeBrowsersReason = "test "+this.stepName+"."+this.testName+" matches 'spot.close.browsers.tests' property: "+CLOSE_BROWSERS_TESTS.value;
+		}
+		if (closeBrowsersReason != null) {
+			closeAllBrowsers(closeBrowsersReason);
+		}
+	}
+}
+
+private void runTest(final Statement statement, final Description description, final int rerunCount) throws Throwable {
+
+	// Test whether the test should be skipped due to a previous step blocker test or not
+	if (this.stopStepExecution != null) {
+		if (this.stopStepExecution.equals(this.stepName)) {
+			String message = "Test case '"+this.testName+"' is skipped due to previous test has failed and was a step blocker";
+			println("	- "+TIME_FORMAT.format(new Date(System.currentTimeMillis()))+": "+message+"!");
+			println("	  -> Unknown result");
+			throw new SkippedTestError(message);
+		}
+		this.stopStepExecution = null;
+	}
+
 	// Run test and take snapshots if a failure or error occurs
 	long start = System.currentTimeMillis();
+	if (this.scenarioStart < 0) {
+		this.scenarioStart = start;
+	}
 	boolean isNotRerunnable = description.getAnnotation(NotRerunnable.class) != null;
 	try {
 		statement.evaluate();
-		// If we're here, the test passed.
+		// At this point, the test passed.
 
 		// Individual tests may be annotated to check server speed.
 		CheckServerSpeed annotation = description.getAnnotation(CheckServerSpeed.class);
@@ -645,7 +750,7 @@ public void runTest(final Statement statement, final Description description) th
 	}
 	catch (UnhandledAlertException uae) {
 		handleAlert(description, uae);
-		runTest(statement, description);
+		runTest(statement, description, rerunCount+1);
 	}
 	catch (SessionNotCreatedException scne) {
 		manageFailure(start, scne, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
@@ -657,17 +762,16 @@ public void runTest(final Statement statement, final Description description) th
 		// Manage failure
 		WebPage currentPage = getCurrentPage();
 		manageFailure(start, ube, isNotRerunnable || currentPage == null, /*snapshotLevel:*/-1);
-		if (this.browserErrors >= this.browserErrorsThreshold || currentPage == null || isNotRerunnable) {
+		if (this.counters.hasMaxBrowserErrors() || currentPage == null || isNotRerunnable) {
 			println("		  -> The browser seems to have a problem which cannot be workarounded by just a restart, give up!");
 			this.shouldStop = true;
 			throw ube;
 		}
 		// Restart the browser on the current page
 		restartBrowser(currentPage);
-		this.browserErrors++;
 		// Re-run the test
 		println("		  -> Re-run the test...");
-		runTest(statement, description);
+		runTest(statement, description, rerunCount+1);
 	}
 	catch (WebDriverException wde) {
 		String message = wde.getMessage();
@@ -676,7 +780,7 @@ public void runTest(final Statement statement, final Description description) th
 		} else if (message.startsWith("Failed to connect to binary FirefoxBinary") || message.startsWith("chrome not reachable")) {
 			WebPage currentPage = getCurrentPage();
 			manageFailure(start, wde, isNotRerunnable || currentPage == null, /*snapshotLevel:*/-1);
-			if (this.browserErrors >= this.browserErrorsThreshold || currentPage == null || isNotRerunnable) {
+			if (this.counters.hasMaxBrowserErrors() || currentPage == null || isNotRerunnable) {
 				println("		  -> The browser seems to have a problem which cannot be workarounded by just a restart, give up!");
 				this.shouldStop = true;
 				throw wde;
@@ -684,10 +788,9 @@ public void runTest(final Statement statement, final Description description) th
 			// Restart the browser on the current page
 			sleep(2);
 			restartBrowser(currentPage);
-			this.browserErrors++;
 		} else {
 			WebPage currentPage = getCurrentPage();
-			boolean shouldFail = this.failures >= this.failuresThreshold || isNotRerunnable || getBrowser() == null;
+			boolean shouldFail = this.counters.hasMaxFailures() || isNotRerunnable || getBrowser() == null;
 			manageFailure(start, wde, isNotRerunnable || getBrowser() == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 			if (shouldFail) {
 				this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || getBrowser() == null;
@@ -697,7 +800,6 @@ public void runTest(final Statement statement, final Description description) th
 				throw wde;
 			}
 			println("WORKAROUND: Try to run the test again in case this was a transient issue...");
-			this.failures++;
 			// Refresh browser in case that can help...
 			println("	1) Close all other browser windows if necessary...");
 			getBrowser().closeOtherWindows();
@@ -706,17 +808,17 @@ public void runTest(final Statement statement, final Description description) th
 		}
 		// Re-run the test
 		println("	3) Re-run the test...");
-		runTest(statement, description);
+		runTest(statement, description, rerunCount+1);
 	}
 	catch (RetryableError pte) {
 		WebPage currentPage = getCurrentPage();
 		boolean cannotRerun = isNotRerunnable || getBrowser() == null;
-		boolean shouldFail = this.retriables >= this.retriablesThreshold;
+		boolean shouldFail = this.counters.hasMaxRetriableErrors();
 		int snapshotLevel = (shouldFail || !cannotRerun) ? 2 : 1;
 		manageFailure(start, pte, cannotRerun, snapshotLevel);
 		if (shouldFail) {
 			println("Too many retryable errors occurred during test execution, hence give up.");
-			this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || ++this.retriablesFailures >= this.retriablesFailuresThreshold;
+			this.shouldStop = this.stopOnFailure || this.mandatoryTests.contains(description) || this.counters.hasMaxRetriableFailures();
 			if (!this.shouldStop && description.getAnnotation(StepBlocker.class) != null) {
 				this.stopStepExecution = this.stepName;
 			}
@@ -736,13 +838,12 @@ public void runTest(final Statement statement, final Description description) th
 		getBrowser().closeOtherWindows();
 		println("	2) Refresh the browser...");
 		getBrowser().refreshManagingLogin(currentPage);
-		this.retriables++;
 		// Re-run the test
-		println("	3) Re-run the test (retry " + this.retriables + "/" + this.retriablesThreshold +  ") ...");
-		runTest(statement, description);
+		println("	3) Re-run the test (retry " + this.counters.retriables + "/" + this.counters.retriableErrorsThreshold +  ") ...");
+		runTest(statement, description, rerunCount+1);
 	}
 	catch (MultipleElementsFoundError mvee) {
-		boolean shouldFail = this.multiples >= this.multiplesThreshold || isNotRerunnable;
+		boolean shouldFail = this.counters.hasMaxMultiples() || isNotRerunnable;
 		manageFailure(start, mvee, isNotRerunnable || getBrowser() == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 		if (shouldFail) {
 			println("Too many multiple elements errors occurred during scenario execution, give up.");
@@ -756,10 +857,9 @@ public void runTest(final Statement statement, final Description description) th
 		// Refresh browser in case that can help...
 		println("WORKAROUND: Refresh the browser...");
 		getBrowser().refresh();
-		this.multiples++;
 		// Re-run the test
 		println("		  -> Re-run the test...");
-		runTest(statement, description);
+		runTest(statement, description, rerunCount+1);
 	}
 	catch (ServerMessageError sme) {
 		manageFailure(start, sme, /*isNotRerunnable:*/true, /*snapshotLevel:*/2);
@@ -782,7 +882,7 @@ public void runTest(final Statement statement, final Description description) th
 			throw be;
 		}
 		WebPage currentPage = getCurrentPage();
-		boolean shouldFail = this.browserErrors >= this.browserErrorsThreshold || currentPage == null || isNotRerunnable;
+		boolean shouldFail = this.counters.hasMaxBrowserErrors() || currentPage == null || isNotRerunnable;
 		manageFailure(start, be, isNotRerunnable || currentPage == null, /*snapshotLevel:*/shouldFail ? 2 : 1);
 		if (shouldFail) {
 			println("Too many browser errors occurred during scenario execution, give up.");
@@ -793,10 +893,9 @@ public void runTest(final Statement statement, final Description description) th
 		if (be instanceof BrowserConnectionError) {
 			restartBrowser(currentPage);
 		}
-		this.browserErrors++;
 		// Re-run the test
 		println("		  -> Re-run the test...");
-		rerunTest(statement, description);
+		runTest(statement, description, rerunCount+1);
 	}
 	catch (Error err) {
 		// Basic failure management for any kind of other error (including ScenarioFailedError)
@@ -831,35 +930,33 @@ public void runTest(final Statement statement, final Description description) th
 	synchroSendTestExecutionMessage(description);
 }
 
-///**
-// * Set the current scenario page.
-// */
-//public void setPage(final WebPage page) {
-//	this.page = page;
-//}
-
-///**
-// * @param shouldStop the shouldStop to set
-// */
-//public void setShouldStop(final boolean shouldStop) {
-//	this.shouldStop = shouldStop;
-//}
-
 /**
- * @param singleStep the singleStep to set
+ * Store step name.
+ *
+ * @param className The step class name
  */
-public void setSingleStep(final boolean singleStep) {
-	this.singleStep = singleStep;
-}
-
 void setStepName(final String className) {
 	this.stepName = ScenarioUtils.getClassSimpleName(className);
 }
 
+/**
+ * Store scenario tests count.
+ *
+ * @param count The test count
+ */
+void setTestCount(final int count) {
+	this.counters.testCount = count;
+}
+
+/**
+ * Store test name.
+ *
+ * @param methodName The test method name
+ */
 void setTestName(final String methodName) {
 	if (this.testName == null || !this.testName.equals(methodName)) {
 		// Initialize the retriables counter for the current test
-		this.retriables = 0;
+		this.counters.retriables = 0;
 	}
 	this.testName = methodName;
 }
@@ -903,12 +1000,28 @@ public void shutdown() {
 
 	// Print if the scenario execution has been stopped at some point
 	if (this.shouldStop) {
-		println("Scenario execution has been stopped due to errors above and following configuration:");
-		println("	- Stop on execution: "+this.stopOnException);
-		println("	- Stop on failure: "+this.stopOnFailure);
-		println("	- Stop on retriables errors: " + this.retriablesFailures + " / " + this.retriablesFailuresThreshold);
-		println("	- Mandatory tests: "+getTextFromList(this.mandatoryTests));
-
+		println();
+		if (this.stopOnException) {
+			println("Scenario execution has been stopped due to exception above and flag stopOnException set to true!");
+		}
+		else if (this.stopOnFailure) {
+			println("Scenario execution has been stopped due to failure above and flag stopOnFailure set to true!");
+		}
+		else if (this.counters.hasMaxRetriableFailures()) {
+			println("Scenario execution has been stopped due to too many retriable errors failures!");
+		} else {
+			boolean mandatoryTest = false;
+			for (Description description: this.mandatoryTests) {
+				if (description.getClassName().endsWith(this.stepName) && description.getMethodName().equals(this.testName)) {
+					mandatoryTest = true;
+					println("Scenario execution has been stopped due to above failure on current executed mandatory test ("+this.stepName+"."+this.testName+")!");
+					break;
+				}
+			}
+			if (!mandatoryTest) {
+				println("WARNING: Scenario execution was stopped for an unknown reason!!!");
+			}
+		}
 	}
 
 	// Manage synchronization during shutdown
@@ -918,6 +1031,7 @@ public void shutdown() {
 			// First get list of synchronized scenarios
 			String spotSynchScenarios = getParameterValue(SPOT_SYNCHRO_SCENARIOS);
 			if (spotSynchScenarios == null) {
+				println();
 				println("WARNING: No scenario was declared while running this synchronized scenario!");
 				println("That means there's no insurance that synchronized scenarios execution have worked properly...");
 				println("Property '"+SPOT_SYNCHRO_SCENARIOS+"' should specify the list of synchronized scenarios.");
@@ -944,12 +1058,27 @@ public void shutdown() {
 			try {
 				synchroSendMessageToQueue(this.scenarioQueue, this.scenarioClass);
 			} catch (JMSException jmse) {
+				println();
 				println("WARNING: Following exception was caught during scenario execution shutdown:");
 				printException(jmse);
 				println("That means synchronized scenarios execution will surely be broken!");
 			}
 		}
 	}
+
+	// Print scenario global execution time
+	Date endDate = new Date(System.currentTimeMillis());
+	println();
+	println("Scenario end execution at: "+TIME_FORMAT.format(endDate)+" (in "+elapsedTimeString(this.scenarioStart)+")");
+
+	// Print counters
+	this.counters.printExecutionResults();
+
+	// Log properties
+	SCENARIO_PROPERTIES.log();
+
+	// Print browser information
+	BrowsersManager.getInstance().printBrowserInformation();
 
 	// Close debug
 	ScenarioUtils.debugClose();

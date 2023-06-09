@@ -25,10 +25,6 @@ import java.util.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.By.ByXPath;
 import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.interactions.internal.Coordinates;
-// Do not move to new org.openqa.selenium.interactions.Locatable to avoid the deprecated warning
-// as it's necessary when using Actions commands
-import org.openqa.selenium.interactions.internal.Locatable;
 import org.openqa.selenium.remote.UnreachableBrowserException;
 
 import com.ibm.bear.qa.spot.core.api.SpotUser;
@@ -134,7 +130,6 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser.ClickableWorkaroundState;
  * <li>{@link #getChild(String)}: Return the child with the given tag of the current element.</li>
  * <li>{@link #getChildren()}: Return children of the current element.</li>
  * <li>{@link #getChildren(String)}: Return specific children of the current element.</li>
- * <li>{@link #getCoordinates()}: TODO Add a javadoc with a meaningful summary to this method !</li>
  * <li>{@link #getFollowingSibling()}: Return the next sibling element from current one.</li>
  * <li>{@link #getFollowingSibling(String)}: Return the next sibling element from current one with the given tag.</li>
  * <li>{@link #getFrame()}: Return the element frame.</li>
@@ -187,7 +182,7 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser.ClickableWorkaroundState;
  * </ul>
  * </p>
  */
-public class WebBrowserElement implements WebElement, Locatable {
+public class WebBrowserElement implements WebElement {
 
 	/* Locators */
 	private static final By CHILDREN_LOCATOR = By.xpath("./child::*");
@@ -501,10 +496,10 @@ public void click() {
 	try {
 		click(true/*recovery*/);
 	}
-	catch (ElementNotVisibleException enve) {
-		println("WARNING: Catching ElementNotVisibleException exception: "+enve.getMessage());
-		printStackTrace(enve.getStackTrace(), 1);
-		this.browser.takeScreenshotWarning("ClickOnNonVisibleElement");
+	catch (ElementNotInteractableException enie) {
+		println("WARNING: Catching ElementNotVisibleException exception: "+enie.getMessage());
+		printStackTrace(enie.getStackTrace(), 1);
+		this.browser.takeScreenshotWarning("ClickOnNonInteractableElement");
 		println("	-> Workaround is to force the element to be visible using javascript...");
 		setVisibility(true);
 		println("	-> Click again on the element...");
@@ -549,16 +544,25 @@ public void click(final boolean recovery, final boolean workaround) {
 		this.browser.selectFrame(this.frame, false/*store*/);
 	}
 
+	this.browser.errorMessage = null;
+	ClickableWorkaroundState state = workaround ? ClickableWorkaroundState.Init : ClickableWorkaroundState.None;
+	WebDriverException initialNotClickableException = null;
 	try {
 		int count = 0;
-		ClickableWorkaroundState state = workaround ? ClickableWorkaroundState.Init : ClickableWorkaroundState.None;
 		while (true) {
 			try {
-				this.webElement.click();
-				if (workaround && state != ClickableWorkaroundState.Init) {
-					println("WARNING: Workaround "+state+" was applied when clicking on web element "+getFullLocator());
-					printStackTrace(1);
-					this.browser.printErrorMessage();
+				switch (state) {
+					case Javascript:
+						executeScript("click()");
+						break;
+					case Failed:
+						if (initialNotClickableException == null) {
+							throw new ScenarioImplementationError("We should have stored an exception at this point!!!");
+						}
+						throw initialNotClickableException;
+					default:
+						this.webElement.click();
+						break;
 				}
 				if (DEBUG) debugPrintln("			 ( -> done.)");
 				return;
@@ -567,11 +571,17 @@ public void click(final boolean recovery, final boolean workaround) {
 				if (!workaround) {
 					throw enie;
 				}
+				if (initialNotClickableException == null) {
+					initialNotClickableException = enie;
+				}
 				state = this.browser.workaroundForNotClickableException(state, this, enie);
 			}
 			catch (WebDriverException wde) {
 				String message = wde.getMessage();
 				if (message.contains(" is not clickable") && message.contains("Other element would receive the click")) {
+					if (initialNotClickableException == null) {
+						initialNotClickableException = wde;
+					}
 					state = this.browser.workaroundForNotClickableException(state, this, wde);
 				} else {
 					if (recovery) {
@@ -584,6 +594,18 @@ public void click(final boolean recovery, final boolean workaround) {
 		}
 	}
 	finally {
+		if (workaround && state != ClickableWorkaroundState.Init) {
+			if (initialNotClickableException != null) {
+				println("WARNING: Following exception was encountered when clicking on web element "+getFullLocator()+":");
+				printStackTrace(initialNotClickableException.getStackTrace(), 1);
+			}
+			if (state == ClickableWorkaroundState.Failed) {
+				println("Workarounds were tentatively applied with no success to circumvent it:");
+			} else {
+				println("Workaround "+state+" was found and applied and successfully circumvent it:");
+			}
+			this.browser.printErrorMessage();
+		}
 		if (this.frame != this.browser.frame) {
 			this.browser.selectFrame();
 		}
@@ -941,7 +963,7 @@ private String getAttribute(final String name, final boolean fail) throws Scenar
 						debugPrintln("null\")");
 					}
 					else {
-						debugPrintln(name.equals("href") ? hidePasswordInLocation(attribute):attribute);
+						debugPrint(name.equals("href") ? hidePasswordInLocation(attribute):attribute);
 						debugPrintln("\")");
 					}
 				}
@@ -1083,44 +1105,6 @@ public List<WebBrowserElement> getChildren() {
  */
 public List<WebBrowserElement> getChildren(final String tag) {
 	return getList(findElements(By.xpath("./child::"+tag)));
-}
-
-/**
- * {@inheritDoc}
- * <p>
- * Catch {@link WebDriverException} and retry the operation until success or
- * {@link #MAX_RECOVERY_ATTEMPTS} attempts has been made.
- * </p>
- */
-@Override
-public Coordinates getCoordinates() {
-	debugPrintEnteringMethod();
-//	if (DEBUG) debugPrintln("			(getting coordinates for "+this+")");
-
-	// Select the frame again if necessary
-	if (this.frame != this.browser.frame) {
-		this.browser.selectFrame(this.frame, false/*store*/);
-	}
-
-	try {
-		int count = 0;
-		while (true) {
-			try {
-				@SuppressWarnings("deprecation")
-				Coordinates coord = ((Locatable) this.webElement).getCoordinates();
-				if (DEBUG) debugPrintln("			 ( -> "+coord+")");
-				return coord;
-			}
-			catch (WebDriverException wde) {
-				catchWebDriverException(wde, "getting coordinates", count++, true);
-			}
-		}
-	}
-	finally {
-		if (this.frame != this.browser.frame) {
-			this.browser.selectFrame();
-		}
-	}
 }
 
 /**

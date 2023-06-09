@@ -17,8 +17,7 @@ import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 
@@ -406,6 +405,19 @@ public static String readFileContent(final File file) throws IOException {
     	outputStream.close();
     	return new String(bytes, "UTF-8");
    }
+}
+
+/**
+ * Read the content of the given file, assuming it's a text file.
+ *
+ * @param file The file to read
+ * @return The properties read from file content
+ * @throws IOException
+ */
+public static Properties readPropertiesFile(final File file) throws IOException {
+	Properties properties = new Properties();
+	properties.load(new StringReader(readFileContent(file)));
+	return properties;
 }
 
 /**

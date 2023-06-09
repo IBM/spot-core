@@ -12,7 +12,7 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.browsers;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.safari.SafariDriver;
@@ -60,7 +60,7 @@ public String getDriverInfo() {
 @Override
 protected void initDriver() {
 	this.driver = new SafariDriver();
-	this.driver.manage().timeouts().implicitlyWait(250, TimeUnit.MILLISECONDS);
+	this.driver.manage().timeouts().implicitlyWait(Duration.ofMillis(250));
 }
 
 @Override

@@ -18,6 +18,9 @@ import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 import java.io.File;
 import java.util.*;
 
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
+
 import com.ibm.bear.qa.spot.core.browsers.*;
 import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
@@ -28,48 +31,87 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
 /**
  * Class to manage several framework browsers.
  * <p>
- * Note that browser is used for <i>instance of {@link WebBrowser}</i>.
- * Which means that each instance of browser might have one or several
- * opened windows...
+ * Note that browser is used for <i>instance of {@link WebBrowser} </i>. Which means that each
+ * instance of browser might have one or several opened windows...
  * </p><p>
- * This class is responsible of storing the browser instances and retrieve them
- * when requested. The current model is to have one different browser per user.
+ * This class is responsible of storing the browser instances and retrieve them when requested. The
+ * current model is to have one different browser per user.
  * </p><p>
- * Sub-class has to implement {@link #getNewBrowser(User)} method in order
- * to return a specific kind of browser specified by {@link BrowserConstants#BROWSER_KIND_ID}
- * property.
- * </p><p>
- * In order to keep framework backward behavior compatible, it also provides
- * a way to get the currently used browser, allowing snapshots to be taken
- * on the active browser when Selenium execution problem occurs.
- * </p><p>
- * Following internal API methods are available on this class:
- * <ul>
- * <li>{@link #close(User)}: Close the browser associated with the given user.</li>
- * <li>{@link #getBrowser(User, boolean)}: Get the browser used for the given user.</li>
- * <li>{@link #getBrowserOpened(User)}: Get the browser used and opened for the given user.</li>
- * <li>{@link #getCurrentBrowser()}: Get the currently used browser.</li>
- * <li>{@link #getDownloadDir()}: Close all browsers.</li>
- * <li>{@link #getLocale()}: Close all browsers.</li>
- * <li>{@link #getPath()}: Close all browsers.</li>
- * <li>{@link #getProfile(User)}: Close all browsers.</li>
- * <li>{@link #getType()}: Close all browsers.</li>
- * <li>{@link #openNewBrowser(User)}: Close all browsers.</li>
- * <li>{@link #printBrowserInfo(WebBrowser, User)}: Close all browsers.</li>
- * <li>{@link #shutdown()}: Close all browsers.</li>
- * </ul>
+ * In order to keep framework backward behavior compatible, it also provides a way to get the
+ * currently used browser, allowing snapshots to be taken on the active browser when Selenium
+ * execution problem occurs.
  * </p><p>
  * Following internal methods are also defined or specialized by this page:
  * <ul>
+ * </ul>
+ * </p><p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #close(User)}: Close the browser associated with the given user.</li>
+ * <li>{@link #closeAll()}: Close the browser associated with the given user.</li>
+ * <li>{@link #getBrowser(User)}: Get the browser used for the given user.</li>
+ * <li>{@link #getBrowser(User,boolean)}: Get the browser used for the given user.</li>
+ * <li>{@link #getBrowserOpened(User)}: Get the browser used and opened for the given user.</li>
+ * <li>{@link #getCurrentBrowser()}: Get the currently used browser.</li>
+ * <li>{@link #getDownloadDir()}: Return the directory where to download files from browsers.</li>
+ * <li>{@link #getInstance()}: Return the singleton instance created when loading the class.</li>
+ * <li>{@link #getLocale()}: Return the browser locale.</li>
+ * <li>{@link #getName()}: Return the browser name.</li>
+ * <li>{@link #getPath()}: Return the browser path.</li>
+ * <li>{@link #getProfile(User)}: Return the browser profile name for the given user.</li>
+ * <li>{@link #getType()}: Return the browser type.</li>
+ * <li>{@link #isHeadless()}: Tells whether browser is headless or not.</li>
+ * <li>{@link #isInPrivateMode(User)}: Tells whether browser is headless or not.</li>
+ * <li>{@link #openNewBrowser(User)}: Open a new browser for the given page.</li>
+ * <li>{@link #printBrowserInformation()}: Print information for browsers used during the scenario execution.</li>
+ * <li>{@link #remove(User)}: Remove corresponding user from the managed browsers.</li>
+ * <li>{@link #shutdown()}: Close all browsers.</li>
  * </ul>
  * </p>
  */
 public class BrowsersManager {
 
+	private class BrowserInformation {
+		final String name, version, driverInfo;
+		final Set<User> users = new HashSet<>();
+		final Dimension windowSize;
+		final Point windowPosition;
+		public BrowserInformation(final WebBrowser browser) {
+			this.name = browser.getName();
+			this.version = browser.getVersion();
+			this.driverInfo = browser.getDriverInfo();
+			this.windowSize = browser.getWindowSize();
+			this.windowPosition = browser.getWindowPosition();
+		}
+		void printInformation() {
+			println("Browser used during the scenario execution:");
+			println("	- " + this.name + " version: " + this.version);
+			println("	- " + this.driverInfo);
+			println("	- Browser is headless: " + isHeadless());
+			print("	- Browser in private mode: ");
+			String sep = EMPTY_STRING;
+			for (User user: this.users) {
+				print(sep+user.getId()+"="+isInPrivateMode(user));
+				sep = ", ";
+			}
+			println();
+			println("	- Browser window size: " + this.windowSize);
+			println("	- Browser window position: " + this.windowPosition);
+		}
+	}
+
 	/* Constants*/
 	private final static BrowsersManager MANAGER = new BrowsersManager();
 
-    /* Fields */
+	 /**
+	 * Return the singleton instance created when loading the class.
+	 *
+	 * @return <b>The</b> browser manager
+	 */
+	public static BrowsersManager getInstance() {
+		return MANAGER;
+	}
+	/* Fields */
 	// Browsers map
 	final private Map<User, WebBrowser> browsers = new HashMap<User, WebBrowser>();
 	// Current browser
@@ -77,19 +119,32 @@ public class BrowsersManager {
 	// Download directory
 	private File downloadDir;
 
-/**
- * Return the singleton instance created when loading the class.
- *
- * @return <b>The</b> browser manager
- */
-public static BrowsersManager getInstance() {
-	return MANAGER;
-}
+// Store browser information
+private BrowserInformation browserInformation = null;
 
 /**
  * Private constructor in order to use singleton pattern.
  */
 private BrowsersManager() {}
+
+/**
+ * Close the browser associated with the given user.
+ *
+ * @param user The user to close the associated browser
+ */
+public void close(final User user) {
+	debugPrintEnteringMethod("user", user);
+	WebBrowser browser = getBrowser(user, false);
+	if (browser == null) {
+		println("Warning: there was no browser associated with user "+user.getId());
+		println("	Hence, the requested close action was a no-op...");
+		printStackTrace(1);
+		return;
+	}
+	browser.close();
+	// TODO Remove user is not enough, we should remove browser in the map instead...
+	remove(user);
+}
 
 /**
  * Close the browser associated with the given user.
@@ -110,25 +165,6 @@ public void closeAll() {
 		browser.close();
 	}
 	this.currentBrowser = null;
-}
-
-/**
- * Close the browser associated with the given user.
- *
- * @param user The user to close the associated browser
- */
-public void close(final User user) {
-	debugPrintEnteringMethod("user", user);
-	WebBrowser browser = getBrowser(user, false);
-	if (browser == null) {
-		println("Warning: there was no browser associated with user "+user.getId());
-		println("	Hence, the requested close action was a no-op...");
-		printStackTrace(1);
-		return;
-	}
-	browser.close();
-	// TODO Remove user is not enough, we should remove browser in the map instead...
-	remove(user);
 }
 
 /**
@@ -241,6 +277,35 @@ public String getLocale() {
 	return getParameterValue(BROWSER_LOCALE_ID);
 }
 
+/**
+ * Return the browser name.
+ * <p>
+ * Currently supported types are:
+ * <ul>
+ * <li>{@link BrowserConstants#BROWSER_KIND_FIREFOX}</li>
+ * <li>{@link BrowserConstants#BROWSER_KIND_GCHROME}</li>
+ * <li>{@link BrowserConstants#BROWSER_KIND_IEXPLORER}</li>
+ * </ul>
+ * </p>
+ * @return The browser type
+ */
+public String getName() {
+	switch (getType()) {
+		case BROWSER_KIND_FIREFOX:
+			return "Firefox";
+		case BROWSER_KIND_GCHROME:
+			return "Chrome";
+		case BROWSER_KIND_IEXPLORER:
+			return "Internet Explorer";
+		case BROWSER_KIND_MSEDGE:
+			return "Edge";
+		case BROWSER_KIND_SAFARI:
+			return "Safari";
+		default:
+			throw new ScenarioMissingImplementationError(whoAmI());
+	}
+}
+
 private WebBrowser getNewBrowser(final User user) {
 	final int type = getType();
 	WebBrowser newBrowser;
@@ -251,7 +316,7 @@ private WebBrowser getNewBrowser(final User user) {
 		case BROWSER_KIND_IEXPLORER:
 			throw new RuntimeException("Internet Explorer is no longer supported use MS Edge instead.");
 		case BROWSER_KIND_GCHROME:
-			newBrowser = new GoogleChromeBrowser(this, user);
+			newBrowser = new ChromeBrowser(this, user);
 			break;
 		case BROWSER_KIND_MSEDGE:
 			newBrowser = new EdgeBrowser(this);
@@ -262,7 +327,14 @@ private WebBrowser getNewBrowser(final User user) {
 		default:
 			throw new RuntimeException("'"+type+"' is not a know browser kind, only 1 (Firefox), 3 (Chrome), 4 (Edge) and 5 (Safari) are currently supported");
 	}
-	printBrowserInfo(newBrowser, user);
+//	printBrowserInfo(newBrowser, user);
+	// Store new browser information
+	if (this.browserInformation == null) {
+		this.browserInformation = new BrowserInformation(newBrowser);
+	}
+	if (user != null) {
+		this.browserInformation.users.add(user);
+	}
 	newBrowser.deleteAllCookies();
 	return newBrowser;
 }
@@ -310,35 +382,6 @@ public String getProfile(final User user) {
  */
 public int getType() {
 	return getParameterIntValue(BROWSER_KIND_ID, BROWSER_KIND_FIREFOX);
-}
-
-/**
- * Return the browser name.
- * <p>
- * Currently supported types are:
- * <ul>
- * <li>{@link BrowserConstants#BROWSER_KIND_FIREFOX}</li>
- * <li>{@link BrowserConstants#BROWSER_KIND_GCHROME}</li>
- * <li>{@link BrowserConstants#BROWSER_KIND_IEXPLORER}</li>
- * </ul>
- * </p>
- * @return The browser type
- */
-public String getName() {
-	switch (getType()) {
-		case BROWSER_KIND_FIREFOX:
-			return "Firefox";
-		case BROWSER_KIND_GCHROME:
-			return "Chrome";
-		case BROWSER_KIND_IEXPLORER:
-			return "Internet Explorer";
-		case BROWSER_KIND_MSEDGE:
-			return "Edge";
-		case BROWSER_KIND_SAFARI:
-			return "Safari";
-		default:
-			throw new ScenarioMissingImplementationError(whoAmI());
-	}
 }
 
 /**
@@ -400,6 +443,18 @@ public WebBrowser openNewBrowser(final User user) {
 }
 
 /**
+ * Print information for browsers used during the scenario execution.
+ */
+public void printBrowserInformation() {
+	println();
+	if (this.browserInformation == null) {
+		println("Unfortunately there was no browser information! :-(");
+	} else {
+		this.browserInformation.printInformation();
+	}
+}
+
+/**
  * Remove corresponding user from the managed browsers.
  *
  * @param user
@@ -415,27 +470,6 @@ public void remove(final User user) {
 		}
 		this.currentBrowser = null;
 	}
-}
-
-/**
- * Print some general Browser information in the console.
- * <p>
- * The displayed information are:
- * <ul>
- * <li>Browser version</li>
- * <li>Browser window size</li>
- * <li>Browser window position</li>
- * </ul>
- * </p>
- */
-void printBrowserInfo(final WebBrowser browser, final User user) {
-	println("Browser information:");
-	println("	- " + browser.getName()+" version: "+browser.getVersion());
-	println("	- " + browser.getDriverInfo());
-	println("	- Browser is headless = " + isHeadless());
-	println("	- Browser in private mode = " + isInPrivateMode(user));
-	println("	- Browser window size = " + browser.getWindowSize());
-	println("	- Browser window position = " + browser.getWindowPosition());
 }
 
 /**

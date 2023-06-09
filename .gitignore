@@ -30,9 +30,5 @@
 ########
 **/screenshots/**
 **/debug/**
-**/launches/**
 
-# RTC #
-#######
-.jazz5/**
-.jazzShed/**
+/.project

@@ -12,18 +12,19 @@
 **********************************************************************/
 package com.ibm.bear.qa.spot.core.browsers;
 
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintEnteringMethod;
-import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintln;
+import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 import static org.openqa.selenium.firefox.GeckoDriverService.GECKO_DRIVER_EXE_PROPERTY;
 
 import java.io.File;
 
-import org.openqa.selenium.*;
+import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.UnexpectedAlertBehaviour;
 import org.openqa.selenium.firefox.*;
-import org.openqa.selenium.remote.CapabilityType;
 
 import com.ibm.bear.qa.spot.core.browser.BrowsersManager;
 import com.ibm.bear.qa.spot.core.config.User;
+import com.ibm.bear.qa.spot.core.scenario.SpotProperty;
+import com.ibm.bear.qa.spot.core.scenario.SpotProperty.Origin;
 import com.ibm.bear.qa.spot.core.scenario.errors.BrowserError;
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 import com.ibm.bear.qa.spot.core.utils.FileUtil;
@@ -44,8 +45,8 @@ import com.ibm.bear.qa.spot.core.web.WebBrowser;
  * </p><p>
  * This class also defines or overrides following methods:
  * <ul>
- * <li>{@link #initDriver()}: Init the driver corresponding to the current browser.</li>
- * <li>{@link #initProfile(User)}: Init the browser profile.</li>
+ * <li>{@link #initDriver()}: Initialize the driver corresponding to the current browser.</li>
+ * <li>{@link #initProfile(User)}: Initialize the browser profile.</li>
  * </ul>
  * </p>
  */
@@ -88,7 +89,7 @@ private void initDownloadDir() {
 
 	// Never ask when saving zip files
 	this.firefoxProfile.setPreference("browser.helperApps.neverAsk.saveToDisk",
-	    "application/x-xpinstall;application/x-zip;application/x-zip-compressed;application/octet-stream;application/zip;application/pdf;application/msword;text/plain;application/octet");
+		"application/x-xpinstall;application/x-zip;application/x-zip-compressed;application/octet-stream;application/zip;application/pdf;application/msword;text/plain;application/octet");
 }
 
 @Override
@@ -96,7 +97,8 @@ protected void initDriver() {
 	debugPrintEnteringMethod();
 
 	// Initialize Gecko driver if specified
-	String geckoDriverPath = System.getProperty(GECKO_DRIVER_EXE_PROPERTY);
+	SpotProperty geckoDriverProperty = getProperty(GECKO_DRIVER_EXE_PROPERTY, null);
+	String geckoDriverPath = geckoDriverProperty.getValue();
 	boolean useGeckoDriver = geckoDriverPath != null && geckoDriverPath.trim().length() > 0;
 	if (useGeckoDriver) {
 		// Check executable
@@ -115,30 +117,28 @@ protected void initDriver() {
 		throw new BrowserError("Firefox since version 60 cannot work without having set '"+GECKO_DRIVER_EXE_PROPERTY+"'!", /*fatal:*/true);
 	}
 
-	// Initialize Firefox binary
-	FirefoxBinary firefoxBinary = this.manager.getPath() == null ? new FirefoxBinary() : new FirefoxBinary(new File(this.manager.getPath()));
-	if (this.manager.isHeadless()) {
-		firefoxBinary.addCommandLineOptions("--headless");
+	// Set system property if gecko driver has not been defined using this way
+	if (geckoDriverProperty.getOrigin() != Origin.System) {
+		System.setProperty(GECKO_DRIVER_EXE_PROPERTY, geckoDriverPath);
 	}
 
-	// Initialize Firefox capabilities
-	MutableCapabilities firefoxCapabilities = new MutableCapabilities();
-	firefoxCapabilities.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR, UnexpectedAlertBehaviour.IGNORE);
+	// Initialize Firefox binary
+	FirefoxBinary firefoxBinary = this.manager.getPath() == null ? new FirefoxBinary() : new FirefoxBinary(new File(this.manager.getPath()));
+//	}
 
 	// Initialize Firefox options
 	FirefoxOptions firefoxOptions = new FirefoxOptions()
-//			.setLogLevel(FirefoxDriverLogLevel.WARN)
+			.setLogLevel(FirefoxDriverLogLevel.WARN)
 			.setProfile(this.firefoxProfile)
-			.setBinary(firefoxBinary);
-			// TODO Uncomment when version Selenium 4 will be used (see https://github.com/SeleniumHQ/selenium/issues/5540)
-//			.addPreference("browser.link.open_newwindow.restriction", 0)
-//			.addPreference("browser.link.open_newwindow", 1)
-//	if (this.manager.isHeadless()) {
-//		debugPrintln("WARNING: Firefox is running in Headless mode !!!");
-//		firefoxOptions.addArguments("--headless");
-//		firefoxOptions.addPreference("unhandledPromptBehavior", "dismiss");
-//	}
-	firefoxOptions.merge(firefoxCapabilities);
+			.setUnhandledPromptBehaviour(UnexpectedAlertBehaviour.IGNORE)
+			.setBinary(firefoxBinary)
+			// Following preferences should make Firefox behaving like Chrome, ie. open a new window in a new tab instead of a new window...
+			.addPreference("browser.link.open_newwindow.restriction", 0)
+			.addPreference("browser.link.open_newwindow", 3);
+	if (this.manager.isHeadless()) {
+		debugPrintln("WARNING: Firefox is running in Headless mode !!!");
+		firefoxOptions.setHeadless(true);
+	}
 	debugPrintln("		  -> firefox options: "+firefoxOptions);
 
 	// Create the driver

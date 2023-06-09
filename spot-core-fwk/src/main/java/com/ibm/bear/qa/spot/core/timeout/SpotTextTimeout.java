@@ -14,11 +14,8 @@ package com.ibm.bear.qa.spot.core.timeout;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.EMPTY_STRING;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.println;
+import static com.ibm.bear.qa.spot.core.utils.StringUtils.compare;
 
-import java.io.IOException;
-import java.util.regex.Pattern;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
 import com.ibm.bear.qa.spot.core.utils.StringUtils.Comparison;
 import com.ibm.bear.qa.spot.core.web.WebBrowserElement;
@@ -80,7 +77,6 @@ public class SpotTextTimeout extends SpotAbstractTimeout {
 	final private String expectedText;
 	// The current text of the element (stored for restitution later)
 	private String currentText;
-
 	// The comparison to be done between element text and expected one
 	final Comparison comparison;
 	// Recovery while getting element text
@@ -285,31 +281,7 @@ protected void fail(final boolean whileLoop) throws WaitElementTimeoutError {
 @Override
 protected boolean getCondition() {
 	this.currentText = getText();
-	switch (this.comparison) {
-		case Equals:
-			return this.currentText.equals(this.expectedText);
-		case StartsWith:
-			return this.currentText.startsWith(this.expectedText);
-		case IsStartOf:
-			return this.expectedText.startsWith(this.currentText);
-		case EndsWith:
-			return this.currentText.endsWith(this.expectedText);
-		case IsEndOf:
-			return this.expectedText.endsWith(this.currentText);
-		case Contains:
-			return this.currentText.contains(this.expectedText);
-		case Regex:
-			return Pattern.compile(this.expectedText).matcher(this.currentText).matches();
-		case Json_Equals:
-			ObjectMapper mapper = new ObjectMapper();
-			try {
-				return mapper.readTree(this.currentText).equals(mapper.readTree(this.expectedText));
-			} catch (IOException e) {
-				throw new ScenarioFailedError(e);
-			}
-		default:
-			throw new ScenarioImplementationError("It well never go there, it's just to fix a compiler bug...");
-	}
+	return compare(this.currentText, this.expectedText, this.comparison);
 }
 
 @Override

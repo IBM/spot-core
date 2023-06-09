@@ -75,6 +75,7 @@ public void addApplication(final Application application) {
  * @param url The page URL
  * @return The created and added application
  */
+@SuppressWarnings("unused")
 public Application addApplication(final String pageClassName, final String url) {
 	throw new ScenarioMissingImplementationError(whoAmI());
 }
@@ -285,23 +286,15 @@ public boolean needLogin(final String location, final User user) {
 		return false;
 	}
 
-	/*
-	 * Following commented block looks like a CLM topology legacy,
-	 * which should have been implemented in specific sub-class instead...
-	 */
-//	// Get all application on the same server than the application
-//	List<Application> serverApplications = this.servers.get(application.server);
-//
-//	// In case the application is not logged yet, check if there's another application
-//	// on the same server logged on the given user
-//	if (application.hasNoUser()) {
-//		for (Application appli: serverApplications) {
-//			if (appli.isUserConnected(user)) {
-////				application.login(user);
-//				return false;
-//			}
-//		}
-//	}
+	// Propagate user login to other applications
+	for (Application appli : this.applications) {
+		if (application.matchApplicationLoginOperationForUser(appli, user)) {
+			if (appli.isUserConnected(user)) {
+				application.users.add(user);
+				return false;
+			}
+		}
+	}
 
 	// None of the application is logged, it needs login
 	if (DEBUG) debugPrintln("		  -> no application is already logged in on same server");

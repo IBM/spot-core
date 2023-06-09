@@ -13,7 +13,6 @@
 package com.ibm.bear.qa.spot.core.utils;
 
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrint;
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -21,10 +20,10 @@ import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 
 import javax.net.ssl.*;
 
-import org.apache.commons.codec.binary.Base64;
 
 public class RestUtil {
 
@@ -184,7 +183,7 @@ public class RestUtil {
 		String authorization = null;
 		if (url.startsWith("http://")) {
 			String userpass = login + ":" + password;
-			authorization = "Basic " + new String(new Base64().encode(userpass.getBytes()));
+			authorization = "Basic " + new String(Base64.getEncoder().encode(userpass.getBytes()));
 			connection = (HttpURLConnection) new URL(url).openConnection();
 		} else {
 			// Override hostname verification for vhost
@@ -206,7 +205,7 @@ public class RestUtil {
 			// Set credentials
 			if (apiKeyHeader == null) {
 				String userpass = login + ":" + password;
-				authorization = "Basic " + new String(new Base64().encode(userpass.getBytes()));
+				authorization = "Basic " + new String(Base64.getEncoder().encode(userpass.getBytes()));
 			} else {
 				authorization = "ZenApiKey " + apiKeyHeader;
 			}
@@ -221,7 +220,7 @@ public class RestUtil {
 				debugPrint("No  SSL Socket Factory needed for connection");
 			}
 		}
-		connection.setRequestProperty(AUTHORIZATION, authorization);
+		connection.setRequestProperty("Authorization", authorization);
 
 		return connection;
 	}

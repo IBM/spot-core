@@ -153,11 +153,20 @@ protected void runChild(final FrameworkMethod method, final RunNotifier notifier
 	if (this.scenarioExecution == null) {
 		throw new RuntimeException("Cannot run SPOT test using this way. You need to run the entire scenario using -Dsteps="+getClassSimpleName(method.getDeclaringClass())+" -Dtests="+method.getName()+" properties...");
 	}
+	if (this.testCounter == 0) {
+		this.scenarioExecution.checkClosingBrowser(method, /*lastTest:*/false);
+	}
 	if (!this.scenarioExecution.shouldStop()) {
+		if (isIgnored(method)) {
+			this.scenarioExecution.addSkippedTest();
+		}
 		super.runChild(method, notifier);
 	}
-	if (++this.testCounter == testCount() && this.shouldEndExecution) {
-		this.scenarioExecution.shutdown();
+	if (++this.testCounter == testCount()) {
+		this.scenarioExecution.checkClosingBrowser(method, /*lastTest:*/true);
+		if (this.shouldEndExecution) {
+			this.scenarioExecution.shutdown();
+		}
 	}
 }
 

@@ -15,8 +15,7 @@ package com.ibm.bear.qa.spot.core.topology;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
 
 import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
 import java.util.*;
 
 import com.ibm.bear.qa.spot.core.config.User;
@@ -388,9 +387,17 @@ protected boolean isApplicationFor(final String pageUrl) {
 	try {
 		URL testUrl = new URL(pageUrl);
 		testUrl = new URL(testUrl.getProtocol(), testUrl.getHost(), testUrl.getPort(), testUrl.getPath());
-		return testUrl.toExternalForm().startsWith(this.shortLocation);
+		if (testUrl.toExternalForm().startsWith(this.shortLocation)) {
+			return true;
+		}
+		String query = (new URL(pageUrl)).getQuery();
+		if (query != null) {
+			@SuppressWarnings("deprecation")
+			String decodeQuery = URLDecoder.decode(query);
+			return decodeQuery.contains("redirect_uri="+this.shortLocation);
+		}
 	}
-	catch (@SuppressWarnings("unused") MalformedURLException ex) {
+	catch (@SuppressWarnings("unused") MalformedURLException ex ) {
 		// skip
 	}
 	return false;

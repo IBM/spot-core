@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2021 IBM Corporation and others.
+* Copyright (c) 2012, 2022 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -45,6 +45,15 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
  * </ul>
  */
 public class ScenarioUtils {
+
+	/**
+	 * Map to store any specified property used during scenario execution.
+	 * <p>
+	 * This map is created to speed up access to properties value and also
+	 * for debug purpose as its content is dumped into the debug log file.
+	 * </p>
+	 */
+	final static SpotProperties SCENARIO_PROPERTIES = new SpotProperties();
 
 	/* Directories */
 	public static final String USER_DIR_ID = "user.dir";
@@ -96,7 +105,7 @@ public class ScenarioUtils {
 	 *
 	 * Default is <code>true</code>.
 	 */
-	public static final boolean PRINT = System.getProperty("print") == null || System.getProperty("print").equals("true");
+	public static final boolean PRINT = System.getProperty("print", "true").equals("true");
 
 	/**
 	 * Global flag whether to print debug information on console or not.
@@ -105,7 +114,7 @@ public class ScenarioUtils {
 	 * </p>
 	 * @category debug parameters
 	 */
-	public static final boolean DEBUG = System.getProperty("debug") == null || System.getProperty("debug").equals("true");
+	public static final boolean DEBUG = System.getProperty("debug", "true").equals("true");
 
 	/**
 	 * Returns the directory to use to store debug file.
@@ -143,20 +152,34 @@ public class ScenarioUtils {
 	}
 
 	/**
-	 * Parameter telling which directory to use to put debug file.
+	 * Parameter telling the name of the debug log file.
 	 * <p>
-	 * Name: <code>"log.file.name"</code><br>
-	 * Value: <code>String</code>, a valid file name matching the OS on which you're running the BVT test<br>
-	 * Default value: <i>debug.log</i></br>
-	 * Usage: <code>-Dlog.file.name=my_debug_file.log</code> in the VM Arguments
-	 * field of the launch configuration.
+	 * Name: <code>"debug.log.file.name"</code><br>
+	 * Value: <code>String</code>, a valid file name matching the OS on which you're running the scenario<br>
+	 * Default value: <i>debug_yyyyMMddHHmmss.log</i></br>
+	 * Usage: <code>-Ddebug.log.file.name=my_debug_file.log</code> in the VM Arguments.
 	 * </p></p>
 	 * Note that this parameter is ignored if {@link #DEBUG} parameter
 	 * is set to <code>false</code>.
 	 * </p>
 	 * @category debug parameters
 	 */
-	public final static String DEBUG_LOG_FILE_NAME = System.getProperty("log.file.name", "debug_"+COMPACT_DATE_STRING+".log");
+	public final static String DEBUG_LOG_FILE_NAME = System.getProperty("debug.log.file.name", "debug_"+COMPACT_DATE_STRING+".log");
+
+	/**
+	 * Parameter telling the name of the console log file.
+	 * <p>
+	 * Name: <code>"console.log.file.name"</code><br>
+	 * Value: <code>String</code>, a valid file name matching the OS on which you're running the scenario<br>
+	 * Default value: <i>console_yyyyMMddHHmmss.log</i></br>
+	 * Usage: <code>-Dconsole.log.file.name=my_console_file.log</code> in the VM Arguments.
+	 * </p></p>
+	 * Note that this parameter is ignored if {@link #DEBUG} parameter
+	 * is set to <code>false</code>.
+	 * </p>
+	 * @category debug parameters
+	 */
+	public final static String CONSOLE_LOG_FILE_NAME = System.getProperty("console.log.file.name", "console_"+COMPACT_DATE_STRING+".log");
 
 	/* Parameters and data */
 	/**
@@ -191,7 +214,7 @@ public class ScenarioUtils {
 	 * </p>
 	 * @see ScenarioParametersManager
 	 */
-	private static final ScenarioParametersManager PARAMETERS_MANAGER;
+	static final ScenarioParametersManager PARAMETERS_MANAGER;
 	static {
 		// Initialize debug
 		debugOpen();
@@ -246,8 +269,9 @@ public class ScenarioUtils {
 	/*
 	 * Stream to store debug information.
 	 */
-	private static PrintWriter LOG_WRITER;
-	private static StringWriter STR_WRITER;
+	private static PrintWriter DEBUG_LOG_WRITER;
+	private static StringWriter DEBUG_STR_WRITER;
+	private static PrintWriter CONSOLE_LOG_WRITER;
 
 	/*
 	 * Indentations for debug print purposes.
@@ -261,16 +285,21 @@ public class ScenarioUtils {
  */
 public static void debugClose() {
 	if (DEBUG_DIRECTORY != null) {
-		LOG_WRITER.println("**********  Close Debug Session: "+COMPACT_DATE_STRING+"  ********");
-		LOG_WRITER.close();
-		if (STR_WRITER == null) {
+		if (CONSOLE_LOG_WRITER != null) {
+			CONSOLE_LOG_WRITER.close();
+		}
+		DEBUG_LOG_WRITER.println("**********  Close Debug Session: "+COMPACT_DATE_STRING+"  ********");
+		DEBUG_LOG_WRITER.close();
+		if (DEBUG_STR_WRITER == null) {
 			if (DEBUG) {
 				System.out.println();
-				System.out.print("Debug information have been written to '");
+				System.out.print("Debug information have been written to ");
 				System.out.print(DEBUG_DIRECTORY);
-				System.out.print(File.separator);
-				System.out.print(DEBUG_LOG_FILE_NAME);
-				System.out.println("'");
+				System.out.println(" directory:");
+				System.out.print(" - console: ");
+				System.out.println(CONSOLE_LOG_FILE_NAME);
+				System.out.print(" - debug: ");
+				System.out.println(DEBUG_LOG_FILE_NAME);
 			} else {
 				System.out.println();
 				System.out.print("WARNING: No debug information written due argument debug="+DEBUG);
@@ -278,7 +307,7 @@ public static void debugClose() {
 		} else {
 			System.out.println();
 			System.out.println("**********  DEBUG INFORMATION **********");
-			System.out.println(STR_WRITER.toString());
+			System.out.println(DEBUG_STR_WRITER.toString());
 		}
 	}
 }
@@ -288,33 +317,42 @@ public static void debugClose() {
  */
 public static void debugOpen() {
 	if (DEBUG_DIRECTORY == null) {
-		LOG_WRITER = new PrintWriter(System.out, false);
+		DEBUG_LOG_WRITER = new PrintWriter(System.out, false);
 	} else {
 		// Close previous file if any
-		if (LOG_WRITER != null) {
-			LOG_WRITER.close();
-			LOG_WRITER = null;
-			STR_WRITER = null;
+		if (DEBUG_LOG_WRITER != null) {
+			DEBUG_LOG_WRITER.close();
+			DEBUG_LOG_WRITER = null;
+			DEBUG_STR_WRITER = null;
 		}
 		// Create directory for debug file
 		File dir = createDir(DEBUG_DIRECTORY);
 		// Open debug file for writing
 		if (dir != null) {
-			File file = new File(dir, DEBUG_LOG_FILE_NAME);
+			// Initiate debug log file
+			File debugLogFile = new File(dir, DEBUG_LOG_FILE_NAME);
 			try {
-				LOG_WRITER = new PrintWriter(new BufferedOutputStream(new FileOutputStream(file, false)), false);
-				LOG_WRITER.println("**********  Open Debug Session: "+COMPACT_DATE_STRING+"  ********");
+				DEBUG_LOG_WRITER = new PrintWriter(new BufferedOutputStream(new FileOutputStream(debugLogFile, false)), false);
+				DEBUG_LOG_WRITER.println("**********  Open Debug Session: "+COMPACT_DATE_STRING+"  ********");
 			}
 			catch (IOException e) {
-				System.err.println("Cannot create stream for log: " + e.getMessage());
+				System.err.println("Cannot create stream for debug log: " + e.getMessage());
+			}
+			// Initiate console log file
+			File consoleLogFile = new File(dir, CONSOLE_LOG_FILE_NAME);
+			try {
+				CONSOLE_LOG_WRITER = new PrintWriter(new BufferedOutputStream(new FileOutputStream(consoleLogFile, false)), false);
+			}
+			catch (IOException e) {
+				System.err.println("Cannot create stream for console log: " + e.getMessage());
 			}
 		}
 		// If file was not opened, then use a simple string instead.
 		// In that case, info will be written in the console at the end of the execution
-		if (LOG_WRITER == null) {
-			STR_WRITER = new StringWriter();
-			LOG_WRITER = new PrintWriter(STR_WRITER);
-			LOG_WRITER.println("**********  Open Debug Session: "+COMPACT_DATE_STRING+"  ********");
+		if (DEBUG_LOG_WRITER == null) {
+			DEBUG_STR_WRITER = new StringWriter();
+			DEBUG_LOG_WRITER = new PrintWriter(DEBUG_STR_WRITER);
+			DEBUG_LOG_WRITER.println("**********  Open Debug Session: "+COMPACT_DATE_STRING+"  ********");
 		}
 	}
 }
@@ -326,9 +364,9 @@ public static void debugOpen() {
  */
 public static void debugPrint(final String text) {
 	if (!DEBUG) return;
-	LOG_WRITER.print(formatDebugLine(text));
+	DEBUG_LOG_WRITER.print(formatDebugLine(text));
 	if (DEBUG_DIRECTORY == null) {
-		LOG_WRITER.flush();
+		DEBUG_LOG_WRITER.flush();
 	}
 }
 
@@ -407,9 +445,9 @@ public static void debugPrintExpectedStrings(final String kind, final String sta
  */
 public static void debugPrintln() {
 	if (!DEBUG) return;
-	LOG_WRITER.println();
+	DEBUG_LOG_WRITER.println();
 	if (DEBUG_DIRECTORY == null) {
-		LOG_WRITER.flush();
+		DEBUG_LOG_WRITER.flush();
 	}
 }
 
@@ -420,10 +458,10 @@ public static void debugPrintln() {
  */
 public static void debugPrintln(final String text) {
 	if (!DEBUG) return;
-	if (LOG_WRITER != null) {
-		LOG_WRITER.println(formatDebugLine(text));
+	if (DEBUG_LOG_WRITER != null) {
+		DEBUG_LOG_WRITER.println(formatDebugLine(text));
 		if (DEBUG_DIRECTORY == null) {
-			LOG_WRITER.flush();
+			DEBUG_LOG_WRITER.flush();
 		}
 	}
 }
@@ -436,11 +474,11 @@ public static void debugPrintln(final String text) {
 public static void debugPrintln(final String... text) {
 	if (!DEBUG) return;
 	for (String str: text) {
-		LOG_WRITER.print(str);
+		DEBUG_LOG_WRITER.print(str);
 	}
-	LOG_WRITER.println();
+	DEBUG_LOG_WRITER.println();
 	if (DEBUG_DIRECTORY == null) {
-		LOG_WRITER.flush();
+		DEBUG_LOG_WRITER.flush();
 	}
 }
 
@@ -559,17 +597,6 @@ public static String getClassSimpleName(final String className) {
 
 /**
  * Return the given environment variable value.
- *
- * @param name The name of the variable
- * @return The environment variable value if found, <code>null</code> otherwise
- */
-public static String getEnvVariableValue(final String name) {
-	return getSimilarEnvVariableValue(name, false);
-}
-
-
-/**
- * Return the given or similar environment variable value.
  * <p>
  * This method can extend the search to similar name of environment variables.<br>
  * This is due to the fact that dot character ('.') is not allowed for Linux environment
@@ -585,25 +612,34 @@ public static String getEnvVariableValue(final String name) {
  * </ol>
  * </p>
  * @param name The name of the variable
- * @param searchForSimilarName Flag to tell whether search can be extended to similar names
  * @return The environment variable value if found, <code>null</code> otherwise
  */
-protected static String getSimilarEnvVariableValue(final String name, final boolean searchForSimilarName) {
+public static String getEnvVariableValue(final String name) {
 	String envValue = ENV_VARIABLES.get(name);
-	if (envValue == null && searchForSimilarName) {
+	if (envValue == null) {
+		String newName = null;
 		switch (getOsName()) {
 			case "win":
-				envValue = ENV_VARIABLES.get(name.toUpperCase());
+				newName = name.toUpperCase();
+				envValue = ENV_VARIABLES.get(newName);
 				break;
 			case "lnx":
 				if (name.indexOf('.') > 0) {
-					envValue = getSimilarEnvVariableValue(name.replaceAll("\\.", "_"), false);
+					newName = name.replaceAll("\\.", "_");
+					envValue = ENV_VARIABLES.get(newName);
 				}
 				break;
 			default:
 				break;
 		}
+		if (envValue == null) {
+			return null;
+		}
+		debugPrintln("Environment variable '"+newName+"' (got from original property name '"+name+"') has been read and its value '"+envValue+"' stored.");
+	} else {
+		debugPrintln("Environment variable '"+name+"' has been read and its value '"+envValue+"' stored.");
 	}
+	System.setProperty(name, envValue);
 	return envValue;
 }
 
@@ -706,7 +742,7 @@ public static double getParameterDoubleValue(final String name, final double def
 	}
 	catch (NumberFormatException nfe) {
 		// if property is not a valid integer value, then keep the default value
-		System.err.println("The specified value for parameter '"+name+"' is not a valid integer! ("+nfe+")");
+		System.err.println("The specified value for parameter '"+name+"' is not a valid double! ("+nfe.getMessage()+")");
 		System.err.println(defaultValue+" default value will be used instead...");
 	}
 	return defaultValue;
@@ -744,41 +780,10 @@ public static int getParameterIntValue(final String name, final int defaultValue
 	}
 	catch (NumberFormatException nfe) {
 		// if property is not a valid integer value, then keep the default value
-		System.err.println("The specified value for parameter '"+name+"' is not a valid integer! ("+nfe+")");
+		System.err.println("The specified value for parameter '"+name+"' is not a valid integer! ("+nfe.getMessage()+")");
 		System.err.println(defaultValue+" default value will be used instead...");
 	}
 	return defaultValue;
-}
-
-/**
- * Return the string value from the first defined System property from the list
- * set in the launch config.
- *
- * @param names A list of possible parameter names
- * @return The value as a {@link String} corresponding to the first defined
- * system property defined or <code>null</code> if none was found.
- */
-public static String getParametersValue(final String... names) {
-	for (String name: names) {
-		String value = getProperty(name);
-		if (value != null) {
-//			if (DEBUG) printReadParameter(name, value);
-			return value;
-		}
-	}
-	return null;
-}
-
-/**
- * Return the parameter string value from the System property set in
- * the launch config.
- *
- * @param name The parameter name
- * @return The value as a {@link String} corresponding to the system property
- * or <code>null</code> if the system property is not defined.
- */
-public static String getParameterValue(final String name) {
-	return getParameterValue(name, null);
 }
 
 /**
@@ -806,39 +811,15 @@ public static String getParameterMandatoryValue(final String name) throws Scenar
  * the launch config.
  *
  * @param name The parameter name
- * @param defaultValue The value returned if the parameter is not defined.
  * @return The value as a {@link String} corresponding to the system property
- * or <code>defaultValue</code> if the system property is not defined.
+ * or <code>null</code> if the system property is not defined.
  */
-public static String getParameterValue(final String name, final String defaultValue) {
-	String value = getProperty(name);
-	if (value == null) return defaultValue;
-//	if (DEBUG) printReadParameter(name, value);
-	return value;
+public static String getParameterValue(final String name) {
+	return getParameterValue(name, null);
 }
 
 /**
- * Return the parameter string value from the System property set in
- * the launch config.
- *
- * @param name The parameter name
- * @param defaultValue The value returned if the parameter is not defined.
- * @return The value as a {@link String} corresponding to the system property
- * or <code>defaultValue</code> if the system property is not defined.
- */
-public static String[] getParameterValues(final String name, final String defaultValue) {
-	String value = getProperty(name);
-	if (value == null) {
-		value = defaultValue;
-	} else {
-//		if (DEBUG) printReadParameter(name, value);
-	}
-	return value.split(",");
-}
-
-
-/**
- * Return the value of the the given property.
+ * Return the value of the given property using default value if not defined.
  * <p>
  * Try first to get it from {@link System} properties. If not defined, then try
  * to get it from {@link #PARAMETERS_MANAGER}. If not defined and use of
@@ -846,19 +827,29 @@ public static String[] getParameterValues(final String name, final String defaul
  * with similar name. If still not defined then return <code>null</code>.
  * </p>
  * @param name The parameter name
- * @return The string corresponding to the parameter value or <code>null</code>
+ * @param defaultValue The default value to be used if the property is not defined
+ * @return The string corresponding to the parameter value or given default value
  * if the parameter is not defined.
  */
-private static String getProperty(final String name) {
-	String value = System.getProperty(name);
-	if (value != null) return value;
-	if (PARAMETERS_MANAGER != null) {
-		value = PARAMETERS_MANAGER.getProperty(name);
-	}
-	if (value == null && USE_ENV_VARIABLES) {
-		value = getSimilarEnvVariableValue(name, true);
-	}
-	return value;
+public static String getParameterValue(final String name, final String defaultValue) {
+	return getProperty(name, defaultValue).getValue();
+}
+
+/**
+ * Return the given property using default value if not defined.
+ * <p>
+ * Try first to get it from {@link System} properties. If not defined, then try
+ * to get it from {@link #PARAMETERS_MANAGER}. If not defined and use of
+ * environment variables is allowed, then try to look for an environment variable
+ * with similar name. If still not defined then return a SPOT property initialized
+ * with the given default value.
+ * </p>
+ * @param name The parameter name
+ * @param defaultValue The default value to be used if the property is not defined
+ * @return The corresponding property, cannot be <code>null</code>
+ */
+public static SpotProperty getProperty(final String name, final String defaultValue) {
+	return SCENARIO_PROPERTIES.get(name, defaultValue);
 }
 
 /**
@@ -1005,8 +996,15 @@ public static void pause(final long millisecs) {
  * @param text The text to print to the console.
  */
 public static void print(final Object text) {
-	if (PRINT) System.out.print(text);
-	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) debugPrint(text.toString());
+	if (PRINT) {
+		System.out.print(text);
+		if (CONSOLE_LOG_WRITER != null) {
+			CONSOLE_LOG_WRITER.print(text);
+		}
+	}
+	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) {
+		debugPrint(text.toString());
+	}
 }
 
 /**
@@ -1032,19 +1030,19 @@ public static void printException(final Throwable t) {
 private static void printIndent(final int indent) {
 	switch (indent) {
 		case 1:
-			LOG_WRITER.print(ONE_INDENT_TAB_WITH_PREFIX);
+			DEBUG_LOG_WRITER.print(ONE_INDENT_TAB_WITH_PREFIX);
 			break;
 		case 2:
-			LOG_WRITER.print(TWO_INDENT_TAB_WITH_PREFIX);
+			DEBUG_LOG_WRITER.print(TWO_INDENT_TAB_WITH_PREFIX);
 			break;
 		case 3:
-			LOG_WRITER.print(THREE_INDENT_TAB_WITH_PREFIX);
+			DEBUG_LOG_WRITER.print(THREE_INDENT_TAB_WITH_PREFIX);
 			break;
 		default:
 			for (int i=0; i<indent; i++) {
-				LOG_WRITER.print("\t");
+				DEBUG_LOG_WRITER.print("\t");
 			}
-			LOG_WRITER.print("->");
+			DEBUG_LOG_WRITER.print("->");
 			break;
 	}
 }
@@ -1054,8 +1052,15 @@ private static void printIndent(final int indent) {
  * flag is set.
  */
 public static void println() {
-	if (PRINT) System.out.println();
-	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) debugPrintln();
+	if (PRINT) {
+		System.out.println();
+		if (CONSOLE_LOG_WRITER != null) {
+			CONSOLE_LOG_WRITER.println();
+		}
+	}
+	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) {
+		debugPrintln();
+	}
 }
 
 /**
@@ -1065,8 +1070,15 @@ public static void println() {
  * @param text The text to print to the console.
  */
 public static void println(final Object text) {
-	if (PRINT) System.out.println(text);
-	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) debugPrintln(String.valueOf(text));
+	if (PRINT) {
+		System.out.println(text);
+		if (CONSOLE_LOG_WRITER != null) {
+			CONSOLE_LOG_WRITER.println(text);
+		}
+	}
+	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) {
+		debugPrintln(String.valueOf(text));
+	}
 }
 
 //private static void printReadParameter(final String name, final String value) {
@@ -1151,13 +1163,7 @@ public static void printStepStart(final String stepName) {
 	for (int i = 0; i < length; i++) {
 		builder.append('=');
 	}
-	final String text = builder.toString();
-	if (PRINT) {
-		System.out.println(text);
-	}
-	if (DEBUG && (!PRINT || DEBUG_DIRECTORY != null)) {
-		debugPrintln(text);
-	}
+	println(builder.toString());
 }
 
 /**

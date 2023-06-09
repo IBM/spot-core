@@ -74,8 +74,18 @@ import com.ibm.bear.qa.spot.core.web.WebPage;
  */
 public abstract class ScenarioStep {
 
+/**
+ * Define the rule to execute a test for a scenario.
+ * <p>
+ * Basically, it simply delegates the execution to
+ * {@link ScenarioExecution#runTest(Statement, Description)} method.
+ * </p>
+ */
 	class ScenarioStepRule implements TestRule {
 
+		/**
+		 * Define the actions to be taken while executing a scenario step.
+		 */
 		final class ScenarioStepRuleStatement extends Statement {
 			private final Statement statement;
 			private final Description description;
@@ -85,6 +95,13 @@ public abstract class ScenarioStep {
 				this.description = description;
 			}
 
+			/**
+			 * {@inheritDoc}
+			 * <p>
+			 * Run a step action (ie. a test) by delegating the execution to
+			 * {@link ScenarioExecution#runTest(Statement, Description)} method.
+			 * </p>
+			 */
 			@Override
 			public void evaluate() throws Throwable {
 				ScenarioStep.this.scenarioExecution.runTest(this.statement, this.description);
@@ -111,6 +128,9 @@ public abstract class ScenarioStep {
 	// Execution
 	ScenarioExecution scenarioExecution;
 
+	/**
+	 * The rule to execute the scenario step.
+	 */
 	@Rule
 	public ScenarioStepRule stepRule = new ScenarioStepRule();
 

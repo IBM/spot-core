@@ -139,7 +139,7 @@ public abstract class WebBrowser implements SearchContext, BrowserConstants {
 	/**
 	 * Possible state for clickable workaround
 	 */
-	enum ClickableWorkaroundState { None, Init, Up, Esc, UpAgain, Javascript }
+	enum ClickableWorkaroundState { None, Init, Up, Esc, UpAgain, Javascript, Failed }
 
 	/**
 	 * Inner class to help to find elements in current browser page frames even if
@@ -358,35 +358,6 @@ public boolean acceptAlert(final String message) {
 }
 
 /**
- * Accepts security certificates on Internet Explorer. Switches to a popup window if one exists and clicks
- * link to proceed to website. Does not switch back to main browser window if popup window is found.
- */
-@Deprecated
-public void acceptInternetExplorerCertificate() {
-
-	// Switch to the popup window
-	if (DEBUG) debugPrintln("		  -> main window handle "+this.mainWindowHandle);
-	Iterator<String> iterator = getWindowHandles().iterator();
-	while (iterator.hasNext()) {
-		String handle = iterator.next();
-		if (!handle.equals(this.mainWindowHandle)) {
-			if (DEBUG) debugPrintln("		  -> switch to window handle "+handle);
-			this.driver.switchTo().window(handle);
-			break;
-		}
-	}
-	try {
-		if (this.driver.getCurrentUrl().contains("invalidcert.htm")) {
-			if (DEBUG) debugPrintln("		+ Accept Internet Explorer certificate");
-			this.driver.navigate().to("javascript:document.getElementById('overridelink').click()");
-		}
-	}
-	catch (@SuppressWarnings("unused") Exception ex) {
-		// skip
-	}
-}
-
-/**
  * Accept private connection if any.
  * <p>
  * Default is to do nothing as we assume that browser web driver will be configured
@@ -394,7 +365,9 @@ public void acceptInternetExplorerCertificate() {
  * </p>
  * @return <code>true</code> if a private connection was accepted,
  * <code>false</code> otherwise
+ * @deprecated This method will be removed
  */
+@Deprecated
 public boolean acceptPrivateConnection() {
 	return false;
 }
@@ -726,11 +699,11 @@ public void close() {
 		return;
 	}
 
-	// Remove page from cache and disconnect them from application
+	// Remove pages from cache and disconnect them from application
 	int size = this.pagesCache.size();
 	for (int i=size-1; i>=0; i--) {
 		WebPage page = this.pagesCache.remove(i);
-		page.getApplication().logout(page.user);
+		page.getTopology().logoutApplications();
 	}
 }
 
@@ -1867,12 +1840,12 @@ public boolean hasFrame() {
 }
 
 /**
- * Init the driver corresponding to the current browser.
+ * Initialize the driver corresponding to the current browser.
  */
 protected abstract void initDriver();
 
 /**
- * Init the browser profile.
+ * Initialize the browser profile.
  *
  * @param user Possible user associated with profile, might be <code>null</code>
  */
@@ -3633,7 +3606,7 @@ public WebBrowserElement waitForTextPresent(final WebBrowserElement parentElemen
 }
 
 ClickableWorkaroundState workaroundForNotClickableException(final ClickableWorkaroundState state, final WebBrowserElement element, final WebDriverException wde) {
-	takeScreenshotInfo("ElementIsNotClickable");
+	takeScreenshotInfo("ElementIsNotClickable_"+state);
 	switch (state) {
 		case Init:
 			this.errorMessage = new StringBuilder("WARNING: Element element is not clickable!").append(LINE_SEPARATOR)
@@ -3642,7 +3615,12 @@ ClickableWorkaroundState workaroundForNotClickableException(final ClickableWorka
 				.append("	- Full locator: ").append(element.getFullLocator()).append(LINE_SEPARATOR)
 				.append(cleanStackTrace(wde.getStackTrace(), 1, 0))
 				.append("	- Try to workaround this scrolling up by 100 (in case a toolbar is masking it)...").append(LINE_SEPARATOR);
-			scrollWindowBy(/*x:*/0, /*y:*/-100);
+			try {
+				scrollWindowBy(/*x:*/0, /*y:*/-100);
+			}
+			catch (@SuppressWarnings("unused") WebDriverException ex) {
+				// Skip error on scroll
+			}
 			return ClickableWorkaroundState.Up;
 		case Up:
 			this.errorMessage.append("	- Try to workaround this sending ESC to element (in case a tooltip is masking it)...").append(LINE_SEPARATOR);
@@ -3656,20 +3634,34 @@ ClickableWorkaroundState workaroundForNotClickableException(final ClickableWorka
 				catch (@SuppressWarnings("unused") ElementNotInteractableException enie) {
 					currentElement = currentElement.getParent();
 				}
+				catch (@SuppressWarnings("unused") Exception ex) {
+					// Skip error on scroll
+				}
 			}
 			return ClickableWorkaroundState.Esc;
 		case Esc:
 			this.errorMessage.append("	- Try to workaround this scrolling up by 100 again (in case several toolbars are masking it)...").append(LINE_SEPARATOR);
-			scrollWindowBy(/*x:*/0, /*y:*/-100);
+			try {
+				scrollWindowBy(/*x:*/0, /*y:*/-100);
+			}
+			catch (@SuppressWarnings("unused") Exception ex) {
+				// Skip error on scroll
+			}
 			return ClickableWorkaroundState.UpAgain;
 		case UpAgain:
 			this.errorMessage.append("	- Try to workaround by executing the click with javascript...").append(LINE_SEPARATOR);
-			element.executeScript("click()");
+			try {
+				element.executeScript("click()");
+			}
+			catch (@SuppressWarnings("unused") Exception ex) {
+				// Skip error on javascript execution
+			}
 			return ClickableWorkaroundState.Javascript;
 		case Javascript:
 			// No other workaround available, hence give up...
+			return ClickableWorkaroundState.Failed;
 		default:
-			throw wde;
+			throw new ScenarioImplementationError("Unexpected case: "+state);
 	}
 }
 

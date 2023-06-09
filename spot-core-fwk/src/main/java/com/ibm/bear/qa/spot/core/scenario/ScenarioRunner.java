@@ -14,6 +14,7 @@ package com.ibm.bear.qa.spot.core.scenario;
 
 import static com.ibm.bear.qa.spot.core.performance.PerfManager.PERFORMANCE_LOOPS;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.*;
+import static com.ibm.bear.qa.spot.core.utils.CollectionsUtil.getListFromCommaString;
 
 import java.util.*;
 
@@ -52,54 +53,14 @@ import com.ibm.bear.qa.spot.core.utils.DependsOn;
 public abstract class ScenarioRunner extends Suite {
 
 	// Constants
-	final static String FIRST_STEP = getParametersValue("runStart", "firstStep");
-	final static String LAST_STEP = getParametersValue("runEnd", "lastStep");
-	final static String STEPS = getParametersValue("runStep", "steps");
-	final static List<String> STEPS_LIST = new ArrayList<String>();
-	static {
-		if (STEPS != null) {
-			StringTokenizer tokenizer = new StringTokenizer(STEPS, ",");
-			while (tokenizer.hasMoreTokens()) {
-				STEPS_LIST.add(tokenizer.nextToken());
-			}
-		}
-	}
-	final static String FIRST_TEST = getParametersValue("runTest", "firstTest");
+	final static String FIRST_STEP = getParameterValue("firstStep");
+	final static String LAST_STEP = getParameterValue("lastStep");
+	final static String STEPS = getParameterValue("steps");
+	final static List<String> STEPS_LIST = getListFromCommaString(STEPS);
+	final static String FIRST_TEST = getParameterValue("firstTest");
 	final static String LAST_TEST = getParameterValue("lastTest");
-	final static String TESTS = getParameterValue("tests");
-	final static List<String> TESTS_LIST = new ArrayList<String>();
-	final static List<String> TESTS_STEPS_LIST = new ArrayList<String>();
-	static {
-		tokenizeTestsList("tests", TESTS_LIST, TESTS_STEPS_LIST);
-	}
-	final static String IGNORE_TESTS = getParameterValue("ignore.tests");
-	final static List<String> IGNORE_TESTS_LIST = new ArrayList<String>();
-	final static List<String> IGNORE_TESTS_STEPS_LIST = new ArrayList<String>();
-	static {
-		tokenizeTestsList("ignore.tests", IGNORE_TESTS_LIST, IGNORE_TESTS_STEPS_LIST);
-	}
-
-	private static void tokenizeTestsList(final String param, final List<String> tests, final List<String> testsSteps) throws ScenarioFailedError {
-		String value = getParameterValue(param);
-		if (value != null) {
-			StringTokenizer tokenizer = new StringTokenizer(value, ",");
-			while (tokenizer.hasMoreTokens()) {
-				String[] items = tokenizer.nextToken().split(":|\\.");
-				switch (items.length) {
-					case 1:
-						tests.add(items[0]);
-						testsSteps.add("*");
-						break;
-					case 2:
-						tests.add(items[1]);
-						testsSteps.add(items[0]);
-						break;
-					default:
-						throw new ScenarioFailedError("Invalid '"+param+"' property content: "+value);
-				}
-			}
-		}
-	}
+	final static SpotTestsList TESTS_LIST = new SpotTestsList("tests");
+	final static SpotTestsList IGNORE_TESTS_LIST = new SpotTestsList("ignore.tests");
 
 	// Data
 	protected ScenarioExecution scenarioExecution;
@@ -116,7 +77,13 @@ public ScenarioRunner(final Class< ? > klass, final RunnerBuilder builder) throw
 	super(klass, builder);
 
 	// Start execution
-	startExecution();
+	try {
+		startExecution();
+	}
+	catch (Throwable t) {
+		printException(t);
+		throw new ScenarioFailedError(t);
+	}
 
 	// Store scenario class
 	getScenarioExecution().scenarioClass = getClassSimpleName(klass);
@@ -161,11 +128,15 @@ public ScenarioRunner(final Class< ? > klass, final RunnerBuilder builder) throw
 		}
 	};
 
+	// Store scenario tests count (before filtering)
+	this.scenarioExecution.setTestCount(testCount());
+
 	// Filter steps and tests
 	try {
 		filter(filter);
-	} catch (NoTestsRemainException e) {
-		e.printStackTrace();
+	} catch (NoTestsRemainException ntre) {
+		printException(ntre);
+		throw new ScenarioFailedError(ntre);
 	}
 }
 
@@ -348,7 +319,8 @@ protected boolean testShouldRun(final Description methodDescription) {
 	String testClassSimpleName = getClassSimpleName(methodDescription.getClassName());
 	String testName = methodDescription.getMethodName();
 	final String testQualifiedName = testClassSimpleName+"."+testName;
-	if (TESTS_LIST.size() == 0) {
+	boolean foundTest = false;
+	if (TESTS_LIST.hasNoTest()) {
 		if (this.firstTest == null && FIRST_TEST != null && FIRST_TEST.length() != 0) {
 			if (!testName.contains(FIRST_TEST)) {
 				println("Filtering " + testQualifiedName + " due to 'firstTest' argument set to \"" + FIRST_TEST + "\"");
@@ -368,68 +340,51 @@ protected boolean testShouldRun(final Description methodDescription) {
 			return false;
 		}
 	} else {
-		boolean found = false;
-		for (int i=0; i<TESTS_LIST.size(); i++) {
-			String testStep = TESTS_STEPS_LIST.get(i);
-			String test = TESTS_LIST.get(i);
-			if ((test.equals("*") || testName.contains(test)) && (testStep.equals("*") || testClassSimpleName.contains(testStep))) {
-				if (methodDescription.getAnnotation(DependsOn.class) != null) {
-					String message = "Cannot insert "+testQualifiedName+" in tests list because it depends on another test.";
-					System.err.println(message);
-					throw new ScenarioFailedError(message);
-				}
-				/* Having the test not re-runnable does not mean we can't start from it...
-				 * We should introduce a specific annotation to prevent test to start from a test (e.g. NotStartable)
-				if (methodDescription.getAnnotation(NotRerunnable.class) != null) {
-					String message = "Cannot insert "+testQualifiedName+" in tests list because it's not rerunnable.";
-					System.err.println(message);
-					throw new ScenarioFailedError(message);
-				}
-				*/
-				found = true;
-				break;
+		if (TESTS_LIST.match(testClassSimpleName, testName)) {
+			if (methodDescription.getAnnotation(DependsOn.class) != null) {
+				String message = "Cannot insert "+testQualifiedName+" in tests list because it depends on another test.";
+				System.err.println(message);
+				throw new ScenarioFailedError(message);
 			}
+			/* Having the test not re-runnable does not mean we can't start from it...
+			 * We should introduce a specific annotation to prevent test to start from a test (e.g. NotStartable)
+			if (methodDescription.getAnnotation(NotRerunnable.class) != null) {
+				String message = "Cannot insert "+testQualifiedName+" in tests list because it's not rerunnable.";
+				System.err.println(message);
+				throw new ScenarioFailedError(message);
+			}
+			*/
+			foundTest = true;
 		}
-		if (!found) {
-			boolean testStepClass = false;
-			for (String testStep: TESTS_STEPS_LIST) {
-				if (testStep.equals("*") || testClassSimpleName.contains(testStep)) {
-					testStepClass = true;
-					break;
-				}
-			}
-			if (!testStepClass) {
+		if (!foundTest) {
+			// Look for step reference in steps list only if it's not used in tests list
+			if (TESTS_LIST.hasNoStepTest(testClassSimpleName)) {
 				for (String step: STEPS_LIST) {
 					if (testClassSimpleName.contains(step)) {
-						found = true;
+						foundTest = true;
 						break;
 					}
 				}
 			}
-			if (!found) {
-				println("Filtering " + testQualifiedName + " due to 'tests' argument set to \"" + TESTS + "\"");
+			if (!foundTest) {
+				println("Filtering " + testQualifiedName + " due to 'tests' argument set to \"" + TESTS_LIST.value + "\"");
 				this.filteredTests.add(methodDescription);
 				return false;
 			}
 		}
 	}
-	if (IGNORE_TESTS_LIST.size() > 0) {
-		for (int i=0; i<IGNORE_TESTS_LIST.size(); i++) {
-			String testStep = IGNORE_TESTS_STEPS_LIST.get(i);
-			String test = IGNORE_TESTS_LIST.get(i);
-			if ((test.equals("*") || testName.contains(test)) && (testStep.equals("*") || testClassSimpleName.contains(testStep))) {
-				// Test has to be ignored
-				if (TESTS_LIST.size() > 0) {
-					println("WARNING: test "+testQualifiedName+" is both specified to be run in 'tests' parameter and to be ignored:");
-					println("	-run through 'tests' parameter = "+TESTS);
-					println("	-ignored through 'ignore.tests' parameter = "+IGNORE_TESTS);
-					println("	Priority has been given to ignore parameter, hence it won't be run...");
-				}
-				println("Filtering " + testQualifiedName + " due to 'ignore.tests' argument set to \"" + IGNORE_TESTS + "\"");
-				this.filteredTests.add(methodDescription);
-				return false;
-			}
+	if (IGNORE_TESTS_LIST.match(testClassSimpleName, testName)) {
+		// Test has to be ignored
+		if (foundTest) {
+			println("WARNING: test "+testQualifiedName+" is both specified to be run in 'tests' parameter and to be ignored:");
+			println("	- run through 'tests' parameter = "+TESTS_LIST.value);
+			println("	- ignored through 'ignore.tests' parameter = "+IGNORE_TESTS_LIST.value);
+			println("	Priority has been given to ignore parameter, hence it won't be run...");
+		} else {
+			println("Filtering " + testQualifiedName + " due to 'ignore.tests' argument set to \"" + IGNORE_TESTS_LIST.value + "\"");
 		}
+		this.filteredTests.add(methodDescription);
+		return false;
 	}
 	if (this.firstTest == null) {
 		this.firstTest = methodDescription;

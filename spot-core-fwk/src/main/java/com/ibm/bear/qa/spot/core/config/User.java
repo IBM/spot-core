@@ -121,7 +121,7 @@ public User(final String prefix, final String user) {
 //		if (this.password == null) {
 //			this.password = this.id;
 //		}
-		this.email = getParameterValue(prefix + EMAIL_ID, this.id + getParameterValue(MAIL_DOMAIN_ID, defaultDomain));
+		this.email = getParameterValue(prefix + EMAIL_ID, this.id==null ? null : this.id + getParameterValue(MAIL_DOMAIN_ID, defaultDomain));
 	}
 
 	// Check that we got at least an ID, a name and a password

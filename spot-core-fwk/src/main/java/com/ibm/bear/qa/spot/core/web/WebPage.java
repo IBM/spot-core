@@ -2202,7 +2202,7 @@ public void scrollDown() {
  * </p>
  * @param webElement The web element to make visible
  */
-protected void scrollToMakeElementVisible(final WebBrowserElement webElement) {
+protected void scrollToMakeElementVisible(@SuppressWarnings("unused") final WebBrowserElement webElement) {
 	// Do nothing
 }
 

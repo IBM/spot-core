@@ -107,7 +107,10 @@ public static <T extends Topology> T createTopologyInstance(final String classNa
  * Create an instance of the given operation associated with the given step.
  * <p>
  * When using this factory method, the framework assumes that the given
- * class has a constructor with a scenario step or one of its subclass parameter.
+ * class has a constructor with following parameters:
+ * <ul>
+ * <li>{@link ScenarioStep} or one of its direct subclass</li>
+ * </ul>
  * </p>
  * @param operationClass The class of the operation to be created
  * @param step The step creating the operation
@@ -151,8 +154,10 @@ public static <O extends ScenarioOperation> O createOperationInstance(final Clas
  * Create an instance of the given web window class located in the given page.
  * <p>
  * When using this factory method, the framework assumes that the given
- * class has a constructor with a single {@link WebPage} or one of its direct
- * subclass parameter.
+ * class has a constructor with following parameters:
+ * <ul>
+ * <li>{@link WebPage} or one of its direct subclass</li>
+ * </ul>
  * </p>
  * @param page The page from which the window will belong to
  * @param windowClass The framework class of the window
@@ -168,8 +173,10 @@ public static <W extends SpotAbstractWindow> W createWindowInstance(final WebPag
  * Create an instance of the given web window class located in the given page.
  * <p>
  * When using this factory method, the framework assumes that the given
- * class has a constructor with a single {@link WebPage} or one of its direct
- * subclass parameter.
+ * class has a constructor with following parameters:
+ * <ul>
+ * <li>{@link WebPage} or one of its direct subclass</li>
+ * </ul>
  * </p>
  * @param page The page from which the window will belong to
  * @param windowClass The framework class of the window
