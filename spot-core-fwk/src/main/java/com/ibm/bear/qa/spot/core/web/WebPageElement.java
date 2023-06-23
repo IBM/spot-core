@@ -132,7 +132,7 @@ abstract public class WebPageElement {
 	 * when closing the dialog.
 	 * </p>
 	 * </li>
-	 * <li>slot 1: The frame used by the dialog
+	 * <li>slot 1: The frame used by the element
 	 * <p>
 	 * Can be <code>null</code> if no frame is used by the window
 	 * </p><p>
@@ -179,7 +179,8 @@ public WebPageElement(final WebPage page, final WebBrowserFrame frame) {
 	this.browser = page.getBrowser();
 	this.frames = new WebBrowserFrame[3];
 	this.frames[0] = this.browser.getCurrentFrame();
-	this.frames[1] = frame;
+	this.frames[1] = frame == null ? this.frames[0] : frame;
+	selectFrame();
 }
 
 /**

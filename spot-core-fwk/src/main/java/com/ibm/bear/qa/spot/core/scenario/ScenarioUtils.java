@@ -97,9 +97,6 @@ public class ScenarioUtils {
 	public static final String NORMAL_DATE_STRING = NORMAL_DATE_FORMAT.format(SCENARIO_START_TIME);
 	public static final String SIMPLE_DATE_STRING = SIMPLE_DATE_FORMAT.format(SCENARIO_START_TIME);
 
-	/* Recovery */
-	public static final int MAX_RECOVERY_TRIES = 5;
-
 	/**
 	 * Global flag whether to print output on console or not.
 	 *

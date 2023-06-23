@@ -67,26 +67,58 @@ abstract public class SpotAbstractWindow extends WebElementWrapper implements Sp
 	 */
 	protected WebBrowserElement openingElement;
 
-public SpotAbstractWindow(WebElementWrapper parent, By locator) {
+/**
+ * Create a new window instance belonging to the given parent element wrapper using given window locator.
+ *
+ * @param parent The parent element wrapper which will own the window instance
+ * @param locator The dialog web element locator
+ */
+public SpotAbstractWindow(final WebElementWrapper parent, final By locator) {
 	super(parent, (WebBrowserElement) null);
 	this.locator = locator;
 	this.max = WebBrowserElement.MAX_RECOVERY_ATTEMPTS;
 }
 
+/**
+ * Create a new window instance belonging to the given page using given window locator.
+ *
+ * @param page The page which will own the window instance
+ * @param locator The dialog web element locator
+ */
 public SpotAbstractWindow(final WebPage page, final By locator) {
 	this(page, locator, (WebBrowserFrame) null);
 }
 
+/**
+ * Create a new window instance belonging to the given page using given window locator.
+ *
+ * @param page The page which will own the window instance
+ * @param locator The dialog web element locator
+ * @param frame The name of the frame used in the window
+ */
 public SpotAbstractWindow(final WebPage page, final By locator, final String frame) {
 	this(page, locator, new WebNamedFrame(page.getBrowser(), frame));
 }
 
+/**
+ * Create a new window instance belonging to the given page using given window locator.
+ *
+ * @param page The page which will own the window instance
+ * @param locator The dialog web element locator
+ * @param frame The frame used in the window
+ */
 public SpotAbstractWindow(final WebPage page, final By locator, final WebBrowserFrame frame) {
 	super(page, frame);
 	this.locator = locator;
 	this.max = WebBrowserElement.MAX_RECOVERY_ATTEMPTS;
 }
 
+/**
+ * Create a new window instance belonging to the given page using given window locator.
+ *
+ * @param page The page which will own the window instance
+ * @param element The window web element
+ */
 public SpotAbstractWindow(final WebPage page, final WebBrowserElement element) {
 	super(page, element);
 	this.locator = element.locator;
@@ -163,12 +195,21 @@ protected void close(final boolean validate) {
 	}
 
 	// Go back to browser frame used before opening the window
-    if (this.frames[0] == null || this.frames[0].isDisplayed()) {
-	    switchToBrowserFrame();
-    } else {
-    	debugPrintln("Warning: Browser frame is no longer displayed, hence reset it while closing browser.");
-    	this.browser.resetFrame();
-    }
+	if (this.frames[0] == null || this.frames[0].isDisplayed()) {
+		switchToBrowserFrame();
+	} else {
+		WebElementFrame parentFrame = null;
+		if (this.frames[0] instanceof WebEmbeddedFrame) {
+			WebEmbeddedFrame embeddedFrame = (WebEmbeddedFrame) this.frames[0];
+			parentFrame = embeddedFrame.getDisplayedParent();
+		}
+		if (parentFrame == null) {
+			debugPrintln("Warning: Browser frame is no longer displayed, hence reset it while closing browser.");
+			this.browser.resetFrame();
+		} else {
+			this.browser.selectFrame(parentFrame, true);
+		}
+	}
 
 	// Add performance result
 	if (PERFORMANCE_ENABLED) {

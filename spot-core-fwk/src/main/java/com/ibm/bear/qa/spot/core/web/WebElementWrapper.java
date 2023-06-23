@@ -271,7 +271,12 @@ public WebBrowserElement findElement(final By elemLocator, final boolean display
 	// Find elements
 	List<WebElement> elements;
 	if (this.frames[2] != null) {
-		elements = this.browser.findElements(elemLocator, displayed, recovery);
+		if (this.element.getFrame() == this.frames[2]) {// == is intentional
+			elements = this.element.findElements(elemLocator, displayed, recovery);
+		} else {
+			selectFrame();
+			elements = this.browser.findElements(elemLocator, displayed, recovery);
+		}
 	} else if (this.element == null) {
 		elements = this.browser.findElements(elemLocator, displayed, recovery);
 	} else {

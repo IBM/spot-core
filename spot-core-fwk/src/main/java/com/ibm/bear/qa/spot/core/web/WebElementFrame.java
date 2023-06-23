@@ -15,7 +15,7 @@ package com.ibm.bear.qa.spot.core.web;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.DEBUG;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintln;
 
-import org.openqa.selenium.By;
+import org.openqa.selenium.*;
 
 import com.ibm.bear.qa.spot.core.config.Timeouts;
 
@@ -75,7 +75,12 @@ public int hashCode() {
  */
 @Override
 public boolean isDisplayed() {
-	return this.element.isDisplayed(false/*recovery*/);
+	try {
+		return this.element.isDisplayed(false);
+	}
+	catch (StaleElementReferenceException | NoSuchElementException ex) {
+		return false;
+	}
 }
 
 /**

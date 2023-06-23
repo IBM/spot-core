@@ -48,7 +48,16 @@ public class SpotProperty implements Comparable<SpotProperty> {
 	/**
 	 * Enumeration to list all possible ways to define a property
 	 */
-	public enum Origin { Undefined, Parameter, Environment, System }
+	public enum Origin {
+		/** The associated property is not defined */
+		Undefined,
+		/** The associated property is defined in properties file and read using {@link ScenarioParametersManager} */
+		Parameter,
+		/** The associated property is defined using an OS environment variable */
+		Environment,
+		/** The associated property is defined using {@link System} properties */
+		System
+	}
 
 	final private String name;
 	private String value;
@@ -56,7 +65,12 @@ public class SpotProperty implements Comparable<SpotProperty> {
 	private Origin origin = Origin.Undefined;
 	private boolean undefined;
 
-
+/**
+ * Create a property using given name and default value.
+ * 
+ * @param name The property name
+ * @param defaultValue The default value if not defined
+ */
 public SpotProperty(final String name, final String defaultValue) {
 	this.name = name;
 	this.defaultValue = defaultValue;

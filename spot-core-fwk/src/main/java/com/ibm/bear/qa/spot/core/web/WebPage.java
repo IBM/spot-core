@@ -1835,7 +1835,7 @@ public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkEleme
 public <P extends WebPage> P openPageUsingLink(final WebBrowserElement linkElement, final Config pageConfig, final User pageUser, final Class<P> openedPageClass, final String... pageData) {
 	if (DEBUG) debugPrintln("		+ Click to link "+linkElement+ " to open web page of "+openedPageClass.getName()+" class");
 
-	// Store current page information to check whether the link click did really occurred
+	// Store destination page information to check whether the link click did really occurred
 	String linkUrl = linkElement.getAttribute("href");
 	String linkString = linkElement.toString();
 	if (DEBUG) {
@@ -2566,9 +2566,8 @@ protected void verifyPageUser() throws ScenarioFailedError {
 
 		// It may be the case that a re-try will let us login properly. However, if there is a disconnect
 		// between the server's info (name/id) and the properties files, we'll be stuck in a loop
-		// between get(), verifyPageUser(), login(). To avoid that, only try MAX_RECOVERY_TRIES
-		// to login/get/verify.
-		if (this.verifyTries++ >= MAX_RECOVERY_TRIES) {
+		// between get(), verifyPageUser(), login(). To avoid that, only 3 attempts to login/get/verify.
+		if (this.verifyTries++ >= 3) {
 			throw new ScenarioFailedError("User with id '" + getUser().getId() + "' is not going to be able to login because their name '"
 					+ getUser().getName() + "' does not match the server value of '" + loggedUserElement.getText() + "'.");
 		}

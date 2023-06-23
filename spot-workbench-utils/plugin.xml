@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <!--
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            id="com.ibm.team.spot.core.utils.popups"
+            objectClass="org.eclipse.jdt.core.IJavaProject">
+         <menu
+               id="spot.utils.pmenu"
+               label="SPOT Utils"
+               path="java.spot">
+            <separator
+                  name="spot.utils.popups.sep_1">
+            </separator>
+         </menu>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.metrics.MetricsResultsAction"
+               id="com.ibm.bear.qa.spot.wb.utils.metrics"
+               label="Code Metrics"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_1b">
+         </action>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.metrics.scenarios.ScenariosAction"
+               id="com.ibm.bear.qa.spot.wb.utils.metrics.scenarios.ScenariosAction"
+               label="Scenarios Metrics"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_1c"
+               tooltip="Compute metrics for scenarios present in the selected projects">
+         </action>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.rewrite.bvt.old.RewriteOldBvtAction"
+               enablesFor="x"
+               id="com.ibm.bear.qa.spot.wb.utils.rewrite.old.bvt"
+               label="Rewrite Old BVT"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_1a">
+         </action>
+         <action
+               class="com.ibm.team.spot.core.utils.rewrite.api.save.RewriteApiSaveAction"
+               id="com.ibm.team.spot.core.utils.rewrite.api.save"
+               label="Rewrite API Save"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_1c">
+         </action>
+      </objectContribution>
+   </extension>
+   -->
+   <!--
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            id="com.ibm.team.spot.core.utils.popups"
+            objectClass="org.eclipse.jdt.core.ICompilationUnit">
+         <menu
+               id="spot.utils.pmenu"
+               label="SPOT Utils"
+               path="java.spot">
+            <separator
+                  name="spot.utils.popups.sep_2">
+            </separator>
+         </menu>
+         <action
+               class="com.ibm.team.spot.core.utils.metrics.scenarios.ScenarioAction"
+               id="com.ibm.team.spot.core.utils.metrics.scenarios.ScenarioAction"
+               label="Scenario Metric"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_2a">
+         </action>
+         <action
+               class="com.ibm.team.spot.core.utils.rewrite.api.save.RewriteApiSaveAction"
+               id="com.ibm.team.spot.core.utils.rewrite.api.save"
+               label="Rewrite API Save"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_2b">
+         </action>
+      </objectContribution>
+   </extension>
+   -->
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            id="com.ibm.team.spot.core.utils.popups.ip"
+            objectClass="org.eclipse.jdt.core.IJavaProject">
+         <menu
+               id="spot.utils.pmenu"
+               label="SPOT Utils"
+               path="java.spot">
+            <separator
+                  name="spot.utils.popups.sep_1">
+            </separator>
+         </menu>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.metrics.CodeMetricsResultsAction"
+               id="com.ibm.bear.qa.spot.wb.utils.metrics"
+               label="Code Metrics"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_1">
+         </action>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.metrics.scenarios.ScenariosMetricsResultsAction"
+               id="com.ibm.bear.qa.spot.wb.utils.metrics.scenarios.ScenariosMetricsResultsAction"
+               label="Scenarios Metrics"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_1"
+               tooltip="Compute metrics for scenarios present in the selected projects">
+         </action>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.code.SpotCreateScenarioAction"
+               id="com.ibm.bear.qa.spot.wb.utils.create.scenario"
+               label="Create SPOT scenario"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_2">
+         </action>
+      </objectContribution>
+      <objectContribution
+            id="com.ibm.team.spot.core.utils.popups.icu"
+            objectClass="org.eclipse.jdt.core.IJavaElement">
+         <menu
+               id="spot.utils.pmenu"
+               label="SPOT Utils"
+               path="java.spot">
+            <separator
+                  name="spot.utils.popups.sep_2">
+            </separator>
+         </menu>
+         <!--
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.rewrite.api.save.RewriteApiSaveAction"
+               id="com.ibm.bear.qa.spot.wb.utils.rewrite.api.save"
+               label="Rewrite API Save"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_2b">
+         </action>
+         -->
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.doc.WriteSpotClassDocAction"
+               id="com.ibm.bear.qa.spot.wb.utils.doc"
+               label="Write SPOT doc"
+               menubarPath="spot.utils.pmenu/spot.utils.popups.group_3">
+         </action>
+		 <action
+				class="com.ibm.bear.qa.spot.wb.utils.copyrights.UpdateCopyrightsAction"
+				id="com.ibm.bear.qa.spot.wb.utils.copyrights"
+				label="Update Copyrights"
+                menubarPath="spot.utils.pmenu/spot.utils.popups.group_3">
+		 </action>
+      </objectContribution>
+   </extension>
+   <extension
+         point="org.eclipse.ui.actionSets">
+     
+      <actionSet
+            id="com.ibm.team.spot.core.utils.spot.actions"
+            label="SPOT"
+            visible="true">
+         <menu
+               id="spot.utils.tmenu"
+               label="SPOT Utils">
+         <separator
+                  name="spot.utils.toolbar.sep_1">
+         </separator>
+         </menu>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.metrics.CodeMetricsAction"
+               id="com.ibm.bear.qa.spot.wb.utils.metrics.CodeMetricsAction"
+               label="Code Metrics"
+               menubarPath="spot.utils.tmenu/spot.utils.toolbar.group_1"
+               tooltip="Compute code metrics for projects present in the entire workspace">
+         </action>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.metrics.scenarios.ScenariosMetricsResultsAction"
+               id="com.ibm.bear.qa.spot.wb.utils.metrics.scenarios.ScenariosMetricsResultsAction"
+               label="Scenarios Metrics"
+               menubarPath="spot.utils.tmenu/spot.utils.toolbar.group_1"
+               tooltip="Compute metrics for scenarios present in the entire workspace">
+         </action>
+      </actionSet>
+   </extension>
+	<extension
+		point="org.eclipse.ui.popupMenus">
+		<viewerContribution
+			targetID="#CompilationUnitEditorContext"
+			id="com.ibm.bear.qa.spot.wb.utils.doc.editor">
+			<action
+				class="com.ibm.bear.qa.spot.wb.utils.doc.WriteSpotClassDocAction"
+				id="com.ibm.bear.qa.spot.wb.utils.doc"
+				label="Write SPOT doc"
+				menubarPath="addition">
+			</action>
+			<action
+				class="com.ibm.bear.qa.spot.wb.utils.copyrights.UpdateCopyrightsAction"
+				id="com.ibm.bear.qa.spot.wb.utils.copyrights"
+				label="Update Copyrights"
+				menubarPath="addition">
+			</action>
+		</viewerContribution>
+	</extension>
+</plugin>

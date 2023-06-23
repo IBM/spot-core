@@ -19,6 +19,7 @@ import static com.ibm.bear.qa.spot.core.utils.ByUtils.getLocatorString;
 import static com.ibm.bear.qa.spot.core.utils.FileUtil.createDir;
 import static com.ibm.bear.qa.spot.core.utils.StringUtils.hidePasswordInLocation;
 import static com.ibm.bear.qa.spot.core.web.WebBrowserElement.MAX_RECOVERY_ATTEMPTS;
+import static com.ibm.bear.qa.spot.core.web.WebBrowserElement.getList;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,8 +41,8 @@ import com.ibm.bear.qa.spot.core.config.User;
 import com.ibm.bear.qa.spot.core.javascript.DrapAndDropSimulator;
 import com.ibm.bear.qa.spot.core.javascript.DrapAndDropSimulator.Position;
 import com.ibm.bear.qa.spot.core.performance.PerfManager;
-import com.ibm.bear.qa.spot.core.scenario.ScenarioUtils;
 import com.ibm.bear.qa.spot.core.scenario.errors.*;
+import com.ibm.bear.qa.spot.core.timeout.SpotTextTimeout;
 import com.ibm.bear.qa.spot.core.utils.*;
 import com.ibm.bear.qa.spot.core.utils.ByUtils.ComparisonPattern;
 
@@ -1017,7 +1018,7 @@ private void dragAndDrop(final WebBrowserElement dragFrom, final WebBrowserEleme
  */
 public void dragAndDropBy(final WebBrowserElement element, final int xOffset, final int yOffset) {
 	debugPrintln("		+ Drag " + element + " to (" + xOffset+", "+yOffset+")");
-	this.actions.dragAndDropBy(element, xOffset, yOffset).build().perform();
+	this.actions.dragAndDropBy(element.getWebElement(), xOffset, yOffset).build().perform();
 }
 
 /**
@@ -1035,7 +1036,7 @@ public Object executeScript(final String script) {
  * <p>
  * Note that this method allow recovery while trying to find the element
  * (see {@link #findElement(By, boolean)} for details on recovery). So, if an
- * exception occurs during the operation it will retry it {@link ScenarioUtils#MAX_RECOVERY_TRIES}
+ * exception occurs during the operation it will retry it {@link WebBrowserElement#MAX_RECOVERY_ATTEMPTS}
  * times before giving up and actually raise the exception...
  * </p><p>
  * The element is searched in the current browser frame.
@@ -1136,7 +1137,7 @@ public WebBrowserElement findElement(final By locator, final WebBrowserFrame web
  * </p><p>
  * Note that this method allow recovery while trying to find the element
  * (see {@link #findElements(By, boolean)} for details on recovery). So, if an
- * exception occurs during the operation it will retry it {@link ScenarioUtils#MAX_RECOVERY_TRIES}
+ * exception occurs during the operation it will retry it {@link WebBrowserElement#MAX_RECOVERY_ATTEMPTS}
  * times before giving up and actually raise the exception...
  * </p>
  * @param locator The locator to find the element in the page (see {@link By}).
@@ -1173,7 +1174,7 @@ public WebBrowserElement findElementInFrames(final By locator) {
  * <p>
  * Note that this method allow recovery while trying to find the element
  * (see {@link #findElements(By, boolean)} for details on recovery). So, if an
- * exception occurs during the operation it will retry it {@link ScenarioUtils#MAX_RECOVERY_TRIES}
+ * exception occurs during the operation it will retry it {@link WebBrowserElement#MAX_RECOVERY_ATTEMPTS}
  * times before giving up and actually raise the exception...
  * </p>
  * @param locator The locator to find the element in the page.
@@ -1324,7 +1325,7 @@ public List<WebElement> findElements(final By locator, final boolean displayed, 
  * </p><p>
  * Note that this method allow recovery while trying to find the element
  * (see {@link #findElements(By, boolean)} for details on recovery). So, if an
- * exception occurs during the operation it will retry it {@link ScenarioUtils#MAX_RECOVERY_TRIES}
+ * exception occurs during the operation it will retry it {@link WebBrowserElement#MAX_RECOVERY_ATTEMPTS}
  * times before giving up and actually raise the exception...
  * </p>
  * @param locator The locator to find the element in the page (see {@link By}).
@@ -1985,7 +1986,7 @@ public void moveToElement(final WebBrowserElement element, final boolean entirel
 
 		// Put the mouse to the element's top-left corner
 		try {
-			this.actions	.moveToElement(webElement, 0, 0);
+			this.actions.moveToElement(webElement, 0, 0);
 		}
 		catch (WebDriverException wde) {
 			if (DEBUG) {
@@ -2027,7 +2028,7 @@ public void moveToElement(final WebBrowserElement element, final boolean entirel
  * @param yOffset Offset from the top-left corner. A negative value means coordinates above the element.
  */
 public void moveToElement(final WebBrowserElement element, final int xOffset, final int yOffset) {
-	this.actions.moveToElement(element, xOffset, yOffset).perform();
+	this.actions.moveToElement(element.getWebElement(), xOffset, yOffset).perform();
 }
 
 /**
@@ -2233,7 +2234,9 @@ public void scrollOnePageUp() {
  * This is a no-op if the web element is already visible in the browser view.
  * </p>
  * @param element The web element to scroll the page to
+ * @deprecated Use {@link #moveToElement(WebBrowserElement, boolean)} instead
  */
+@Deprecated
 public void scrollPageTo(final WebBrowserElement element) {
 	element.scrollIntoView();
 }
@@ -2313,7 +2316,9 @@ public WebBrowserElement[] select(final WebBrowserElement listElement, final By 
  * @return The array of the selected elements as {@link WebBrowserElement}.
  * @throws ScenarioFailedError if not all elements to select were found after
  * having retried {@link WebBrowserElement#MAX_RECOVERY_ATTEMPTS} times.
+ * @deprecated Use {@link WebSelectElement#select(String, ComparisonPattern)} instead
  */
+@Deprecated
 public WebBrowserElement[] select(final WebBrowserElement listElement, final By entriesBy, final boolean useControl, final StringComparisonCriterion[] comparisonCriteria, final String... expected) {
 
 	// Init array to return
@@ -2848,7 +2853,7 @@ private void setWindow(final Dimension dimension, final Point location) {
  */
 public void shiftClick(final WebBrowserElement destination) {
 	this.actions.keyDown(Keys.SHIFT)
-		.moveToElement(destination)
+		.moveToElement(destination.getWebElement())
 		.click()
 		.keyUp(Keys.SHIFT)
 		.build()
@@ -3338,6 +3343,7 @@ public List<WebBrowserElement> waitForElements(final WebBrowserElement parentEle
 		}
 
 		// Return hidden elements if any and allowed
+		// TODO This block is unnecessary as hiddenElements is populated only when displayed is true...
 		int hiddenSize = hiddenElements.size();
 		if (hiddenSize > 0 && !displayed) {
 			if (DEBUG) debugPrintln("		  -> return "+hiddenSize+" hidden elements");
@@ -3450,19 +3456,24 @@ public WebBrowserElement[] waitForFirstElementInList(final WebBrowserElement par
 
 			// Find the framework web elements
 			List<WebElement> findElements = parentElement == null
-				? findElements(locators[i], displayed, fail/*recovery*/)
-				: parentElement.findElements(locators[i], displayed, fail/*recovery*/);
+				? findElements(locators[i], displayed, /*recovery:*/true)
+				: parentElement.findElements(locators[i], displayed, /*recovery:*/true);
 
-			// Put the found element in the return array
-			for (WebElement findElement: findElements) {
-				if (DEBUG)  debugPrintln("		  -> found '"+locators[i]+"'");
-				foundElements[i] = (WebBrowserElement) findElement;
-				found = true;
-				break;
+			// Check a single element is found
+			switch (findElements.size()) {
+				case 0:
+					break;
+				case 1:
+					if (DEBUG)  debugPrintln("		  -> found '"+locators[i]+"'");
+					foundElements[i] = (WebBrowserElement) findElements.get(0);
+					found = true;
+					break;
+				default:
+					throw new MultipleElementsFoundError(getList(findElements));
 			}
 		}
 
-		// Leave as soon as one of the element is found
+		// Leave as soon as at least one element is found
 		if (found) {
 			return foundElements;
 		}
@@ -3530,7 +3541,9 @@ public WebBrowserElement waitForMandatoryDisplayedElement(final By locator, fina
  * it's asked not to fail.
  * @throws ScenarioFailedError If the text never matches before timeout occurs
  * and if it's asked to fail.
+ * @deprecated Use {@link SpotTextTimeout} instead
  */
+@Deprecated
 public String waitForText(final WebBrowserElement element, final boolean fail, final int timeout, final String... texts) {
 	debugPrintEnteringMethod("element", element, "fail", fail, "timeout", timeout, "texts", getTextFromList(texts));
 

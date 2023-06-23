@@ -290,7 +290,7 @@ public boolean needLogin(final String location, final User user) {
 	for (Application appli : this.applications) {
 		if (application.matchApplicationLoginOperationForUser(appli, user)) {
 			if (appli.isUserConnected(user)) {
-				application.users.add(user);
+				application.login(user);
 				return false;
 			}
 		}

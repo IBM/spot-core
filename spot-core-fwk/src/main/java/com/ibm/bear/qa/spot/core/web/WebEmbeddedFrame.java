@@ -15,10 +15,22 @@ package com.ibm.bear.qa.spot.core.web;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.DEBUG;
 import static com.ibm.bear.qa.spot.core.scenario.ScenarioUtils.debugPrintln;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioFailedError;
 
 /**
  * Class to manage browser frame embedded in another frame.
+ * <p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #getDisplayedParent()}: Switch to parent frame.</li>
+ * <li>{@link #getParentFrame()}: Get the parent frame.</li>
+ * <li>{@link #isDisplayed()}: Return whether the frame is still displayed or not.</li>
+ * <li>{@link #switchToParent()}: Switch to parent frame.</li>
+ * </ul>
+ * </p>
  */
 public class WebEmbeddedFrame extends WebElementFrame {
 
@@ -35,6 +47,72 @@ public WebEmbeddedFrame(final WebBrowser browser, final WebBrowserFrame frame, f
 	} else {
 		throw new ScenarioFailedError("Invalid class for parent frame: "+browserFrame.getClass());
 	}
+}
+
+/**
+ * Switch to parent frame.
+ * <p>
+ * Note that if parent frame is no longer displayed, this method safely walk through
+ * frames hierarchy until it finds a displayed frame. If all frames are no longer displayed
+ * in the hierarchy, then no frame will be selected at the end of the method operation.
+ * </p>
+ * @return The selected parent frame as a {@link WebElementFrame} or <code>null</code>
+ * if no valid frame was found in the frame parents hierarchy
+ */
+public WebElementFrame getDisplayedParent() {
+	if (DEBUG) debugPrintln("		+ Switch to "+this);
+
+	// Reset frame first
+	this.driver.switchTo().defaultContent();
+
+	// Get parent frames hierarchy
+	List<WebElementFrame> framesHierarchy = getFramesHierarchy();
+
+	// Switch to first valid parent frame
+	WebElementFrame displayedFrame = null;
+	for (WebElementFrame frame: framesHierarchy) {
+		if (frame.getElement().isDisplayed(false)) {
+			displayedFrame = frame;
+		} else {
+			return displayedFrame;
+		}
+	}
+
+	// No valid frame was found in hierarchy
+	return null;
+}
+
+private List<WebElementFrame> getFramesHierarchy() {
+	WebElementFrame rootParent = this.parentFrame;
+	List<WebElementFrame> framesHierarchy = new ArrayList<>();
+	framesHierarchy.add(rootParent);
+	while (rootParent instanceof WebEmbeddedFrame) {
+		rootParent = ((WebEmbeddedFrame) this.parentFrame).parentFrame;
+		if (rootParent != null) {
+			framesHierarchy.add(0, rootParent);
+		}
+	}
+	return framesHierarchy;
+}
+
+/**
+ * Get the parent frame.
+ *
+ * @return The parent frame
+ */
+public WebElementFrame getParentFrame() {
+	return this.parentFrame;
+}
+
+@Override
+public boolean isDisplayed() {
+	List<WebElementFrame> framesHierarchy = getFramesHierarchy();
+	for (WebElementFrame frame: framesHierarchy) {
+		if (!frame.getElement().isDisplayed(false)) {
+			return false;
+		}
+	}
+	return super.isDisplayed();
 }
 
 @Override

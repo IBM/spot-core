@@ -27,8 +27,36 @@ import com.ibm.bear.qa.spot.core.web.*;
  */
 abstract public class SpotInFrameDialog extends SpotAbstractDialog {
 
-public SpotInFrameDialog(final WebPage page, final By findBy, final WebBrowserFrame frame) {
-	super(page, findBy, frame);
+/**
+ * Create a new dialog instance belonging to the given page using given dialog locator.
+ *
+ * @param page The page which will own the dialog instance
+ * @param locator The dialog web element locator
+ */
+public SpotInFrameDialog(final WebPage page, final By locator) {
+	super(page, locator);
+}
+
+/**
+ * Create a new dialog instance belonging to the given page using given dialog locator.
+ *
+ * @param page The page which will own the dialog instance
+ * @param locator The dialog web element locator
+ * @param frame The name of the frame used in the dialog
+ */
+public SpotInFrameDialog(final WebPage page, final By locator, final String frame) {
+	super(page, locator, frame);
+}
+
+/**
+ * Create a new dialog instance belonging to the given page using given dialog locator.
+ *
+ * @param page The page which will own the dialog instance
+ * @param locator The dialog web element locator
+ * @param frame The frame used in the dialog
+ */
+public SpotInFrameDialog(final WebPage page, final By locator, final WebBrowserFrame frame) {
+	super(page, locator, frame);
 }
 
 /**
