@@ -32,16 +32,11 @@ import com.ibm.bear.qa.spot.wb.utils.metrics.AbstractMetricsResults;
  * </p><p>
  * The flat file generated at the end of the metrics scan is built as follows:
  * <pre>
- * Version		Date		Scenarios	Steps	Tests
- * CLM 6.0.0 S8	01/20/2014	X	Y	Z
- * 				&lt;name 1&gt;	S1	T2
- * ...
- * 				&lt;name N&gt;	Sn	Tn
+ * Project	Version		Date		Scenarios	Steps	Tests
+ * spot-samples-scenarios	5.1.0	06/24/23	SampleToolsQaScenario	3	7
  * </pre>
- * Where on the first line, <b>X</b> is the number of scenarios, <b>Y</b> the total
- * of steps and <b>Z</b> the total of tests for that version.<br>
- * On following lines, for each scenario of that version, <b>Sn</b> is the number
- * of steps and <b>Tn</b> the number of tests for the corresponding scenario.
+ * Where on the first line, <b>3</b> is the number of steps and <b>7</b>
+ * the total of tests for that version.
  */
 @SuppressWarnings("restriction")
 public class ScenarioMetricsResults extends AbstractMetricsResults {

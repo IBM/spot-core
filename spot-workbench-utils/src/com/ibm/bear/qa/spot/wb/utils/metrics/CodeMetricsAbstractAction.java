@@ -86,13 +86,13 @@ protected boolean initVersionValues() {
 	}
 
 	// Enter the version name
-	InputDialog versionNameInputDialog = new InputDialog(getShell(), "SPOT Metrics", "Enter the CLM versionName", this.versionName, null);
+	InputDialog versionNameInputDialog = new InputDialog(getShell(), "SPOT Metrics", "Enter the versionName", this.versionName, null);
 	int validName = versionNameInputDialog.open();
 	if (validName == Window.CANCEL) return false;
 	this.versionName = versionNameInputDialog.getValue();
 
 	// Enter the version date
-	InputDialog versionDateInputDialog = new InputDialog(getShell(), "SPOT Metrics", "Enter the CLM version date", this.versionDate, null);
+	InputDialog versionDateInputDialog = new InputDialog(getShell(), "SPOT Metrics", "Enter the version date", this.versionDate, null);
 	int validDate = versionDateInputDialog.open();
 	if (validDate == Window.CANCEL) return false;
 	this.versionDate = versionDateInputDialog.getValue();

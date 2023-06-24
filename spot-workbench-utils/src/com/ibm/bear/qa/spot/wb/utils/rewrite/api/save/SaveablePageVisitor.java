@@ -19,7 +19,7 @@ import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 /**
- * Visitor used to add the interface 'JazzSaveablePage' on the parsed type.
+ * Visitor used to add the interface 'SaveablePage' on the parsed type.
  */
 @SuppressWarnings("unchecked")
 public class SaveablePageVisitor extends SaveAbstractVisitor {

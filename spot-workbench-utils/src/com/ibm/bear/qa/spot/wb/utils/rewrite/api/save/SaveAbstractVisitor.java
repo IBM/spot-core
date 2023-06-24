@@ -27,8 +27,8 @@ import com.ibm.bear.qa.spot.wb.utils.rewrite.SpotAbstractVisitor;
 public abstract class SaveAbstractVisitor extends SpotAbstractVisitor {
 
 	/* Constants */
-	static final String INTERFACE_NAME = "JazzSaveablePage";
-	private static final String INTERFACE_QUALIFIED_NAME = "com.ibm.team.cspf.jazz.pages." + INTERFACE_NAME;
+	static final String INTERFACE_NAME = "SaveablePage";
+	private static final String INTERFACE_QUALIFIED_NAME = "com.ibm.team.spot.pages." + INTERFACE_NAME;
 	private final static String[] PACKAGE_IMPORT = INTERFACE_QUALIFIED_NAME.split("\\.");
 
 	/* Fields */
@@ -44,7 +44,7 @@ public SaveAbstractVisitor(final CompilationUnit root, final ICompilationUnit cu
 }
 
 /**
- * Add the import declaration to 'JazzSaveablePage' interface in case it has been
+ * Add the import declaration to 'SaveablePage' interface in case it has been
  * added as implementor of the unit type declaration.
  * <p>
  * Try to insert the declaration respecting the usual sort order used for organized

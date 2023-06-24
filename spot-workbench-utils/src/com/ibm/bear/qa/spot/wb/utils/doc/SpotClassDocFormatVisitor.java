@@ -29,10 +29,19 @@ import org.eclipse.text.edits.*;
 import com.ibm.bear.qa.spot.wb.utils.rewrite.SpotAbstractVisitor;
 
 /**
- * AST Visitor to extract method references to public and protected method
- * declarations and put them in specific paragraphs of the javadoc class.
- *
- * TODO Replace existing method reference instead of adding them blindly
+ * AST Visitor to format the class javadoc.
+ * <p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #endVisit(TypeDeclaration)}: /</li>
+ * <li>{@link #evaluateRewrite()}: Write all changes currently stored in the rewriter and return the modified unti source.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #udpateTypeDeclarationJavadoc(TypeDeclaration)}: Update the type declaration javadoc comment with method references.</li>
+ * </ul>
+ * </p>
  */
 @SuppressWarnings("restriction")
 public class SpotClassDocFormatVisitor extends SpotAbstractVisitor {

@@ -24,21 +24,10 @@ import org.eclipse.swt.SWT;
 import com.ibm.bear.qa.spot.wb.utils.rewrite.RewriteAction;
 
 /**
- * Class implementing an action which writes the public and internal API methods
- * in the type declaration javadoc comment of the classes of the selected java element.
+ * Class implementing an action to update copyrights comment of the classes of the selected java
+ * element.
  * <p>
- * Basically the action is traversing the class AST to detect public and protected
- * method declarations and add a reference to each method in a specific paragraph
- * of the class javadoc comment.
- * </p><p>
- * Already existing method references are removed and replaced by current
- * accurate ones. Note that the entire content of the 2 paragraphs including these method
- * references are removed, all other paragraphs are kept. The added or updated method
- * references are moved at the end of the javadoc comment.
- * </p><p>
- * The selected element can be any {@link IJavaElement Java element} in the
- * package explorer. Its content is explored to find all Java classes and execute
- * the corresponding action on each of them.
+ * The updated copyrights comment is the one of an EPL 2.0 license.
  * </p>
  */
 public class UpdateCopyrightsAction extends RewriteAction<SpotClassCopyrightsVisitor> {

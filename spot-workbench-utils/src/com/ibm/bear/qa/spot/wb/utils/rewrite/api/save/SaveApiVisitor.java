@@ -18,17 +18,17 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.*;
 
 /**
- * Visitor which rewrites any method invocation to ClmScenarioStep.save(JazzWebPage)
- * method to the ClmWebPage.save() public method.
+ * Visitor which rewrites any method invocation to ScenarioStep.save(WebPage)
+ * method to the WebPage.save() public method.
  * <p>
- * This method call will be replaced by calling the save() method of the JazzSaveablePage
+ * This method call will be replaced by calling the save() method of the SaveablePage
  * interface.
  * </p>
  * For example, the following code line: <pre>save(projectAreaPage);</pre>
- * will be replaced by:<pre>((JazzSaveablePage)projectAreaPage).save();</pre>
+ * will be replaced by:<pre>((SaveablePage)projectAreaPage).save();</pre>
  * </p><p>
  * In order to avoid to introduce any compiler error or warning, the declaration
- * class of the expression will be modified to implement the JazzSaveablePage
+ * class of the expression will be modified to implement the SaveablePage
  * interface (see {@link SaveablePageVisitor}).
  * </p><p>
  * Note that if the class of the caller expression overrides the save() method
@@ -40,7 +40,7 @@ import org.eclipse.jdt.core.dom.*;
  */
 public class SaveApiVisitor extends SaveAbstractVisitor {
 
-	// Store the units which must implement the 'JazzSaveablePage' interface
+	// Store the units which must implement the 'SaveablePage' interface
 	List<ICompilationUnit> unitsToImplementInterface = new ArrayList<ICompilationUnit>();
 
 protected SaveApiVisitor(final CompilationUnit root, final ICompilationUnit cu) {
@@ -77,13 +77,13 @@ private List<TypeDeclaration> getTypeDeclarationsList(final ASTNode node) {
 }
 
 /**
- * Check each method invocation to see if it matches the ClmScenarioStep.save() method.
+ * Check each method invocation to see if it matches the ScenarioStep.save() method.
  * <p>
  * If it matches, then the code pattern is expected to be as follows:<br>
  * <code>&nbsp;&nbsp;&nbsp;&nbsp;save(<i>expression</i>);</code>
  * <br>
  * and it will replace it with the following code pattern:<br>
- * <code>&nbsp;&nbsp;&nbsp;&nbsp;((JazzSaveablePage)<i>expression</i>).save();</code>
+ * <code>&nbsp;&nbsp;&nbsp;&nbsp;((SaveablePage)<i>expression</i>).save();</code>
  * </p>
  */
 @Override
@@ -92,15 +92,15 @@ public boolean visit(final MethodInvocation methodInvocation) {
 	// Get method name
 	final String methodName = methodInvocation.getName().toString();
 
-	// Check if pattern match ClmScenarioStep.save()
+	// Check if pattern match ScenarioStep.save()
 	if (methodName.equals("save") && methodInvocation.getExpression() == null && methodInvocation.arguments().size() == 1) {
 
 		// Resolve binding (that's time costly but we need to be sure about the method invocation declaration class
 		IMethodBinding methodBinding = methodInvocation.resolveMethodBinding();
 		ITypeBinding typeBinding = methodBinding.getDeclaringClass();
 
-		// Check that it's the ClmScenarioStep.save() call
-		if (typeBinding.getName().equals("ClmScenarioStep")) {
+		// Check that it's the ScenarioStep.save() call
+		if (typeBinding.getName().equals("ScenarioStep")) {
 
 			// Some info in the console
 			System.out.println("Replace save() method invocation found in "+getTypeDeclarationQualifiedName(methodInvocation)+"."+methodName+"(): ");
@@ -110,7 +110,7 @@ public boolean visit(final MethodInvocation methodInvocation) {
 			Expression argument = (Expression) methodInvocation.arguments().get(0);
 			ITypeBinding argumentTypeBinding = argument.resolveTypeBinding();
 
-			// Add declaring of class of argument to the list as we will need to implement the JazzSaveablePage interface (later)
+			// Add declaring of class of argument to the list as we will need to implement the SaveablePage interface (later)
 			ICompilationUnit argumentUnit = (ICompilationUnit) argumentTypeBinding.getJavaElement().getParent();
 			this.unitsToImplementInterface.add(argumentUnit);
 

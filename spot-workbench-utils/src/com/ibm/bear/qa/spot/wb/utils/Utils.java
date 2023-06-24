@@ -17,10 +17,11 @@ import java.text.NumberFormat;
 /**
  * Class for utilities used for SPOT Utils plugin.
  * <p>
- * Available methods are:
+ * This class defines following internal API methods:
  * <ul>
  * <li>{@link #timeString(long)}: Returns a formatted string to display the given time as a duration.</li>
- * <
+ * </ul>
+ * </p>
  */
 public class Utils {
 

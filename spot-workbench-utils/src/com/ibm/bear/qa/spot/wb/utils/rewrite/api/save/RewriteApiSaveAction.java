@@ -18,7 +18,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import com.ibm.bear.qa.spot.wb.utils.rewrite.RewriteAction;
 
 /**
- * Action used to rewrite all method invocations to ClmScenarioStep.save(JazzWebPage) method.
+ * Action used to rewrite all method invocations to ScenarioStep.save(WebPage) method.
  */
 public class RewriteApiSaveAction extends RewriteAction<SaveApiVisitor> {
 
@@ -53,13 +53,13 @@ protected StringBuffer getFinalMessage() {
 				messageBuilder.append("No java file was");
 				break;
 			case 1:
-				messageBuilder.append("to add 'JazzSaveablePage' interface.");
+				messageBuilder.append("to add 'SaveablePage' interface.");
 				break;
 			default:
 				messageBuilder.append(this.addedInterfaces).append(" java files have been");
 				break;
 		}
-		messageBuilder.append(" modified to add 'JazzSaveablePage' interface.");
+		messageBuilder.append(" modified to add 'SaveablePage' interface.");
 	}
 	return messageBuilder;
 }

@@ -25,7 +25,7 @@ import com.ibm.bear.qa.spot.wb.utils.rewrite.SpotAbstractVisitor;
 
 /**
  * AST Visitor to extract method references to public and protected method
- * declarations and put them in specific paragraphs of the javadoc class.
+ * declarations and put them in specific paragraphs of the class javadoc.
  *
  * TODO Replace existing method reference instead of adding them blindly
  */

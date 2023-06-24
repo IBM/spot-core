@@ -21,7 +21,28 @@ import java.util.List;
 /**
  * Utilities to manipulate files and directories on disk through java.io
  * <p>
- * Note that this code has been initially copied from JFS team...
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #copyDir(File,File)}: Copy all files from source directory to destination directory.</li>
+ * <li>{@link #copyFile(File,File)}: Copy the given source file to the given destination directory.</li>
+ * <li>{@link #copyFile(File,File,String)}: Copy the given source file to the given destination directory with a different</li>
+ * <li>{@link #createDir(String)}: Return the</li>
+ * <li>{@link #createDir(String,String)}: Return the</li>
+ * <li>{@link #deleteFile(File)}: Delete the given file.</li>
+ * <li>{@link #findFile(String,File,FileFilter)}: Find files with the given name in the given directory hiearchy using given filter.</li>
+ * <li>{@link #findFileInAscendantHierarchy(String,String,FileFilter)}: Find files with the given name in the project directory or its ascendant hierarchy using given filter.</li>
+ * <li>{@link #getDir(String)}: Return a file built from given directory path.</li>
+ * <li>{@link #getDir(String,String)}: Return a file built from given parent dir and path.</li>
+ * <li>{@link #getFile(String,String)}: Return a file built from given dir and path.</li>
+ * <li>{@link #getFile(URL)}: Get the file from the given URL.</li>
+ * <li>{@link #getUrl(File)}: Get the URL from the given file.</li>
+ * <li>{@link #readFileContent(File)}: Read the content of the given file, assuming it's a text file.</li>
+ * <li>{@link #replaceFile(File,String)}: Overwrite the given file with the given text.</li>
+ * <li>{@link #rmdir(File)}: Delete an entire directory hierarchy including all files.</li>
+ * <li>{@link #waitUntilFileExists(File,int)}: Verify if a file exists at the given path. If the file doesn't exist yet,</li>
+ * <li>{@link #waitUntilFileExists(String,int)}: Verify if a file exists at the given path. If the file doesn't exist yet,</li>
+ * <li>{@link #writeFile(File,String)}: Write the given file with the given text.</li>
+ * </ul>
  * </p>
  */
 public class FileUtil {
