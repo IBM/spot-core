@@ -15,6 +15,15 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioMissingImplementationEr
 /**
  * Class to manage data needed while running the scenario.
  * <p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #getExpectedDocumentTitle()}: Return the expected document title of the application home page.</li>
+ * </ul>
+ * </p><p>
+ * This class defines or overrides following methods:
+ * <ul>
+ * <li>{@link #initUsers()}: Initialize users which will be used all over the scenario steps.</li>
+ * </ul>
  * </p>
  */
 public class TemplateScenarioData extends ScenarioData {
@@ -23,8 +32,17 @@ public TemplateScenarioData() {
 	super();
 }
 
+/**
+ * Return the expected document title of the application home page.
+ *
+ * @return The expected title
+ */
+public String getExpectedDocumentTitle() {
+	return "To Be Defined";
+}
+
 @Override
 protected void initUsers() {
-	throw new ScenarioMissingImplementationError("Scenario data should implement a specific initUsers() method.");
+	throw new ScenarioMissingImplementationError("Scenario data should implement a specific initUsers() method. If no user is needed, then just delete this line...");
 }
 }

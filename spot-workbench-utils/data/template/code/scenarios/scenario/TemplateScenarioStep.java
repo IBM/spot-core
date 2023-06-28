@@ -14,11 +14,27 @@ import com.ibm.bear.qa.spot.core.scenario.ScenarioStep;
 
 /**
  * Class to manage common behavior of any scenario step.
+ * <p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #getData()}: Return the scenario data to use during the run.</li>
+ * <li>{@link #getScenarioOperation()}: Return a new scenario operation.</li>
+ * </ul>
+ * </p>
  */
 public abstract class TemplateScenarioStep extends ScenarioStep {
 
 @Override
 public TemplateScenarioData getData() {
 	return (TemplateScenarioData) super.getData();
+}
+
+/**
+ * Return a new scenario operation.
+ *
+ * @return The scenario operation
+ */
+public TemplateScenarioOperation getScenarioOperation() {
+	return getOperation(TemplateScenarioOperation.class);
 }
 }

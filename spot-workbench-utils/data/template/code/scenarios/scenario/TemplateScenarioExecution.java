@@ -10,7 +10,7 @@
 package com.ibm.bear.qa.spot.template.scenario;
 
 import com.ibm.bear.qa.spot.core.scenario.ScenarioExecution;
-import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioMissingImplementationError;
+import com.ibm.bear.qa.spot.test.gen.config.TemplateConfig;
 
 /**
  * Class to manage the scenario execution.
@@ -18,6 +18,17 @@ import com.ibm.bear.qa.spot.core.scenario.errors.ScenarioMissingImplementationEr
  * This is the concrete class of this hierarchy which has to create the specific
  * scenario configuration and data object respectively in {@link #initConfig()} and
  * {@link #initData()} method.
+ * </p><p>
+ * This class defines following internal API methods:
+ * <ul>
+ * <li>{@link #getData()}: Return the scenario data to use during the run.</li>
+ * </ul>
+ * </p><p>
+ * This class also defines or overrides following methods:
+ * <ul>
+ * <li>{@link #initConfig()}: Initialize the configuration.</li>
+ * <li>{@link #initData()}: Override the superclass implementation to create the specific scenario data</li>
+ * </ul>
  * </p>
  * @see TemplateScenarioData
  */
@@ -25,8 +36,9 @@ public class TemplateScenarioExecution extends ScenarioExecution {
 
 @Override
 protected void initConfig() {
-	throw new ScenarioMissingImplementationError("Should instanciate a concrete Config subclass, see commented code line below this exception as a possible example...");
-//	this.config = new TemplateConfig();
+	// A compilation error on line below would mean that the TemplateConfig has
+	// either not been implemented or it was implemented using a different name
+	this.config = new TemplateConfig();
 }
 
 /**

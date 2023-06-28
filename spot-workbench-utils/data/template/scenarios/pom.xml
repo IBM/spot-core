@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.ibm.bear.qa.spot</groupId>
+		<artifactId>spot-scenarios</artifactId>
+		<version>5.1.0-SNAPSHOT</version>
+	</parent>
+	<groupId>com.ibm.bear.qa.spot</groupId>
+	<artifactId>spot-shortname-scenarios</artifactId>
+	<version>5.1.0-SNAPSHOT</version>
+	<name>SPOT Loan Server Scenarios</name>
+
+	<properties>
+		<spot.scenario.short.name>spot-scn-loan-server</spot.scenario.short.name>
+		<skipAntRun>false</skipAntRun>
+		<spot.debug.dir>${project.basedir}/debug</spot.debug.dir>
+		<spot.screenshots.dir>${project.basedir}/screenshots</spot.screenshots.dir>
+		<spot.scenario.params>params/browsers/${env.OS_TYPE}/${browser}.properties</spot.scenario.params>
+		<spot.additional.params></spot.additional.params>
+		<scenario_identifier></scenario_identifier>
+	</properties> 
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ibm.bear.qa.spot</groupId>
+			<artifactId>spot-shortname-pages</artifactId>
+			<version>5.1.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19.1</version>
+				<configuration>
+					<includes>
+						<include>**/*${scenario_identifier}Scenario.java</include>
+					</includes>
+					<testFailureIgnore>false</testFailureIgnore>
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<systemProperties>
+						<paramFilesDir>params</paramFilesDir>
+						<paramFilesPath>${spot.scenario.params};topology.properties;${spot.additional.params}</paramFilesPath>
+					</systemProperties>
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<reportNameSuffix>${browser}</reportNameSuffix>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

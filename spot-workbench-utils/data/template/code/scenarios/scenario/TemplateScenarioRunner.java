@@ -22,6 +22,12 @@ import com.ibm.bear.qa.spot.core.scenario.ScenarioRunner;
  * </p><p>
  * Secondarily, it also defines the name of the main suite which is displayed
  * in the JUnit view when launching it.
+ * </p><p>
+ * This class defines or overrides following methods:
+ * <ul>
+ * <li>{@link #getName()}: Returns a name used to describe this Runner</li>
+ * <li>{@link #startExecution()}: Start the scenario execution.</li>
+ * </ul>
  * </p>
  */
 public class TemplateScenarioRunner extends ScenarioRunner {
@@ -32,7 +38,7 @@ public TemplateScenarioRunner(final Class< ? > klass, final RunnerBuilder builde
 
 @Override
 protected String getName() {
-	return "Scenario name";
+	return "%title%";
 }
 
 @Override

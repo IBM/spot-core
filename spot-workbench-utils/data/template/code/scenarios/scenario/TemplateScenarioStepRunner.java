@@ -19,6 +19,11 @@ import com.ibm.bear.qa.spot.core.scenario.ScenarioStepRunner;
  * This is the concrete class of this hierarchy which has to create the specific
  * scenario execution object (see subclass of {@link TemplateScenarioExecution} if any)
  * in the case the scenario step is executed as a single JUnit test class.
+ * </p><p>
+ * This class defines or overrides following methods:
+ * <ul>
+ * <li>{@link #startExecution()}: Start the scenario execution.</li>
+ * </ul>
  * </p>
  */
 public class TemplateScenarioStepRunner extends ScenarioStepRunner {
