@@ -39,14 +39,12 @@ public SpotCreateNewProjectsAction() {
 					break;
 			}
 		}
-		/*
 		if (this.spotFwkFolder == null) {
 			MessageDialog.openWarning(getShell(), "SPOT Utils", "spot pages hierarchy was not found in workspace, hence projects will be generated in workspace instead of git repo tree.");
 		}
 		if (this.spotScnFolder == null) {
 			MessageDialog.openWarning(getShell(), "SPOT Utils", "spot scenarios hierarchy was not found in workspace, hence projects will be generated in workspace instead of git repo tree.");
 		}
-		*/
 	}
 
 /*
@@ -121,10 +119,9 @@ private boolean createProject(final ProjectType projectType) {
 			IFile launchFile = createFile("/data/template/launches/TemplateScenario_(chrome).launch", launchesFolder.getFile("TemplateScenario_(chrome).launch"));
 			String newLaunchFilePath = launchFile.getFullPath().toString().replaceAll("TemplateScenario_", this.classPrefix+"Scenario ");
 			launchFile.move(new Path(newLaunchFilePath), true, null);
-			System.out.println("Launch file path: "+launchFile.getFullPath());
 			IFolder paramsFolder = project.getFolder("params");
 			paramsFolder.create(true, true, null);
-			createFile("/data/template/params/.gitignore", paramsFolder.getFile(".gitignore"));
+			createFile("/data/template/params/_gitignore", paramsFolder.getFile(".gitignore"));
 			createFile("/data/template/params/common.properties", paramsFolder.getFile("common.properties"));
 			createFile("/data/template/params/topology.properties", paramsFolder.getFile("topology.properties"));
 		}

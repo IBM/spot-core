@@ -100,9 +100,9 @@
                tooltip="Compute metrics for scenarios present in the selected projects">
          </action>
          <action
-               class="com.ibm.bear.qa.spot.wb.utils.code.SpotCreateScenarioAction"
-               id="com.ibm.bear.qa.spot.wb.utils.create.scenario"
-               label="Create SPOT scenario"
+               class="com.ibm.bear.qa.spot.wb.utils.code.SpotCreateProjectClassesAction"
+               id="com.ibm.bear.qa.spot.wb.utils.create.scenarios.project"
+               label="Create SPOT basic classes"
                menubarPath="spot.utils.pmenu/spot.utils.popups.group_2">
          </action>
       </objectContribution>
@@ -167,7 +167,13 @@
                menubarPath="spot.utils.tmenu/spot.utils.toolbar.group_1"
                tooltip="Compute metrics for scenarios present in the entire workspace">
          </action>
-      </actionSet>
+         <action
+               class="com.ibm.bear.qa.spot.wb.utils.code.SpotCreateNewProjectsAction"
+               id="com.ibm.bear.qa.spot.wb.utils.create.project"
+               label="Create SPOT projects"
+               menubarPath="spot.utils.tmenu/spot.utils.toolbar.group_2">
+         </action>
+       </actionSet>
    </extension>
 	<extension
 		point="org.eclipse.ui.popupMenus">
