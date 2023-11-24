@@ -23,12 +23,6 @@ if "%1" == "-s" (
 	shift
 	goto LBLARGS
 )
-if "%1" == "-g" (
-	set GECKO_ARG=%2
-	shift
-	shift
-	goto LBLARGS
-)
 if "%1" == "-p" (
 	set ADDITIONNAL_PARAMETERS_ARG=%2
 	shift
@@ -69,38 +63,33 @@ goto LBLARGS
 
 rem Read browser argument
 if "%BROWSER_ARG%" == "all" (
- 	set NEED_GECKO_DRIVER=true
-rem 	set FIRST_TEST_ARG=-DfirstTest=test05
-) else if "%BROWSER_ARG%" == "firefox_v60" (
-	set NEED_GECKO_DRIVER=true
-) else if "%BROWSER_ARG%" == "firefox_v68" (
 	set NEED_GECKO_DRIVER=true
 ) else if "%BROWSER_ARG%" == "firefox_v78" (
 	set NEED_GECKO_DRIVER=true
+) else if "%BROWSER_ARG%" == "firefox_v91" (
+	set NEED_GECKO_DRIVER=true
+) else if "%BROWSER_ARG%" == "firefox_v102" (
+	set NEED_GECKO_DRIVER=true
+) else if "%BROWSER_ARG%" == "firefox_v115" (
+	set NEED_GECKO_DRIVER=true
 ) else if NOT "%BROWSER_ARG%" == "chrome" if NOT "%BROWSER_ARG%" == "edge" (
-	echo %1 is not a valid browser type. Expecting either all, firefox_v78, firefox_v68, firefox_v60, chrome or edge
+	echo %1 is not a valid browser type. Expecting either all, firefox_v115, firefox_v102, firefox_v91, firefox_v78, chrome or edge
 	goto LBLERR
 )
 set BROWSER=%BROWSER_ARG%
 echo SPOT scenarios will be run with %BROWSER% browser(s)
 
-rem Add Gecko driver system property if required
-set GECKO_DRIVER=NONE
+rem Check Gecko driver system property if specified
 if "%NEED_GECKO_DRIVER%" == "true" (
 	echo.
-	echo Add Gecko driver system property when starting Maven command...
-	if NOT DEFINED GECKO_ARG (
-		echo - use default VTT location...
-		set GECKO_DRIVER=C:/Work/Tools/Gecko/geckodriver.exe
+	if DEFINED GECKO_DRIVER (
+		echo - Gecko driver location will be %GECKO_DRIVER%
+		if NOT EXIST "%GECKO_DRIVER%" (
+			echo Cannot find gecko driver file on local drive.
+			goto LBLERR
+		)
 	) else (
-		set GECKO_DRIVER=%GECKO_ARG%
-	)
-)
-if NOT "%GECKO_DRIVER%" == "NONE" (
-	echo - Gecko driver location will be %GECKO_DRIVER%
-	if NOT EXIST %GECKO_DRIVER% (
-		echo Cannot find gecko driver file on local drive.
-		goto LBLERR
+		echo - Gecko driver path not defined by an environment variable, assuming it will be set using properties file.
 	)
 )
 

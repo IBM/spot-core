@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>com.ibm.bear.qa.spot</groupId>
 		<artifactId>spot-core-root</artifactId>
-		<version>5.1.0</version>
+		<version>5.2.0</version>
 	</parent>
 	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-samples-scenarios</artifactId>
-	<version>5.1.0</version>
+	<version>5.2.0</version>
 	<name>SPOT Samples Scenarios</name>
 
 	<properties>
@@ -26,7 +26,7 @@
 		<dependency>
 			<groupId>com.ibm.bear.qa.spot</groupId>
 			<artifactId>spot-samples-pages</artifactId>
-			<version>5.1.0</version>
+			<version>5.2.0</version>
 		</dependency>
 	</dependencies>
 
@@ -45,7 +45,6 @@
 					<systemProperties>
 						<paramFilesDir>params</paramFilesDir>
 						<paramFilesPath>${spot.scenario.params};topology.properties;${spot.additional.params}</paramFilesPath>
-						<webdriver.gecko.driver>${geckodriver}</webdriver.gecko.driver>
 					</systemProperties>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 					<reportNameSuffix>${browser}</reportNameSuffix>

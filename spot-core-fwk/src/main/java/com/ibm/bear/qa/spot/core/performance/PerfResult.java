@@ -78,9 +78,9 @@ public PerfResult (final String stepName, final String testName, final String ur
  * Add a new response time to the perfTimeList for the perf result
  */
 public void addResponseTime(final double serverTime, final double clientTime, final long timeDateStamp) {
-	this.serverTimes.add(new Double(serverTime));
-	this.clientTimes.add(new Double(clientTime));
-	this.regressionTimes.add(new Double(PerfResult.getRegressionValue(serverTime,clientTime,this.regressionType)));
+	this.serverTimes.add(Double.valueOf(serverTime));
+	this.clientTimes.add(Double.valueOf(clientTime));
+	this.regressionTimes.add(Double.valueOf(PerfResult.getRegressionValue(serverTime,clientTime,this.regressionType)));
 	this.timeDateStamps.add(TaskDataWriter.timestamp2(timeDateStamp,true));
 }
 

@@ -43,47 +43,31 @@ fi
 if [[ -n ${GECKO_DRIVER} ]]; then
 	GECKO_PROPERTY="-Dwebdriver.gecko.driver=${GECKO_DRIVER}"
 	echo "GECKO_PROPERTY=${GECKO_PROPERTY}"
-elif [[ ${BROWSER/firefox/} != ${BROWSER} ]]; then
-	echo "Missing GECKO_DRIVER variable. This script must be run from a run_client.sh script..."
-	exit 1
 fi
 
-# Compile framework core
+# Compile framework core and samples projects
 cd ${SPOT_CORE_DIR}
 echo ""
-echo "Compile framework core"
-${MAVEN_HOME}/bin/mvn -B -f spot-core/pom.xml install
-
-# Compile and run scenarios
-echo ""
-echo "Compile samples projects"
-${MAVEN_HOME}/bin/mvn -B -f spot-samples-pages/pom.xml install
-${MAVEN_HOME}/bin/mvn -B -f spot-samples-scenarios/pom.xml install
+echo "Compile framework core and samples projects"
+${MAVEN_HOME}/bin/mvn -B -f pom.xml install -DskipTests
 
 echo "Change directory to ${SCENARIO_DIR}"
 cd ${SCENARIO_DIR}
 echo "Current directory is now"
 pwd
 
-# Check whether scenario should run with Firefox 68esr
-if [[ ${BROWSER} == "firefox_v78" || ${BROWSER} == "all" ]]; then
+# Check whether scenario should run with Firefox 115esr
+if [[ ${BROWSER} == "firefox_v115" || ${BROWSER} == "all" ]]; then
 	echo ""
-	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 78esr browser..."
-	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v78 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
+	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 115esr browser..."
+	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v115 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
 fi
 
-# Check whether scenario should run with Firefox 68esr
-if [[ ${BROWSER} == "firefox_v68" || ${BROWSER} == "all" ]]; then
+# Check whether scenario should run with Firefox 102esr
+if [[ ${BROWSER} == "firefox_v102" || ${BROWSER} == "all" ]]; then
 	echo ""
-	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 68esr browser..."
-	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v68 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
-fi
-
-# Check whether scenario should run with Firefox 60esr
-if [[ ${BROWSER} == "firefox_v60" ]]; then
-	echo ""
-	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 60esr browser..."
-	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v60 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
+	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 102esr browser..."
+	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v102 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
 fi
 
 # Check whether scenario should run with Chrome
@@ -98,4 +82,23 @@ if [[ ${BROWSER} == "safari" ]]; then
 	echo ""
 	echo "Run ${SCENARIO_PREFIX}Scenario using Safari browser..."
 	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=safari ${SCENARIO_ID} ${ADDITIONNAL_ARG}
+fi
+
+
+# =============================================================
+# Keep deprecated Firefox esr versions for ponctual unary tests
+# =============================================================
+
+# Check whether scenario should run with Firefox 91esr
+if [[ ${BROWSER} == "firefox_v91" ]]; then
+	echo ""
+	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 91esr browser..."
+	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v91 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
+fi
+
+# Check whether scenario should run with Firefox 78esr
+if [[ ${BROWSER} == "firefox_v78" ]]; then
+	echo ""
+	echo "Run ${SCENARIO_PREFIX}Scenario using Firefox 78esr browser..."
+	${MAVEN_HOME}/bin/mvn -B -f pom.xml install -Dbrowser=firefox_v78 ${GECKO_PROPERTY} ${SCENARIO_ID} ${ADDITIONNAL_ARG}
 fi

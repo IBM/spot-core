@@ -112,7 +112,7 @@ protected void initDriver() {
 		debugPrintln("		  -> Using Gecko driver located at: "+geckoDriverFile.getAbsolutePath());
 
 		// Disable Gecko log output in error console
-		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE,"/dev/null");
+		System.setProperty(GeckoDriverService.GECKO_DRIVER_LOG_PROPERTY, "/dev/null");
 	} else {
 		throw new BrowserError("Firefox since version 60 cannot work without having set '"+GECKO_DRIVER_EXE_PROPERTY+"'!", /*fatal:*/true);
 	}
@@ -137,7 +137,7 @@ protected void initDriver() {
 			.addPreference("browser.link.open_newwindow", 3);
 	if (this.manager.isHeadless()) {
 		debugPrintln("WARNING: Firefox is running in Headless mode !!!");
-		firefoxOptions.setHeadless(true);
+		firefoxOptions.addArguments("-headless");
 	}
 	debugPrintln("		  -> firefox options: "+firefoxOptions);
 

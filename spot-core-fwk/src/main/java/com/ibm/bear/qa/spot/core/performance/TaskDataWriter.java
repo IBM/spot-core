@@ -32,13 +32,13 @@ public class TaskDataWriter extends CsvWriter {
 public TaskDataWriter (final String filePathName){
 	super(filePathName, ',');
 	this.writeNext(new String[]{
-			"Step Name", 
-			"Test Name", 
-			"User Action Name", 
-			"URL", 
-			"Page Title", 
-			"Measurement Type", 
-			"Response Time", 
+			"Step Name",
+			"Test Name",
+			"User Action Name",
+			"URL",
+			"Page Title",
+			"Measurement Type",
+			"Response Time",
 			"DateStamp" });
 }
 
@@ -47,13 +47,13 @@ public TaskDataWriter (final String filePathName){
  * Write the given result out to the cvsFile
  *
  */
-public void write(PerfResult result){
+public void write(final PerfResult result){
 	this.writeNext(new String[]{
 			result.getStepName(),
 			result.getTestName(),
 			result.getUserActionName(),
 			result.getUrl(),
-			result.getPageTitle(), 
+			result.getPageTitle(),
 			PerfResult.regressionTypeToString(result.getRegressionType()),
 			Double.toString(Timer.round(result.getLastRegressionTime().doubleValue(),5)),
 			result.getLastTimeDateStamp()});
@@ -63,30 +63,30 @@ public void write(PerfResult result){
  * Return string from time in format dd/MON/yyyy hh:mm:ss.mmm (Excel friendly)
  * NOTE: Method copied from RPP framework from StringUtils.  Updated to clear
  * all boxing errors and unused month variables.
- * 
+ *
  * @param time
  * @return formatted string
  */
-public static String timestamp2(long time, boolean showSecsMillis) {
+public static String timestamp2(final long time, final boolean showSecsMillis) {
 	DecimalFormat fmt2 = new DecimalFormat("##");
 	fmt2.setMinimumIntegerDigits(2);
 
 	Calendar cs = Calendar.getInstance();
 	cs.setTimeInMillis(time);
-	
-	Integer yy = new Integer(cs.get(Calendar.YEAR));
-	Integer mon = new Integer(cs.get(Calendar.MONTH) + 1);
-	Integer dd = new Integer(cs.get(Calendar.DAY_OF_MONTH));
-	Integer hh = new Integer(cs.get(Calendar.HOUR_OF_DAY));
-	Integer mins = new Integer(cs.get(Calendar.MINUTE));
-	String name = 
+
+	Integer yy = Integer.valueOf(cs.get(Calendar.YEAR));
+	Integer mon = Integer.valueOf(cs.get(Calendar.MONTH) + 1);
+	Integer dd = Integer.valueOf(cs.get(Calendar.DAY_OF_MONTH));
+	Integer hh = Integer.valueOf(cs.get(Calendar.HOUR_OF_DAY));
+	Integer mins = Integer.valueOf(cs.get(Calendar.MINUTE));
+	String name =
 		mon + "/" + fmt2.format(dd) + "/" + fmt2.format(yy) +
 		" " + fmt2.format(hh) + ":" + fmt2.format(mins);
 	if (showSecsMillis) {
 		DecimalFormat fmt3 = new DecimalFormat("###");
 		fmt3.setMinimumIntegerDigits(3);
-		Integer secs = new Integer(cs.get(Calendar.SECOND));
-		Integer msecs = new Integer(cs.get(Calendar.MILLISECOND));
+		Integer secs = Integer.valueOf(cs.get(Calendar.SECOND));
+		Integer msecs = Integer.valueOf(cs.get(Calendar.MILLISECOND));
 		name += ":" + fmt2.format(secs) + "." + fmt3.format(msecs);
 	}
 	return name;

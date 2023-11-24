@@ -3,7 +3,7 @@
 # TODO
 function usage() {
 	echo "Usage run_client.bat -b browser_type -s scenario_suffix"
-	echo "* browser_type: can be either 'all', 'firefox_v60', 'firefox_v52' or 'chrome'"
+	echo "* browser_type: can be either 'all', 'firefox_v115', 'firefox_v102', 'firefox_v91', 'firefox_v78' or 'chrome'"
 }
 
 # Store script dir
@@ -12,16 +12,13 @@ SPOT_CORE_DIR="$( cd ${SPOT_SCRIPTS_DIR}/../.. && pwd )"
 echo "SPOT core root dir is ${SPOT_CORE_DIR}"
 
 # Read arguments
-while getopts ":b:s:g:m:n:p:a:h:o:e:t:" opt; do
+while getopts ":b:s:m:n:p:a:h:o:e:t:" opt; do
 	case $opt in 
 		b)
 			BROWSER_ARG=${OPTARG}
 			;;
 		s)
 			SCENARIO_ARG=${OPTARG}
-			;;
-		g)
-			GECKO_ARG=${OPTARG}
 			;;
 		p)
 			ADDITIONNAL_PARAMETERS_ARG=${OPTARG}
@@ -60,36 +57,31 @@ fi
 case ${BROWSER_ARG} in
 	"all" )
 		NEED_GECKO_DRIVER="true"
-#		FIRST_TEST_ARG=-DfirstTest=test05
 		;;
-	"firefox_v60" | "firefox_v68" )
+	"firefox_v78" | "firefox_v91" | "firefox_v102" | "firefox_v115" )
 		NEED_GECKO_DRIVER="true"
 		;;
 	"chrome" | "safari" )
 		;;
 	*)
-		msg="'${BROWSER-ARG}' is not a valid browser type. Expecting either all, firefox_v68, firefox_v60, chrome or safari"
+		msg="'${BROWSER-ARG}' is not a valid browser type. Expecting either all, firefox_v115, firefox_v102, firefox_v91, firefox_v78, chrome or safari"
 		echo ${msg}; echo ${msg} > ${SPOT_SCRIPTS_DIR}/setup.err
 		exit 1
 esac
 BROWSER=${BROWSER_ARG}
 echo "SPOT scenarios will be run with ${BROWSER} browser(s)"
 
-# Add Gecko driver system property if required
+# Check Gecko driver system property if specified
 if [[ ${NEED_GECKO_DRIVER} == "true" ]]; then
 	echo ""
-	echo "Add Gecko driver system property when starting Maven command..."
-	if [[ -n ${GECKO_ARG} ]]; then
-		GECKO_DRIVER="${GECKO_ARG}"
-	fi
-	if [[ -z ${GECKO_DRIVER} ]]; then
-		echo "Missing Gecko driver path."
-		exit 1
-	fi
-	echo " - Gecko driver location will be ${GECKO_DRIVER}"
-	if [[ ! -f ${GECKO_DRIVER} ]]; then
-		echo "Cannot find gecko driver file on local drive."
-		exit 1
+	if [[ -n ${GECKO_DRIVER} ]]; then
+		echo " - Gecko driver location will be ${GECKO_DRIVER}"
+		if [[ ! -f ${GECKO_DRIVER} ]]; then
+			echo "Cannot find gecko driver file on local drive."
+			exit 1
+		fi
+	else
+		echo "- Gecko driver path not defined by an environment variable, assuming it will be set using properties file."
 	fi
 fi
 

@@ -13,6 +13,7 @@
 package com.ibm.bear.qa.spot.core.performance;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Timer class, for gathering execution/response times.
@@ -52,7 +53,7 @@ public void end() {
 /**
  * Return the time/date stamp taken when the timer last started.
  *
- * @return The time/date stamp as a long. 
+ * @return The time/date stamp as a long.
  */
 public long getTimeDateStamp() {
 	return this.timeDateStamp;
@@ -65,10 +66,10 @@ public long getTimeDateStamp() {
  * @return The total execution time as a double.
  */
 public double getTotalTime() {
-	
+
 	// If start time was never started then the total time is invalid and should be sent back as 0
 	if (this.startTime == 0) return 0;
-	
+
 	// Otherwise the totalTime is valid and should be caculated
 	return round(((this.endTime - this.startTime)/1000000000.00),2);
 }
@@ -89,7 +90,7 @@ public void reset() {
  */
 public static double round(final double unrounded, final int precision) {
     BigDecimal bigDec = new BigDecimal(unrounded);
-    BigDecimal scale = bigDec.setScale(precision, BigDecimal.ROUND_HALF_UP);
+    BigDecimal scale = bigDec.setScale(precision, RoundingMode.HALF_UP);
     return scale.doubleValue();
 }
 

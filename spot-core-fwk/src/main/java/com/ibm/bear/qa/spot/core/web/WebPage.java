@@ -2550,9 +2550,9 @@ protected WebBrowserElement typeTextWithParent(final WebBrowserElement parentEle
  * <p>
  * Note that no error is raised when an inconsistency is first detected. Instead, a log in operation
  * with the page user is done to synchronize the page and the browser. However, a {@link ScenarioFailedError}
- * is eventually raised if the verification fails {@link #MAX_RECOVERY_TRIES} times.
+ * is eventually raised if the verification fails 3 times.
  * </p>
- * @throws ScenarioFailedError if verification fails {@link #MAX_RECOVERY_TRIES} times
+ * @throws ScenarioFailedError if verification fails 3 times
  */
 protected void verifyPageUser() throws ScenarioFailedError {
 	debugPrintEnteringMethod();

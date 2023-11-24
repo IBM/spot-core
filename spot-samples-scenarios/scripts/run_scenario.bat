@@ -39,14 +39,11 @@ if DEFINED ADDITIONNAL_ARG (
 	echo ADDITIONNAL_ARG=%ADDITIONNAL_ARG%
 )
 
-rem Set Geck Driver if necessary
+rem Set Gecko Driver if necessary
 if DEFINED GECKO_DRIVER (
 	set GECKO_PROPERTY=-Dwebdriver.gecko.driver=%GECKO_DRIVER%
-) else if NOT %BROWSER:firefox=% == %BROWSER% (
-	echo Missing GECKO_DRIVER variable. This script must be run from a run_client.bat script...
-	exit 1
-)
-echo GECKO_PROPERTY=%GECKO_PROPERTY%
+	echo GECKO_PROPERTY=%GECKO_PROPERTY%
+) 
 
 rem set maven command
 set MAVEN_CMD=%MAVEN_HOME%\bin\mvn.cmd
@@ -56,36 +53,30 @@ if NOT EXIST %MAVEN_CMD% (
 	exit 1
 )
 
-rem Compile framework core
+rem Compile framework core and samples projects
 cd %SPOT_CORE_DIR%
 echo.
-echo Compile framework core
-call %MAVEN_CMD% -B -f spot-core\pom.xml install
-
-rem Compile and run scenarios
-echo.
-echo Compile samples projects
-call %MAVEN_CMD% -B -f spot-samples-pages\pom.xml install
-call %MAVEN_CMD% -B -f spot-samples-scenarios\pom.xml install
+echo Compile framework core and samples projects
+call %MAVEN_CMD% -B -f pom.xml install -DskipTests
 
 echo Change directory to %SCENARIO_DIR%
 cd %SCENARIO_DIR%
 echo directory is now
 cd
 
-:LBL_FF78
-rem Check whether scenario should run with Firefox 78esr
-if NOT %BROWSER% == firefox_v78 if NOT %BROWSER% == all goto LBL_FF68
+:LBL_FF115
+rem Check whether scenario should run with Firefox 115esr
+if NOT %BROWSER% == firefox_v115 if NOT %BROWSER% == all goto LBL_FF102
 echo.
-echo Run %SCENARIO_PREFIX%Scenario using Firefox 78esr browser...
-call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v78 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
+echo Run %SCENARIO_PREFIX%Scenario using Firefox 115esr browser...
+call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v115 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
 
-:LBL_FF68
-rem Check whether scenario should run with Firefox 68esr
-if NOT %BROWSER% == firefox_v68 if NOT %BROWSER% == all goto LBL_CHROME
+:LBL_FF102
+rem Check whether scenario should run with Firefox 102esr
+if NOT %BROWSER% == firefox_v102 if NOT %BROWSER% == all goto LBL_CHROME
 echo.
-echo Run %SCENARIO_PREFIX%Scenario using Firefox 68esr browser...
-call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v68 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
+echo Run %SCENARIO_PREFIX%Scenario using Firefox 102esr browser...
+call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v102 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
 
 :LBL_CHROME
 rem Check whether scenario should run with Chrome
@@ -108,7 +99,7 @@ if %BROWSER% == edge (
 		exit 2
 	)
 ) else (
-	if NOT %BROWSER% == all goto LBL_FF60
+	if NOT %BROWSER% == all goto LBL_FF78
 	if NOT DEFINED EDGE_DRIVER (
 		echo EDGE_DRIVER environment variable is not defined
 		echo Skip MS Edge scenario test for all browsers as current VM does not seem to be setup for it
@@ -123,12 +114,26 @@ if %BROWSER% == edge (
 echo.
 echo Run %SCENARIO_PREFIX%Scenario using MS Edge browser...
 call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=edge %SCENARIO_ID% %ADDITIONNAL_ARG%
+goto LBLFIN
 
-:LBL_FF60
-rem Check whether scenario should run with Firefox 60esr
-if NOT %BROWSER% == firefox_v60 goto LBLFIN
+rem =============================================================
+rem Keep deprecated Firefox esr versions for ponctual unary tests
+rem =============================================================
+
+:LBL_FF78
+rem Check whether scenario should run with Firefox 78esr
+if NOT %BROWSER% == firefox_v78 goto LBL_FF91
 echo.
-echo Run %SCENARIO_PREFIX%Scenario using Firefox 60esr browser...
-call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v60 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
+echo Run %SCENARIO_PREFIX%Scenario using Firefox 78esr browser...
+call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v78 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
+goto LBLFIN
+
+:LBL_FF91
+rem Check whether scenario should run with Firefox 91esr
+if NOT %BROWSER% == firefox_v91 goto LBLFIN
+echo.
+echo Run %SCENARIO_PREFIX%Scenario using Firefox 91esr browser...
+call %MAVEN_CMD% -B -f pom.xml install -Dbrowser=firefox_v91 %GECKO_PROPERTY% %SCENARIO_ID% %ADDITIONNAL_ARG%
+goto LBLFIN
 
 :LBLFIN

@@ -5,18 +5,18 @@
 	<parent>
 		<groupId>com.ibm.bear.qa.spot</groupId>
 		<artifactId>spot-framework</artifactId>
-		<version>5.1.0-SNAPSHOT</version>
+		<version>5.2.0</version>
 	</parent>
 	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-shortname-pages</artifactId>
-	<version>5.1.0-SNAPSHOT</version>
+	<version>5.2.0</version>
 	<name>Framework implementation for %title% pages</name>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.ibm.bear.qa.spot</groupId>
 			<artifactId>spot-core-fwk</artifactId>
-			<version>5.1.0-SNAPSHOT</version>
+			<version>5.2.0</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -3,11 +3,11 @@
 	<parent>
 		<groupId>com.ibm.bear.qa.spot</groupId>
 		<artifactId>spot-core-root</artifactId>
-		<version>5.1.0</version>
+		<version>5.2.0</version>
 	</parent>
 	<groupId>com.ibm.bear.qa.spot</groupId>
 	<artifactId>spot-core-fwk</artifactId>
-	<version>5.1.0</version>
+	<version>5.2.0</version>
 	<name>Core of the SPOT framework</name>
 
 	<dependencies>
@@ -19,12 +19,12 @@
 		<dependency>
 			<groupId>org.seleniumhq.selenium</groupId>
 			<artifactId>selenium-java</artifactId>
-			<version>4.6.0</version>
+			<version>4.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.seleniumhq.selenium</groupId>
 			<artifactId>selenium-http-jdk-client</artifactId>
-			<version>4.6.0</version>
+			<version>4.13.0</version>
 		</dependency>
 		<!-- ActiveMQ -->
 		<dependency>
