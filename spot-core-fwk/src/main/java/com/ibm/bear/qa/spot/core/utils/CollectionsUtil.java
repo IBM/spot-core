@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2024 IBM Corporation and others.
+* Copyright (c) 2012, 2026 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -112,7 +112,7 @@ public static void checkComparison(final List<String> first, final List<String> 
 		if (n==0) buffer.append("	Errors while checking lists "+comparison+":").append(LINE_SEPARATOR);
 		buffer.append("	    "+ ++n + ") Following strings are only present in the second collection:").append(LINE_SEPARATOR);
 		for (int i=firstSize; i<secondSize; i++) {
-			buffer.append("		    - index "+i+": '"+first.get(i)+"'").append(LINE_SEPARATOR);
+			buffer.append("		    - index "+i+": '"+second.get(i)+"'").append(LINE_SEPARATOR);
 		}
 	}
 	if (n > 0) {

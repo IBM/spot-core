@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2024 IBM Corporation and others.
+* Copyright (c) 2012, 2026 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -134,7 +134,9 @@ protected void initDriver() {
 			.setBinary(firefoxBinary)
 			// Following preferences should make Firefox behaving like Chrome, ie. open a new window in a new tab instead of a new window...
 			.addPreference("browser.link.open_newwindow.restriction", 0)
-			.addPreference("browser.link.open_newwindow", 3);
+			.addPreference("browser.link.open_newwindow", 3)
+			// Enable strict tracking protection (blocks most ads)
+			.addPreference("browser.contentblocking.category", "strict");
 	if (this.manager.isHeadless()) {
 		debugPrintln("WARNING: Firefox is running in Headless mode !!!");
 		firefoxOptions.addArguments("-headless");

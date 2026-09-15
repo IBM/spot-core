@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2020, 2021 IBM Corporation and others.
+* Copyright (c) 2012, 2025 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -33,7 +33,7 @@ import com.ibm.bear.qa.spot.samples.tqa.scenario.SampleToolsQaScenarioStepRunner
 public class SampleToolsQaStep00_General extends SampleToolsQaScenarioStep {
 
 	// Constants
-	private static final String HOME_PAGE_DOCUMENT_TITLE = "DEMOQA";
+	private static final String HOME_PAGE_DOCUMENT_TITLE = "demosite";
 
 /**
  * Test <b>Full Name</b> simple input field.

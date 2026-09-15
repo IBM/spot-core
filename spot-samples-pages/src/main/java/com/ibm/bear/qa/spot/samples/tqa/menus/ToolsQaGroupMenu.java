@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2020, 2021 IBM Corporation and others.
+* Copyright (c) 2012, 2025 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -43,7 +43,7 @@ public ToolsQaGroupMenu(final WebPage page, final WebBrowserElement element) {
 
 @Override
 protected By getItemElementsLocator() {
-	return By.tagName("li");
+	return By.cssSelector("li>a");
 }
 
 /**

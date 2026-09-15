@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2024 IBM Corporation and others.
+* Copyright (c) 2012, 2026 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -327,8 +327,8 @@ public List<String> getColumnHeaders() {
 	List<WebBrowserElement> headersElement = getHeaderElements();
 	List<String> headers = new ArrayList<String>(headersElement.size());
 	for (WebBrowserElement hElement: headersElement) {
-		WebBrowserElement labelElement = hElement.findElement(By.className("gridxSortNode"));
-		headers.add(labelElement==null ? hElement.getText() : labelElement.getText());
+		String headerText = getHeaderText(hElement);
+		headers.add(headerText);
 	}
 	return headers;
 }
@@ -363,8 +363,7 @@ public List<List<String>> getContent() {
 public WebBrowserElement getHeaderElement(final String column) {
 	List<WebBrowserElement> headersElement = getHeaderElements();
 	for (WebBrowserElement hElement: headersElement) {
-		WebBrowserElement labelElement = hElement.findElement(By.className("gridxSortNode"));
-		String headerText = labelElement==null ? hElement.getText() : labelElement.getText();
+		String headerText = getHeaderText(hElement);
 		if (headerText.equals(column)) {
 			return hElement;
 		}
@@ -386,6 +385,8 @@ public List<WebBrowserElement> getHeaderElements() {
 	return this.element.waitShortlyForMandatoryDisplayedChildrenElements(getHeaderElementsLocator());
 }
 
+
+
 /**
  * Return the locator to find header web elements in the displayed grid container element.
  * <p>
@@ -401,6 +402,11 @@ abstract protected By getHeaderElementsLocator();
 public int getHeaderIndex(final String column) {
 	List<String> headers = getColumnHeaders();
 	return headers.indexOf(column);
+}
+
+private String getHeaderText(final WebBrowserElement hElement) {
+	WebBrowserElement labelElement = hElement.findElement(By.className("gridxSortNode"));
+	 return labelElement==null ? hElement.getText().split("\n")[0] : labelElement.getText();
 }
 
 /**

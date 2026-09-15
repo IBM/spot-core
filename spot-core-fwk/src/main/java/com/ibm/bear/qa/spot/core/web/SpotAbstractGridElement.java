@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2024 IBM Corporation and others.
+* Copyright (c) 2012, 2026 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -348,6 +348,7 @@ public WebBrowserElement waitForTableToBeLoaded() {
 		}
 	};
 	timeout.waitUntil(openTimeout());
+	pause(500);
 	return bodyEmptyElement;
 }
 }

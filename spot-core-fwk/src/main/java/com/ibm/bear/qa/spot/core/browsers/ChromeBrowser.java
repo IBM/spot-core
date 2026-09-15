@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2012, 2024 IBM Corporation and others.
+* Copyright (c) 2012, 2026 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -67,19 +67,6 @@ public String getDriverInfo() {
 	return info + chrome.get("chromedriverVersion");
 }
 
-private void initDownloadDir() {
-
-	// Set experimental options
-	Map<String, Object> prefs = new HashMap<String, Object>();
-	// Default download directory
-	prefs.put("download.default_directory", getDownloadDir());
-	prefs.put("download.directory_upgrade", Boolean.TRUE);
-	// No prompt while download a file
-	prefs.put("download.prompt_for_download", Boolean.FALSE);
-	// Set above options
-	this.options.setExperimentalOption("prefs", prefs);
-}
-
 @Override
 protected void initDriver() {
 
@@ -132,15 +119,27 @@ protected void initProfile(final User user) {
 	// Set options arguments
 	this.options.addArguments(arguments);
 
-	// Init download dir if necessary
-	if (hasDownloadDir()) {
-		initDownloadDir();
-	}
-
 	// Set private mode for browser if requested
 	if (this.manager.isInPrivateMode(user)) {
 		this.options.addArguments("--incognito");
 	}
+
+	// FIXED: Consolidate all Chrome preferences in a single call
+	// This prevents preferences from being overwritten
+	final Map<String, Object> chromePrefs = new HashMap<>();
+	
+	// Deactivate the check on Google Password Manager ('Change your password' popup)
+	chromePrefs.put("profile.password_manager_leak_detection", false);
+	
+	// Add download preferences if download directory is configured
+	if (hasDownloadDir()) {
+		chromePrefs.put("download.default_directory", getDownloadDir());
+		chromePrefs.put("download.directory_upgrade", Boolean.TRUE);
+		chromePrefs.put("download.prompt_for_download", Boolean.FALSE);
+	}
+	
+	// Single call with all preferences to avoid overwriting
+	this.options.setExperimentalOption("prefs", chromePrefs);
 }
 
 @Override

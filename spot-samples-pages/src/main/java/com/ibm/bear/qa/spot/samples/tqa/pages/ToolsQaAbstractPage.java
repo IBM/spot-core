@@ -1,5 +1,5 @@
 /*********************************************************************
-* Copyright (c) 2020, 2021 IBM Corporation and others.
+* Copyright (c) 2012, 2025 IBM Corporation and others.
 *
 * This program and the accompanying materials are made
 * available under the terms of the Eclipse Public License 2.0
@@ -108,7 +108,7 @@ protected By getLoggedUserElementLocator() {
 
 @Override
 protected By getRootElementLocator() {
-	return By.id("app");
+	return By.id("root");
 }
 
 @Override
